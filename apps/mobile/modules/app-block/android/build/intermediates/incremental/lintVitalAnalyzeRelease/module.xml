@@ -1,0 +1,18 @@
+<lint-module
+    format="1"
+    dir="D:\ProjetosPessoais\Wityu\Wityu-react-native\apps\mobile\modules\app-block\android"
+    name=":app-block"
+    type="LIBRARY"
+    maven="com.wityu.appblock:app-block:1.0.0"
+    agpVersion="8.12.0"
+    buildFolder="build"
+    bootClassPath="C:\Android\platforms\android-36\android.jar;C:\Android\build-tools\35.0.0\core-lambda-stubs.jar"
+    javaSourceLevel="17"
+    compileTarget="android-36"
+    neverShrinking="true">
+  <lintOptions
+      absolutePaths="true"
+      checkReleaseBuilds="true"
+      explainIssues="true"/>
+  <variant name="release"/>
+</lint-module>

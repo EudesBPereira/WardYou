@@ -1,0 +1,656 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model EFMigrationsHistory {
+  MigrationId    String @id(map: "PK___EFMigrationsHistory") @db.VarChar(150)
+  ProductVersion String @db.VarChar(32)
+
+  @@map("__EFMigrationsHistory")
+}
+
+model app_block_schedules {
+  Id                    String                @id(map: "PK_app_block_schedules") @db.Uuid
+  ChildDevicePolicyId   String                @db.Uuid
+  Name                  String                @db.VarChar(80)
+  IsEnabled             Boolean
+  StartTime             DateTime              @db.Time(6)
+  EndTime               DateTime              @db.Time(6)
+  DaysOfWeek            Int                   @db.SmallInt
+  BlockAll              Boolean
+  BlockGames            Boolean
+  BlockSocial           Boolean
+  BlockVideo            Boolean
+  CreatedAt             DateTime              @db.Timestamptz(6)
+  UpdatedAt             DateTime?             @db.Timestamptz(6)
+  child_device_policies child_device_policies @relation(fields: [ChildDevicePolicyId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_app_block_schedules_child_device_policies_ChildDevicePolicy~")
+
+  @@index([ChildDevicePolicyId], map: "IX_app_block_schedules_ChildDevicePolicyId")
+}
+
+model app_rules {
+  Id                    String                @id(map: "PK_app_rules") @db.Uuid
+  ChildDevicePolicyId   String                @db.Uuid
+  AppPackageName        String                @db.VarChar(256)
+  AppDisplayName        String                @db.VarChar(120)
+  IsBlocked             Boolean
+  DailyLimitMinutes     Int?
+  IsEmergencyAllowed    Boolean
+  UpdatedAt             DateTime?             @db.Timestamptz(6)
+  UpdatedByUserId       String?               @db.Uuid
+  AppCategory           String                @default("Other") @db.VarChar(40)
+  IsWhitelisted         Boolean               @default(false)
+  child_device_policies child_device_policies @relation(fields: [ChildDevicePolicyId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_app_rules_child_device_policies_ChildDevicePolicyId")
+  users                 users?                @relation(fields: [UpdatedByUserId], references: [Id], onUpdate: NoAction, map: "FK_app_rules_users_UpdatedByUserId")
+
+  @@unique([ChildDevicePolicyId, AppPackageName], map: "IX_app_rules_ChildDevicePolicyId_AppPackageName")
+  @@index([ChildDevicePolicyId], map: "IX_app_rules_ChildDevicePolicyId")
+  @@index([ChildDevicePolicyId, AppCategory], map: "IX_app_rules_ChildDevicePolicyId_AppCategory")
+  @@index([UpdatedByUserId], map: "IX_app_rules_UpdatedByUserId")
+}
+
+model app_usage_summaries {
+  Id             String    @id(map: "PK_app_usage_summaries") @db.Uuid
+  ChildUserId    String    @db.Uuid
+  DeviceId       String    @db.Uuid
+  UsageDate      DateTime  @db.Date
+  AppPackageName String    @db.VarChar(256)
+  AppDisplayName String    @db.VarChar(120)
+  UsedMinutes    Int
+  CreatedAt      DateTime  @db.Timestamptz(6)
+  UpdatedAt      DateTime? @db.Timestamptz(6)
+  devices        devices   @relation(fields: [DeviceId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_app_usage_summaries_devices_DeviceId")
+  users          users     @relation(fields: [ChildUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_app_usage_summaries_users_ChildUserId")
+
+  @@unique([ChildUserId, DeviceId, UsageDate, AppPackageName], map: "IX_app_usage_summaries_ChildUserId_DeviceId_UsageDate_AppPacka~")
+  @@index([AppPackageName], map: "IX_app_usage_summaries_AppPackageName")
+  @@index([ChildUserId], map: "IX_app_usage_summaries_ChildUserId")
+  @@index([DeviceId], map: "IX_app_usage_summaries_DeviceId")
+  @@index([UsageDate], map: "IX_app_usage_summaries_UsageDate")
+}
+
+model audit_logs {
+  Id                                   String         @id(map: "PK_audit_logs") @db.Uuid
+  ActorUserId                          String         @db.Uuid
+  TargetUserId                         String?        @db.Uuid
+  Action                               Int
+  SourceType                           Int
+  FamilyId                             String?        @db.Uuid
+  TravelGroupId                        String?        @db.Uuid
+  CreatedAt                            DateTime       @db.Timestamptz(6)
+  MetadataJson                         Json?
+  DeviceId                             String?        @db.Uuid
+  devices                              devices?       @relation(fields: [DeviceId], references: [Id], onUpdate: NoAction, map: "FK_audit_logs_devices_DeviceId")
+  families                             families?      @relation(fields: [FamilyId], references: [Id], onUpdate: NoAction, map: "FK_audit_logs_families_FamilyId")
+  travel_groups                        travel_groups? @relation(fields: [TravelGroupId], references: [Id], onUpdate: NoAction, map: "FK_audit_logs_travel_groups_TravelGroupId")
+  users_audit_logs_ActorUserIdTousers  users          @relation("audit_logs_ActorUserIdTousers", fields: [ActorUserId], references: [Id], onUpdate: NoAction, map: "FK_audit_logs_users_ActorUserId")
+  users_audit_logs_TargetUserIdTousers users?         @relation("audit_logs_TargetUserIdTousers", fields: [TargetUserId], references: [Id], onUpdate: NoAction, map: "FK_audit_logs_users_TargetUserId")
+
+  @@index([ActorUserId, CreatedAt], map: "IX_audit_logs_ActorUserId_CreatedAt")
+  @@index([DeviceId, CreatedAt], map: "IX_audit_logs_DeviceId_CreatedAt")
+  @@index([FamilyId], map: "IX_audit_logs_FamilyId")
+  @@index([TargetUserId, CreatedAt], map: "IX_audit_logs_TargetUserId_CreatedAt")
+  @@index([TravelGroupId], map: "IX_audit_logs_TravelGroupId")
+}
+
+model child_device_policies {
+  Id                                                 String                @id(map: "PK_child_device_policies") @db.Uuid
+  ChildUserId                                        String                @unique(map: "IX_child_device_policies_ChildUserId") @db.Uuid
+  ManagedByUserId                                    String                @db.Uuid
+  DailyScreenTimeLimitMinutes                        Int
+  IsEnabled                                          Boolean
+  CreatedAt                                          DateTime              @db.Timestamptz(6)
+  UpdatedAt                                          DateTime?             @db.Timestamptz(6)
+  BlockAppInstall                                    Boolean               @default(false)
+  EntertainmentDailyLimitMinutes                     Int?
+  IsRemotelyPaused                                   Boolean               @default(false)
+  BlockedWebsites                                    String?
+  app_block_schedules                                app_block_schedules[]
+  app_rules                                          app_rules[]
+  users_child_device_policies_ChildUserIdTousers     users                 @relation("child_device_policies_ChildUserIdTousers", fields: [ChildUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_child_device_policies_users_ChildUserId")
+  users_child_device_policies_ManagedByUserIdTousers users                 @relation("child_device_policies_ManagedByUserIdTousers", fields: [ManagedByUserId], references: [Id], onUpdate: NoAction, map: "FK_child_device_policies_users_ManagedByUserId")
+  sleep_schedules                                    sleep_schedules?
+
+  @@index([ManagedByUserId], map: "IX_child_device_policies_ManagedByUserId")
+}
+
+model child_device_statuses {
+  Id               String   @id(map: "PK_child_device_statuses") @db.Uuid
+  ChildUserId      String   @unique(map: "IX_child_device_statuses_ChildUserId") @db.Uuid
+  LastSeenAt       DateTime @db.Timestamptz(6)
+  HasUsageAccess   Boolean
+  HasAccessibility Boolean
+  AppVersion       String?  @db.VarChar(32)
+  BatteryLevel     Int?
+  users            users    @relation(fields: [ChildUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_child_device_statuses_users_ChildUserId")
+}
+
+model child_tasks {
+  Id                                       String             @id(map: "PK_child_tasks") @db.Uuid
+  ChildUserId                              String             @db.Uuid
+  CreatedByUserId                          String             @db.Uuid
+  Title                                    String             @db.VarChar(120)
+  Description                              String?            @db.VarChar(500)
+  Category                                 String             @default("Other") @db.VarChar(40)
+  RewardMinutes                            Int
+  IsRecurring                              Boolean
+  RecurringDays                            Int                @db.SmallInt
+  IsActive                                 Boolean
+  CreatedAt                                DateTime           @db.Timestamptz(6)
+  UpdatedAt                                DateTime?          @db.Timestamptz(6)
+  users_child_tasks_ChildUserIdTousers     users              @relation("child_tasks_ChildUserIdTousers", fields: [ChildUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_child_tasks_users_ChildUserId")
+  users_child_tasks_CreatedByUserIdTousers users              @relation("child_tasks_CreatedByUserIdTousers", fields: [CreatedByUserId], references: [Id], onUpdate: NoAction, map: "FK_child_tasks_users_CreatedByUserId")
+  task_completions                         task_completions[]
+
+  @@index([ChildUserId], map: "IX_child_tasks_ChildUserId")
+  @@index([ChildUserId, IsActive], map: "IX_child_tasks_ChildUserId_IsActive")
+  @@index([CreatedByUserId], map: "IX_child_tasks_CreatedByUserId")
+}
+
+model consent_grant_scopes {
+  Id             String         @id(map: "PK_consent_grant_scopes") @db.Uuid
+  ConsentGrantId String         @db.Uuid
+  Scope          Int
+  consent_grants consent_grants @relation(fields: [ConsentGrantId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_consent_grant_scopes_consent_grants_ConsentGrantId")
+
+  @@unique([ConsentGrantId, Scope], map: "IX_consent_grant_scopes_ConsentGrantId_Scope")
+}
+
+model consent_grants {
+  Id                                          String                 @id(map: "PK_consent_grants") @db.Uuid
+  SubjectUserId                               String                 @db.Uuid
+  GrantedToUserId                             String                 @db.Uuid
+  FamilyId                                    String?                @db.Uuid
+  TravelGroupId                               String?                @db.Uuid
+  SourceType                                  Int
+  GrantedAt                                   DateTime               @db.Timestamptz(6)
+  ExpiresAt                                   DateTime?              @db.Timestamptz(6)
+  RevokedAt                                   DateTime?              @db.Timestamptz(6)
+  IsRevocable                                 Boolean
+  IsActive                                    Boolean
+  consent_grant_scopes                        consent_grant_scopes[]
+  families                                    families?              @relation(fields: [FamilyId], references: [Id], onUpdate: NoAction, map: "FK_consent_grants_families_FamilyId")
+  travel_groups                               travel_groups?         @relation(fields: [TravelGroupId], references: [Id], onUpdate: NoAction, map: "FK_consent_grants_travel_groups_TravelGroupId")
+  users_consent_grants_GrantedToUserIdTousers users                  @relation("consent_grants_GrantedToUserIdTousers", fields: [GrantedToUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_consent_grants_users_GrantedToUserId")
+  users_consent_grants_SubjectUserIdTousers   users                  @relation("consent_grants_SubjectUserIdTousers", fields: [SubjectUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_consent_grants_users_SubjectUserId")
+
+  @@index([FamilyId, TravelGroupId, SourceType], map: "IX_consent_grants_FamilyId_TravelGroupId_SourceType")
+  @@index([GrantedToUserId], map: "IX_consent_grants_GrantedToUserId")
+  @@index([SubjectUserId, GrantedToUserId, IsActive], map: "IX_consent_grants_SubjectUserId_GrantedToUserId_IsActive")
+  @@index([TravelGroupId], map: "IX_consent_grants_TravelGroupId")
+}
+
+model devices {
+  Id                   String                @id(map: "PK_devices") @db.Uuid
+  UserId               String                @db.Uuid
+  DeviceName           String                @db.VarChar(120)
+  Platform             String                @db.VarChar(32)
+  PushToken            String?               @db.VarChar(500)
+  PublicKey            String?               @db.VarChar(4096)
+  RegisteredAt         DateTime              @db.Timestamptz(6)
+  LastSeenAt           DateTime?             @db.Timestamptz(6)
+  IsActive             Boolean
+  SharePreciseLocation Boolean               @default(true)
+  PushLanguage         String?
+  app_usage_summaries  app_usage_summaries[]
+  audit_logs           audit_logs[]
+  users                users                 @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_devices_users_UserId")
+  location_events      location_events[]
+  refresh_tokens       refresh_tokens[]
+  remote_commands      remote_commands[]
+
+  @@index([UserId], map: "IX_devices_UserId")
+  @@index([UserId, IsActive], map: "IX_devices_UserId_IsActive")
+}
+
+model extra_time_requests {
+  Id                                                 String    @id(map: "PK_extra_time_requests") @db.Uuid
+  ChildUserId                                        String    @db.Uuid
+  RequestedToUserId                                  String    @db.Uuid
+  RequestedMinutes                                   Int
+  Status                                             Int
+  RequestedAt                                        DateTime  @db.Timestamptz(6)
+  ExpiresAt                                          DateTime  @db.Timestamptz(6)
+  RespondedAt                                        DateTime? @db.Timestamptz(6)
+  RespondedByUserId                                  String?   @db.Uuid
+  Source                                             Int       @default(0)
+  SourceTaskId                                       String?   @db.Uuid
+  users_extra_time_requests_ChildUserIdTousers       users     @relation("extra_time_requests_ChildUserIdTousers", fields: [ChildUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_extra_time_requests_users_ChildUserId")
+  users_extra_time_requests_RequestedToUserIdTousers users     @relation("extra_time_requests_RequestedToUserIdTousers", fields: [RequestedToUserId], references: [Id], onUpdate: NoAction, map: "FK_extra_time_requests_users_RequestedToUserId")
+  users_extra_time_requests_RespondedByUserIdTousers users?    @relation("extra_time_requests_RespondedByUserIdTousers", fields: [RespondedByUserId], references: [Id], onUpdate: NoAction, map: "FK_extra_time_requests_users_RespondedByUserId")
+
+  @@index([ChildUserId], map: "IX_extra_time_requests_ChildUserId")
+  @@index([RequestedToUserId], map: "IX_extra_time_requests_RequestedToUserId")
+  @@index([RequestedToUserId, Status, RequestedAt], map: "IX_extra_time_requests_RequestedToUserId_Status_RequestedAt")
+  @@index([RespondedByUserId], map: "IX_extra_time_requests_RespondedByUserId")
+  @@index([Status], map: "IX_extra_time_requests_Status")
+}
+
+model families {
+  Id              String            @id(map: "PK_families") @db.Uuid
+  Name            String            @db.VarChar(140)
+  CreatedAt       DateTime          @db.Timestamptz(6)
+  Description     String?           @db.VarChar(400)
+  InviteCode      String            @unique(map: "IX_families_InviteCode") @default("") @db.VarChar(32)
+  UpdatedAt       DateTime?         @db.Timestamptz(6)
+  audit_logs      audit_logs[]
+  consent_grants  consent_grants[]
+  family_consents family_consents[]
+  family_invites  family_invites[]
+  family_members  family_members[]
+  location_events location_events[]
+  safety_zones    safety_zones[]
+  sos_events      sos_events[]
+}
+
+model family_child_settings {
+  MemberId               String                  @id(map: "PK_family_child_settings") @db.Uuid
+  ScreenTimeLimitMinutes Int
+  TodayScreenTimeMinutes Int
+  BedtimeStart           Unsupported("interval")
+  BedtimeEnd             Unsupported("interval")
+  StudyModeEnabled       Boolean
+  AppBlockingEnabled     Boolean
+  WebProtectionEnabled   Boolean
+  LocationSharingEnabled Boolean
+  UpdatedAt              DateTime                @db.Timestamptz(6)
+  family_members         family_members          @relation(fields: [MemberId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_family_child_settings_family_members_MemberId")
+}
+
+model family_consents {
+  Id                                           String    @id(map: "PK_family_consents") @db.Uuid
+  FamilyId                                     String    @db.Uuid
+  UserId                                       String    @db.Uuid
+  GrantedByUserId                              String    @db.Uuid
+  Type                                         Int
+  Version                                      String    @db.VarChar(32)
+  IpAddress                                    String?   @db.VarChar(64)
+  AllowedFromHour                              Int?
+  AllowedToHour                                Int?
+  CreatedAt                                    DateTime  @db.Timestamptz(6)
+  GrantedAt                                    DateTime  @db.Timestamptz(6)
+  RevokedAt                                    DateTime? @db.Timestamptz(6)
+  IsActive                                     Boolean
+  families                                     families  @relation(fields: [FamilyId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_family_consents_families_FamilyId")
+  users_family_consents_GrantedByUserIdTousers users     @relation("family_consents_GrantedByUserIdTousers", fields: [GrantedByUserId], references: [Id], onUpdate: NoAction, map: "FK_family_consents_users_GrantedByUserId")
+  users_family_consents_UserIdTousers          users     @relation("family_consents_UserIdTousers", fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_family_consents_users_UserId")
+
+  @@index([FamilyId, UserId, Type, IsActive], map: "IX_family_consents_FamilyId_UserId_Type_IsActive")
+  @@index([GrantedAt], map: "IX_family_consents_GrantedAt")
+  @@index([GrantedByUserId], map: "IX_family_consents_GrantedByUserId")
+  @@index([UserId], map: "IX_family_consents_UserId")
+}
+
+model family_elder_settings {
+  MemberId                   String         @id(map: "PK_family_elder_settings") @db.Uuid
+  MedicationRemindersEnabled Boolean
+  LowBatteryAlertEnabled     Boolean
+  LostPhoneHelperEnabled     Boolean
+  SosEnabled                 Boolean
+  LocationSharingEnabled     Boolean
+  DailyCheckInEnabled        Boolean
+  UpdatedAt                  DateTime       @db.Timestamptz(6)
+  family_members             family_members @relation(fields: [MemberId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_family_elder_settings_family_members_MemberId")
+}
+
+model family_invites {
+  Id              String    @id(map: "PK_family_invites") @db.Uuid
+  FamilyId        String    @db.Uuid
+  InviteCode      String    @unique(map: "IX_family_invites_InviteCode") @db.VarChar(64)
+  ExpiresAt       DateTime  @db.Timestamptz(6)
+  IsUsed          Boolean
+  UsedAt          DateTime? @db.Timestamptz(6)
+  Email           String    @default("") @db.VarChar(256)
+  CreatedAt       DateTime  @default(now()) @db.Timestamptz(6)
+  CreatedByUserId String    @db.Uuid
+  IsActive        Boolean   @default(true)
+  families        families  @relation(fields: [FamilyId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_family_invites_families_FamilyId")
+  users           users     @relation(fields: [CreatedByUserId], references: [Id], onUpdate: NoAction, map: "FK_family_invites_users_CreatedByUserId")
+
+  @@index([CreatedByUserId], map: "IX_family_invites_CreatedByUserId")
+  @@index([FamilyId, Email, IsActive, IsUsed], map: "IX_family_invites_FamilyId_Email_IsActive_IsUsed")
+}
+
+model family_members {
+  Id                    String                 @id(map: "PK_family_members") @db.Uuid
+  FamilyId              String                 @db.Uuid
+  UserId                String?                @db.Uuid
+  Role                  Int
+  JoinedAt              DateTime               @db.Timestamptz(6)
+  Age                   Int?
+  BatteryLevel          Int?
+  DisplayName           String                 @default("") @db.VarChar(160)
+  LastLocationLabel     String?                @db.VarChar(160)
+  LastSeenAt            DateTime?              @db.Timestamptz(6)
+  LinkType              Int                    @default(1)
+  RelationshipLabel     String?                @db.VarChar(160)
+  Status                Int
+  family_child_settings family_child_settings?
+  family_elder_settings family_elder_settings?
+  families              families               @relation(fields: [FamilyId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_family_members_families_FamilyId")
+  users                 users?                 @relation(fields: [UserId], references: [Id], onUpdate: NoAction, map: "FK_family_members_users_UserId")
+
+  @@index([UserId], map: "IX_family_members_UserId")
+}
+
+model location_events {
+  Id             String         @id(map: "PK_location_events") @db.Uuid
+  UserId         String         @db.Uuid
+  DeviceId       String?        @db.Uuid
+  Latitude       Float
+  Longitude      Float
+  AccuracyMeters Float?
+  BatteryLevel   Int?
+  IsCharging     Boolean?
+  SourceType     Int
+  FamilyId       String?        @db.Uuid
+  TravelGroupId  String?        @db.Uuid
+  CapturedAt     DateTime       @db.Timestamptz(6)
+  ReceivedAt     DateTime       @db.Timestamptz(6)
+  devices        devices?       @relation(fields: [DeviceId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_location_events_devices_DeviceId")
+  families       families?      @relation(fields: [FamilyId], references: [Id], onUpdate: NoAction, map: "FK_location_events_families_FamilyId")
+  travel_groups  travel_groups? @relation(fields: [TravelGroupId], references: [Id], onUpdate: NoAction, map: "FK_location_events_travel_groups_TravelGroupId")
+  users          users          @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_location_events_users_UserId")
+  sos_events     sos_events[]
+
+  @@index([DeviceId], map: "IX_location_events_DeviceId")
+  @@index([FamilyId, TravelGroupId], map: "IX_location_events_FamilyId_TravelGroupId")
+  @@index([TravelGroupId], map: "IX_location_events_TravelGroupId")
+  @@index([UserId, ReceivedAt], map: "IX_location_events_UserId_ReceivedAt")
+}
+
+model medication_reminders {
+  Id              String    @id(map: "PK_medication_reminders") @db.Uuid
+  ElderUserId     String    @db.Uuid
+  ManagedByUserId String    @db.Uuid
+  Name            String    @db.VarChar(120)
+  Dosage          String?   @db.VarChar(80)
+  Times           String    @db.VarChar(200)
+  DaysOfWeek      Int       @db.SmallInt
+  IsActive        Boolean
+  CreatedAt       DateTime  @db.Timestamptz(6)
+  UpdatedAt       DateTime? @db.Timestamptz(6)
+  users           users     @relation(fields: [ElderUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_medication_reminders_users_ElderUserId")
+
+  @@index([ElderUserId], map: "IX_medication_reminders_ElderUserId")
+}
+
+model refresh_tokens {
+  Id                  String    @id(map: "PK_refresh_tokens") @db.Uuid
+  UserId              String    @db.Uuid
+  DeviceId            String?   @db.Uuid
+  TokenHash           String    @unique(map: "IX_refresh_tokens_TokenHash") @db.VarChar(256)
+  CreatedAt           DateTime  @db.Timestamptz(6)
+  ExpiresAt           DateTime  @db.Timestamptz(6)
+  RevokedAt           DateTime? @db.Timestamptz(6)
+  ReplacedByTokenHash String?   @db.VarChar(256)
+  devices             devices?  @relation(fields: [DeviceId], references: [Id], onUpdate: NoAction, map: "FK_refresh_tokens_devices_DeviceId")
+  users               users     @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_refresh_tokens_users_UserId")
+
+  @@index([DeviceId], map: "IX_refresh_tokens_DeviceId")
+  @@index([UserId, ExpiresAt], map: "IX_refresh_tokens_UserId_ExpiresAt")
+}
+
+model remote_commands {
+  Id                                             String    @id(map: "PK_remote_commands") @db.Uuid
+  RequestedByUserId                              String    @db.Uuid
+  TargetUserId                                   String    @db.Uuid
+  TargetDeviceId                                 String?   @db.Uuid
+  CommandType                                    Int
+  Status                                         Int
+  CreatedAt                                      DateTime  @db.Timestamptz(6)
+  ExpiresAt                                      DateTime  @db.Timestamptz(6)
+  CompletedAt                                    DateTime? @db.Timestamptz(6)
+  PayloadJson                                    Json?
+  devices                                        devices?  @relation(fields: [TargetDeviceId], references: [Id], onUpdate: NoAction, map: "FK_remote_commands_devices_TargetDeviceId")
+  users_remote_commands_RequestedByUserIdTousers users     @relation("remote_commands_RequestedByUserIdTousers", fields: [RequestedByUserId], references: [Id], onUpdate: NoAction, map: "FK_remote_commands_users_RequestedByUserId")
+  users_remote_commands_TargetUserIdTousers      users     @relation("remote_commands_TargetUserIdTousers", fields: [TargetUserId], references: [Id], onUpdate: NoAction, map: "FK_remote_commands_users_TargetUserId")
+
+  @@index([RequestedByUserId], map: "IX_remote_commands_RequestedByUserId")
+  @@index([TargetDeviceId], map: "IX_remote_commands_TargetDeviceId")
+  @@index([TargetUserId, Status, ExpiresAt], map: "IX_remote_commands_TargetUserId_Status_ExpiresAt")
+}
+
+model safety_zone_members {
+  Id           String       @id(map: "PK_safety_zone_members") @db.Uuid
+  ZoneId       String       @db.Uuid
+  UserId       String       @db.Uuid
+  safety_zones safety_zones @relation(fields: [ZoneId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_safety_zone_members_safety_zones_ZoneId")
+  users        users        @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_safety_zone_members_users_UserId")
+
+  @@unique([ZoneId, UserId], map: "IX_safety_zone_members_ZoneId_UserId")
+  @@index([UserId], map: "IX_safety_zone_members_UserId")
+}
+
+model safety_zone_occupancies {
+  Id           String       @id(map: "PK_safety_zone_occupancies") @db.Uuid
+  ZoneId       String       @db.Uuid
+  UserId       String       @db.Uuid
+  IsInside     Boolean
+  UpdatedAt    DateTime     @db.Timestamptz(6)
+  safety_zones safety_zones @relation(fields: [ZoneId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_safety_zone_occupancies_safety_zones_ZoneId")
+  users        users        @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_safety_zone_occupancies_users_UserId")
+
+  @@unique([ZoneId, UserId], map: "IX_safety_zone_occupancies_ZoneId_UserId")
+  @@index([UserId], map: "IX_safety_zone_occupancies_UserId")
+}
+
+model safety_zones {
+  Id                      String                    @id(map: "PK_safety_zones") @db.Uuid
+  FamilyId                String                    @db.Uuid
+  Name                    String                    @db.VarChar(120)
+  Latitude                Float
+  Longitude               Float
+  RadiusMeters            Int
+  NotifyOnEntry           Boolean
+  NotifyOnExit            Boolean
+  IsActive                Boolean
+  CreatedByUserId         String                    @db.Uuid
+  CreatedAt               DateTime                  @db.Timestamptz(6)
+  UpdatedAt               DateTime?                 @db.Timestamptz(6)
+  safety_zone_members     safety_zone_members[]
+  safety_zone_occupancies safety_zone_occupancies[]
+  families                families                  @relation(fields: [FamilyId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_safety_zones_families_FamilyId")
+  users                   users                     @relation(fields: [CreatedByUserId], references: [Id], onUpdate: NoAction, map: "FK_safety_zones_users_CreatedByUserId")
+
+  @@index([CreatedByUserId], map: "IX_safety_zones_CreatedByUserId")
+  @@index([FamilyId, IsActive], map: "IX_safety_zones_FamilyId_IsActive")
+}
+
+model sleep_schedules {
+  Id                    String                @id(map: "PK_sleep_schedules") @db.Uuid
+  ChildDevicePolicyId   String                @unique(map: "IX_sleep_schedules_ChildDevicePolicyId") @db.Uuid
+  IsEnabled             Boolean
+  StartTime             DateTime              @db.Time(6)
+  EndTime               DateTime              @db.Time(6)
+  DaysOfWeek            Int                   @db.SmallInt
+  UpdatedAt             DateTime              @db.Timestamptz(6)
+  child_device_policies child_device_policies @relation(fields: [ChildDevicePolicyId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sleep_schedules_child_device_policies_ChildDevicePolicyId")
+}
+
+model sos_events {
+  Id                                           String           @id(map: "PK_sos_events") @db.Uuid
+  TriggeredByUserId                            String           @db.Uuid
+  FamilyId                                     String?          @db.Uuid
+  TravelGroupId                                String?          @db.Uuid
+  LocationEventId                              String?          @db.Uuid
+  Status                                       Int
+  TriggeredAt                                  DateTime         @db.Timestamptz(6)
+  ClosedAt                                     DateTime?        @db.Timestamptz(6)
+  AcknowledgedAt                               DateTime?        @db.Timestamptz(6)
+  AcknowledgedByUserId                         String?          @db.Uuid
+  ClosedByUserId                               String?          @db.Uuid
+  families                                     families?        @relation(fields: [FamilyId], references: [Id], onUpdate: NoAction, map: "FK_sos_events_families_FamilyId")
+  location_events                              location_events? @relation(fields: [LocationEventId], references: [Id], onUpdate: NoAction, map: "FK_sos_events_location_events_LocationEventId")
+  travel_groups                                travel_groups?   @relation(fields: [TravelGroupId], references: [Id], onUpdate: NoAction, map: "FK_sos_events_travel_groups_TravelGroupId")
+  users_sos_events_AcknowledgedByUserIdTousers users?           @relation("sos_events_AcknowledgedByUserIdTousers", fields: [AcknowledgedByUserId], references: [Id], onUpdate: NoAction, map: "FK_sos_events_users_AcknowledgedByUserId")
+  users_sos_events_ClosedByUserIdTousers       users?           @relation("sos_events_ClosedByUserIdTousers", fields: [ClosedByUserId], references: [Id], onUpdate: NoAction, map: "FK_sos_events_users_ClosedByUserId")
+  users_sos_events_TriggeredByUserIdTousers    users            @relation("sos_events_TriggeredByUserIdTousers", fields: [TriggeredByUserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_sos_events_users_TriggeredByUserId")
+
+  @@index([AcknowledgedByUserId], map: "IX_sos_events_AcknowledgedByUserId")
+  @@index([ClosedByUserId], map: "IX_sos_events_ClosedByUserId")
+  @@index([FamilyId], map: "IX_sos_events_FamilyId")
+  @@index([LocationEventId], map: "IX_sos_events_LocationEventId")
+  @@index([TravelGroupId], map: "IX_sos_events_TravelGroupId")
+  @@index([TriggeredByUserId, Status, TriggeredAt], map: "IX_sos_events_TriggeredByUserId_Status_TriggeredAt")
+}
+
+model task_completions {
+  Id                                             String      @id(map: "PK_task_completions") @db.Uuid
+  ChildTaskId                                    String      @db.Uuid
+  ChildUserId                                    String      @db.Uuid
+  Status                                         Int
+  ChildNote                                      String?     @db.VarChar(300)
+  ParentNote                                     String?     @db.VarChar(300)
+  ReviewedByUserId                               String?     @db.Uuid
+  ReviewedAt                                     DateTime?   @db.Timestamptz(6)
+  RewardCredited                                 Boolean
+  CompletedAt                                    DateTime    @db.Timestamptz(6)
+  child_tasks                                    child_tasks @relation(fields: [ChildTaskId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_task_completions_child_tasks_ChildTaskId")
+  users_task_completions_ChildUserIdTousers      users       @relation("task_completions_ChildUserIdTousers", fields: [ChildUserId], references: [Id], onUpdate: NoAction, map: "FK_task_completions_users_ChildUserId")
+  users_task_completions_ReviewedByUserIdTousers users?      @relation("task_completions_ReviewedByUserIdTousers", fields: [ReviewedByUserId], references: [Id], onUpdate: NoAction, map: "FK_task_completions_users_ReviewedByUserId")
+
+  @@index([ChildTaskId], map: "IX_task_completions_ChildTaskId")
+  @@index([ChildUserId], map: "IX_task_completions_ChildUserId")
+  @@index([ChildUserId, Status], map: "IX_task_completions_ChildUserId_Status")
+  @@index([ReviewedByUserId], map: "IX_task_completions_ReviewedByUserId")
+  @@index([Status], map: "IX_task_completions_Status")
+}
+
+model travel_group_members {
+  Id                 String        @id(map: "PK_travel_group_members") @db.Uuid
+  TravelGroupId      String        @db.Uuid
+  UserId             String        @db.Uuid
+  ShareLiveLocation  Boolean
+  ShareBatteryStatus Boolean
+  ReceiveSosAlerts   Boolean
+  JoinedAt           DateTime      @db.Timestamptz(6)
+  LeftAt             DateTime?     @db.Timestamptz(6)
+  IsActive           Boolean
+  travel_groups      travel_groups @relation(fields: [TravelGroupId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_travel_group_members_travel_groups_TravelGroupId")
+  users              users         @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_travel_group_members_users_UserId")
+
+  @@unique([TravelGroupId, UserId], map: "IX_travel_group_members_TravelGroupId_UserId")
+  @@index([TravelGroupId], map: "IX_travel_group_members_TravelGroupId")
+  @@index([UserId], map: "IX_travel_group_members_UserId")
+}
+
+model travel_groups {
+  Id                                         String                 @id(map: "PK_travel_groups") @db.Uuid
+  Name                                       String                 @db.VarChar(160)
+  CreatedByUserId                            String                 @db.Uuid
+  Type                                       Int
+  StartsAt                                   DateTime               @db.Timestamptz(6)
+  EndsAt                                     DateTime               @db.Timestamptz(6)
+  AllowMembersToSeeEachOther                 Boolean
+  IsActive                                   Boolean
+  CreatedAt                                  DateTime               @db.Timestamptz(6)
+  ClosedAt                                   DateTime?              @db.Timestamptz(6)
+  ClosedByUserId                             String?                @db.Uuid
+  audit_logs                                 audit_logs[]
+  consent_grants                             consent_grants[]
+  location_events                            location_events[]
+  sos_events                                 sos_events[]
+  travel_group_members                       travel_group_members[]
+  users_travel_groups_ClosedByUserIdTousers  users?                 @relation("travel_groups_ClosedByUserIdTousers", fields: [ClosedByUserId], references: [Id], onUpdate: NoAction, map: "FK_travel_groups_users_ClosedByUserId")
+  users_travel_groups_CreatedByUserIdTousers users                  @relation("travel_groups_CreatedByUserIdTousers", fields: [CreatedByUserId], references: [Id], onUpdate: NoAction, map: "FK_travel_groups_users_CreatedByUserId")
+  travel_invites                             travel_invites[]
+
+  @@index([ClosedByUserId], map: "IX_travel_groups_ClosedByUserId")
+  @@index([CreatedByUserId], map: "IX_travel_groups_CreatedByUserId")
+  @@index([EndsAt], map: "IX_travel_groups_EndsAt")
+  @@index([IsActive], map: "IX_travel_groups_IsActive")
+}
+
+model travel_invites {
+  Id                                          String        @id(map: "PK_travel_invites") @db.Uuid
+  TravelGroupId                               String        @db.Uuid
+  InviteCode                                  String        @unique(map: "IX_travel_invites_InviteCode") @db.VarChar(64)
+  ExpiresAt                                   DateTime      @db.Timestamptz(6)
+  CreatedAt                                   DateTime      @db.Timestamptz(6)
+  CreatedByUserId                             String        @db.Uuid
+  IsUsed                                      Boolean
+  UsedByUserId                                String?       @db.Uuid
+  UsedAt                                      DateTime?     @db.Timestamptz(6)
+  travel_groups                               travel_groups @relation(fields: [TravelGroupId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_travel_invites_travel_groups_TravelGroupId")
+  users_travel_invites_CreatedByUserIdTousers users         @relation("travel_invites_CreatedByUserIdTousers", fields: [CreatedByUserId], references: [Id], onUpdate: NoAction, map: "FK_travel_invites_users_CreatedByUserId")
+  users_travel_invites_UsedByUserIdTousers    users?        @relation("travel_invites_UsedByUserIdTousers", fields: [UsedByUserId], references: [Id], onUpdate: NoAction, map: "FK_travel_invites_users_UsedByUserId")
+
+  @@index([CreatedByUserId], map: "IX_travel_invites_CreatedByUserId")
+  @@index([ExpiresAt], map: "IX_travel_invites_ExpiresAt")
+  @@index([TravelGroupId], map: "IX_travel_invites_TravelGroupId")
+  @@index([UsedByUserId], map: "IX_travel_invites_UsedByUserId")
+}
+
+model user_consents {
+  Id              String    @id(map: "PK_user_consents") @db.Uuid
+  UserId          String    @db.Uuid
+  Type            Int
+  Version         String    @db.VarChar(32)
+  IpAddress       String?   @db.VarChar(64)
+  AllowedFromHour Int?
+  AllowedToHour   Int?
+  CreatedAt       DateTime  @db.Timestamptz(6)
+  GrantedAt       DateTime  @db.Timestamptz(6)
+  RevokedAt       DateTime? @db.Timestamptz(6)
+  IsActive        Boolean
+  users           users     @relation(fields: [UserId], references: [Id], onDelete: Cascade, onUpdate: NoAction, map: "FK_user_consents_users_UserId")
+
+  @@index([GrantedAt], map: "IX_user_consents_GrantedAt")
+  @@index([UserId, Type, IsActive], map: "IX_user_consents_UserId_Type_IsActive")
+}
+
+model users {
+  Id                                                                 String                    @id(map: "PK_users") @db.Uuid
+  FullName                                                           String                    @db.VarChar(160)
+  Email                                                              String                    @unique(map: "IX_users_Email") @db.VarChar(200)
+  PhoneNumber                                                        String?                   @db.VarChar(32)
+  PasswordHash                                                       String                    @db.VarChar(512)
+  CreatedAt                                                          DateTime                  @db.Timestamptz(6)
+  LastLoginAt                                                        DateTime?                 @db.Timestamptz(6)
+  IsActive                                                           Boolean
+  AvatarUrl                                                          String?
+  app_rules                                                          app_rules[]
+  app_usage_summaries                                                app_usage_summaries[]
+  audit_logs_audit_logs_ActorUserIdTousers                           audit_logs[]              @relation("audit_logs_ActorUserIdTousers")
+  audit_logs_audit_logs_TargetUserIdTousers                          audit_logs[]              @relation("audit_logs_TargetUserIdTousers")
+  child_device_policies_child_device_policies_ChildUserIdTousers     child_device_policies?    @relation("child_device_policies_ChildUserIdTousers")
+  child_device_policies_child_device_policies_ManagedByUserIdTousers child_device_policies[]   @relation("child_device_policies_ManagedByUserIdTousers")
+  child_device_statuses                                              child_device_statuses?
+  child_tasks_child_tasks_ChildUserIdTousers                         child_tasks[]             @relation("child_tasks_ChildUserIdTousers")
+  child_tasks_child_tasks_CreatedByUserIdTousers                     child_tasks[]             @relation("child_tasks_CreatedByUserIdTousers")
+  consent_grants_consent_grants_GrantedToUserIdTousers               consent_grants[]          @relation("consent_grants_GrantedToUserIdTousers")
+  consent_grants_consent_grants_SubjectUserIdTousers                 consent_grants[]          @relation("consent_grants_SubjectUserIdTousers")
+  devices                                                            devices[]
+  extra_time_requests_extra_time_requests_ChildUserIdTousers         extra_time_requests[]     @relation("extra_time_requests_ChildUserIdTousers")
+  extra_time_requests_extra_time_requests_RequestedToUserIdTousers   extra_time_requests[]     @relation("extra_time_requests_RequestedToUserIdTousers")
+  extra_time_requests_extra_time_requests_RespondedByUserIdTousers   extra_time_requests[]     @relation("extra_time_requests_RespondedByUserIdTousers")
+  family_consents_family_consents_GrantedByUserIdTousers             family_consents[]         @relation("family_consents_GrantedByUserIdTousers")
+  family_consents_family_consents_UserIdTousers                      family_consents[]         @relation("family_consents_UserIdTousers")
+  family_invites                                                     family_invites[]
+  family_members                                                     family_members[]
+  location_events                                                    location_events[]
+  medication_reminders                                               medication_reminders[]
+  refresh_tokens                                                     refresh_tokens[]
+  remote_commands_remote_commands_RequestedByUserIdTousers           remote_commands[]         @relation("remote_commands_RequestedByUserIdTousers")
+  remote_commands_remote_commands_TargetUserIdTousers                remote_commands[]         @relation("remote_commands_TargetUserIdTousers")
+  safety_zone_members                                                safety_zone_members[]
+  safety_zone_occupancies                                            safety_zone_occupancies[]
+  safety_zones                                                       safety_zones[]
+  sos_events_sos_events_AcknowledgedByUserIdTousers                  sos_events[]              @relation("sos_events_AcknowledgedByUserIdTousers")
+  sos_events_sos_events_ClosedByUserIdTousers                        sos_events[]              @relation("sos_events_ClosedByUserIdTousers")
+  sos_events_sos_events_TriggeredByUserIdTousers                     sos_events[]              @relation("sos_events_TriggeredByUserIdTousers")
+  task_completions_task_completions_ChildUserIdTousers               task_completions[]        @relation("task_completions_ChildUserIdTousers")
+  task_completions_task_completions_ReviewedByUserIdTousers          task_completions[]        @relation("task_completions_ReviewedByUserIdTousers")
+  travel_group_members                                               travel_group_members[]
+  travel_groups_travel_groups_ClosedByUserIdTousers                  travel_groups[]           @relation("travel_groups_ClosedByUserIdTousers")
+  travel_groups_travel_groups_CreatedByUserIdTousers                 travel_groups[]           @relation("travel_groups_CreatedByUserIdTousers")
+  travel_invites_travel_invites_CreatedByUserIdTousers               travel_invites[]          @relation("travel_invites_CreatedByUserIdTousers")
+  travel_invites_travel_invites_UsedByUserIdTousers                  travel_invites[]          @relation("travel_invites_UsedByUserIdTousers")
+  user_consents                                                      user_consents[]
+}

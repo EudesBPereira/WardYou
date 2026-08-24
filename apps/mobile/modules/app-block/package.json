@@ -1,0 +1,7 @@
+{
+  "name": "app-block",
+  "version": "1.0.0",
+  "description": "Local native module: Android AccessibilityService that enforces WardYou's parental app-blocking policy on-device (soft-blocks by returning the launcher to Home).",
+  "main": "index",
+  "types": "index.ts"
+}

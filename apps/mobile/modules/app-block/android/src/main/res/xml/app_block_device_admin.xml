@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Minimal device-admin policy set. The point of registering as a device admin
+     is uninstall protection (Android refuses to uninstall an active admin);
+     force-lock is also used by the antifurto "lock the phone" flow. We ask for
+     nothing else — no wipe-data, no password policies. -->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+  <uses-policies>
+    <force-lock />
+  </uses-policies>
+</device-admin>

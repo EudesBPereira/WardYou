@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Generate Prisma client
+        run: npm run db:generate --workspace apps/api
+
+      - name: Typecheck API
+        run: npm run typecheck --workspace apps/api
+
+      - name: Typecheck mobile
+        run: npm run typecheck --workspace apps/mobile
+
+      - name: Test API
+        run: npm run test --workspace apps/api
+
+      - name: Test mobile (pure logic)
+        run: npm run test --workspace apps/mobile
+
+      - name: Build API
+        run: npm run build --workspace apps/api

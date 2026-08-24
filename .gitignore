@@ -1,0 +1,44 @@
+# Dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Env & secrets (Maps keys, OAuth client ids, Azure)
+.env
+.env.*
+!.env.example
+google-services.json
+GoogleService-Info.plist
+
+# Metro / logs
+.metro-health-check*
+npm-debug.*
+yarn-error.*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Native projects gerados por `expo prebuild` (NAO versionados).
+# ATENCAO: o pin do CMake 3.30.5 em android/app/build.gradle e uma edicao MANUAL
+# que precisa ser reaplicada apos cada prebuild — ver CLAUDE.md "Windows MAX_PATH gotcha".
+apps/mobile/android/
+apps/mobile/ios/
+
+# IDE
+.idea/
+
+# Build output da API
+apps/api/dist/

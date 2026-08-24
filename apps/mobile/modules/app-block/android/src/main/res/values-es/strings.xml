@@ -1,0 +1,17 @@
+<resources>
+  <string name="app_block_service_label">Protección Wityu</string>
+  <string name="app_block_service_description">Permite que Wityu aplique los límites de uso de apps definidos por el responsable (cierra apps bloqueadas o fuera del horario permitido). No lee ni recopila contenido de la pantalla.</string>
+  <string name="app_block_shield_channel">Protección activa</string>
+  <string name="app_block_shield_title">Protección Wityu activa</string>
+  <string name="app_block_shield_body">Este dispositivo está protegido por tu familia.</string>
+  <string name="app_block_overlay_title">App bloqueada</string>
+  <string name="app_block_overlay_body">%1$s no está permitida ahora. Puedes pedírsela a tus responsables.</string>
+  <string name="app_block_overlay_ask_access">Pedir desbloqueo</string>
+  <string name="app_block_overlay_ask_time">Pedir más tiempo</string>
+  <string name="app_block_overlay_sent">¡Solicitud enviada! ✓</string>
+  <string name="app_block_overlay_close">Cerrar</string>
+  <string name="app_block_overlay_min">min</string>
+  <string name="app_block_admin_label">Protección contra desinstalación</string>
+  <string name="app_block_admin_description">Impide que Wityu sea desinstalado o desactivado sin que los responsables lo sepan. No borra datos ni controla contraseñas.</string>
+  <string name="app_block_admin_disable_warning">Si lo desactivas, la protección de Wityu podrá eliminarse de este dispositivo y tus responsables serán avisados.</string>
+</resources>

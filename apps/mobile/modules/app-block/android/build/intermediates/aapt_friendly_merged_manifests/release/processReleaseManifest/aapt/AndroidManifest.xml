@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="expo.modules.appblock" >
+
+    <uses-sdk android:minSdkVersion="24" />
+    <!--
+       Special permission granted by the user via Settings → Usage access. Lets
+       the child device read its own per-app foreground time for the daily limit.
+    -->
+    <uses-permission
+        android:name="android.permission.PACKAGE_USAGE_STATS"
+        tools:ignore="ProtectedPermissions" />
+    <!--
+       See all installed apps (Android 11+ package visibility) so the child can
+       list its apps for the guardian and the blocker can resolve the launcher/
+       dialer to keep them usable. Allowed for parental-control apps (needs the
+       Play Console declaration at submission).
+    -->
+    <uses-permission
+        android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
+    <!--
+       "Shield" keep-alive foreground service: keeps the process at foreground
+       priority while enforcement is on, so OEM task killers (MIUI etc.) don't
+       kill the app and silently disable the AccessibilityService. specialUse
+       is the honest FGS type for parental-control protection (Android 14+).
+    -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!--
+       Battery-optimization exemption request (Settings dialog) — parental
+       protection must survive Doze/OEM battery savers on the child's device.
+    -->
+    <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
+    <!--
+       Fallback path for the "app blocked" panel: the primary is the
+       accessibility overlay (no permission), but some OEM builds suppress it —
+       SYSTEM_ALERT_WINDOW lets us draw an application overlay instead so the
+       panel always appears the instant a blocked app is opened.
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <!--
+       Last-resort path for the blocked panel: a full-screen-intent notification
+       (the incoming-call mechanism) can present UI from the background even
+       where OEMs suppress overlays and plain startActivity.
+    -->
+    <uses-permission android:name="android.permission.USE_FULL_SCREEN_INTENT" />
+
+    <application>
+        <service
+            android:name="expo.modules.appblock.AppBlockAccessibilityService"
+            android:exported="true"
+            android:label="@string/app_block_service_label"
+            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE" >
+            <intent-filter>
+                <action android:name="android.accessibilityservice.AccessibilityService" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.accessibilityservice"
+                android:resource="@xml/app_block_accessibility_service_config" />
+        </service>
+        <!--
+         Runs in its OWN process: clearing all recents ("fechar todos") kills the
+         app's task process, which used to take the shield down with it. A
+         separate process + stopWithTask="false" keeps the protection alive.
+        -->
+        <service
+            android:name="expo.modules.appblock.AppBlockShieldService"
+            android:exported="false"
+            android:foregroundServiceType="specialUse"
+            android:process=":shield"
+            android:stopWithTask="false" >
+            <property
+                android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+                android:value="Parental-control protection keep-alive: keeps the app-blocking enforcement process alive while a guardian&apos;s policy is active on a child device." />
+        </service>
+        <!--
+         Device admin: while active, Android REFUSES to uninstall the app — the
+         fix for a child long-pressing the icon and tapping "Desinstalar".
+         Policies are minimal (force-lock only; no wipe, no password control).
+        -->
+        <receiver
+            android:name="expo.modules.appblock.AppBlockDeviceAdminReceiver"
+            android:description="@string/app_block_admin_description"
+            android:exported="true"
+            android:label="@string/app_block_admin_label"
+            android:permission="android.permission.BIND_DEVICE_ADMIN" >
+            <meta-data
+                android:name="android.app.device_admin"
+                android:resource="@xml/app_block_device_admin" />
+
+            <intent-filter>
+                <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLED" />
+                <action android:name="android.app.action.DEVICE_ADMIN_DISABLE_REQUESTED" />
+            </intent-filter>
+        </receiver>
+        <receiver
+            android:name="expo.modules.appblock.AppBlockBootReceiver"
+            android:exported="true" >
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+                <action android:name="android.intent.action.QUICKBOOT_POWERON" />
+                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+                <!--
+             Watchdog tick (AlarmManager): restarts the shield if the process
+             was killed while the guardian had the app closed.
+                -->
+                <action android:name="com.wityu.app.APPBLOCK_WATCHDOG" />
+            </intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

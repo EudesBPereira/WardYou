@@ -1,0 +1,795 @@
+{
+  "auth": {
+    "login": {
+      "title": "Bon retour",
+      "subtitle": "Connectez-vous pour veiller sur vos proches.",
+      "action": "Se connecter",
+      "noAccount": "Pas encore de compte ?",
+      "signUp": "Créer un compte",
+      "forgotPassword": "Mot de passe oublié ?"
+    },
+    "forgot": {
+      "title": "Réinitialiser le mot de passe",
+      "subtitle": "Saisissez l'e-mail de votre compte et nous vous enverrons un lien pour créer un nouveau mot de passe.",
+      "action": "Envoyer le lien",
+      "sentTitle": "Vérifiez votre e-mail",
+      "sentBody": "Si un compte existe pour {{email}}, nous avons envoyé un lien pour réinitialiser le mot de passe. Il est valable 30 minutes.",
+      "backToLogin": "Retour à la connexion"
+    },
+    "register": {
+      "title": "Créer un compte",
+      "subtitle": "Commencez à protéger votre famille en quelques minutes.",
+      "action": "Créer un compte",
+      "hasAccount": "Vous avez déjà un compte ?",
+      "signIn": "Se connecter"
+    },
+    "fields": {
+      "fullName": "Nom complet",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe"
+    },
+    "placeholders": {
+      "fullName": "Votre nom",
+      "email": "vous@exemple.com",
+      "password": "Votre mot de passe",
+      "passwordNew": "Au moins 6 caractères",
+      "confirmPassword": "Répétez le mot de passe"
+    },
+    "errors": {
+      "generic": "Une erreur est survenue. Veuillez réessayer.",
+      "passwordMismatch": "Les mots de passe ne correspondent pas."
+    },
+    "or": "ou",
+    "google": "Continuer avec Google",
+    "finishingSignIn": "Connexion…"
+  },
+  "onboarding": {
+    "title": "Configurons l'application",
+    "subtitle": "Cela détermine le comportement de WardYou sur cet appareil — une seule fois.",
+    "roleTutor": "Je suis responsable / tuteur",
+    "roleTutorBody": "Je vais gérer ma famille, voir les localisations et configurer la protection.",
+    "roleChild": "Cet appareil appartient à un enfant",
+    "roleChildBody": "Mode protégé : limites d'écran, tâches et SOS.",
+    "roleElder": "Cet appareil appartient à une personne âgée",
+    "roleElderBody": "Mode simplifié : gros bouton SOS et rappels de médicaments.",
+    "roleTraveler": "Je suis voyageur",
+    "roleTravelerBody": "Je veux juste que quelqu'un me suive pendant un trajet.",
+    "codeTitle": "Code de la famille",
+    "codeSubtitleChild": "Demandez le code d'invitation à votre responsable et collez-le ci-dessous.",
+    "codeSubtitleElder": "Demandez le code d'invitation à la personne qui s'occupe de vous et collez-le ci-dessous.",
+    "codePlaceholder": "Code d'invitation",
+    "codeAction": "Rejoindre"
+  },
+  "pendingApproval": {
+    "title": "Compte en cours de validation",
+    "body": "Demandez au responsable de la famille d'ouvrir WardYou et d'approuver votre demande — l'application se débloque automatiquement dès que c'est fait.",
+    "logout": "Se déconnecter"
+  },
+  "common": {
+    "genericError": "Une erreur s'est produite. Réessayez.",
+    "back": "Retour",
+    "comingSoon": "Bientôt disponible",
+    "comingSoonBody": "Cette fonctionnalité sera bientôt disponible.",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "ok": "OK",
+    "notNow": "Pas maintenant",
+    "approve": "Approuver",
+    "reject": "Rejeter",
+    "delete": "Supprimer",
+    "add": "Ajouter",
+    "tagline": "La sécurité pour la famille, les amis et les trajets",
+    "online": "En ligne",
+    "offline": "Hors ligne",
+    "needsAttention": "Attention requise",
+    "seeAll": "Tout voir"
+  },
+  "nav": {
+    "home": "Accueil",
+    "family": "Famille",
+    "trips": "Trajets",
+    "tasks": "Tâches",
+    "sos": "SOS",
+    "settings": "Réglages"
+  },
+  "roles": {
+    "admin": "Admin",
+    "guardian": "Tuteur",
+    "child": "Enfant",
+    "elder": "Aîné",
+    "member": "Membre"
+  },
+  "home": {
+    "subtitle": "Tous en sécurité, au même endroit.",
+    "statusTitle": "Tout le monde est en sécurité",
+    "statusSubtitle": "{{count}} membres partagent leur position",
+    "membersTitle": "Votre famille",
+    "seeAll": "Tout voir",
+    "pending": {
+      "title": "{{count}} demande(s) d'adhésion",
+      "body": "Touchez pour approuver dans l'onglet Famille"
+    },
+    "traveler": {
+      "title": "Voyage en sécurité",
+      "subtitle": "Partagez votre trajet et laissez quelqu'un veiller sur vous.",
+      "startTitle": "Démarrer un trajet",
+      "startBody": "Créez ou rejoignez un trajet pour être accompagné."
+    },
+    "mapTitle": "Carte de la famille",
+    "mapEmpty": "Aucune position partagée pour le moment.",
+    "family": {
+      "title": "Ma Famille",
+      "subtitle": "Gérer les membres"
+    },
+    "parental": {
+      "title": "Enfant Protégé",
+      "subtitle": "Configurer la protection"
+    },
+    "trips": {
+      "title": "Trajets",
+      "subtitle": "Suivre les trajets"
+    },
+    "sos": {
+      "title": "SOS Rapide",
+      "subtitle": "Envoyer des alertes"
+    }
+  },
+  "family": {
+    "title": "Famille",
+    "subtitle": "Votre réseau familial",
+    "add": "Ajouter un membre",
+    "responsibles": "Responsables",
+    "dependents": "Enfants et aînés",
+    "battery": "{{n}}%",
+    "invite": {
+      "title": "Inviter dans votre famille",
+      "subtitle": "Partagez un lien pour ajouter un membre",
+      "action": "Partager le lien d'invitation",
+      "shareMessage": "Rejoignez ma famille sur WardYou. Code : {{code}} — {{link}}"
+    },
+    "create": {
+      "title": "Créer une famille",
+      "subtitle": "Donnez un nom à votre famille.",
+      "placeholder": "Ex. : Famille Dupont"
+    },
+    "pending": {
+      "title": "En attente d'approbation",
+      "subtitle": "A demandé à rejoindre la famille",
+      "subtitleRole": "Souhaite rejoindre en tant que {{role}}"
+    },
+    "empty": {
+      "title": "Pas encore de famille",
+      "body": "Créez une famille ou rejoignez-en une avec une invitation pour commencer.",
+      "action": "Créer une famille"
+    },
+    "memberDetail": {
+      "status": {
+        "online": "En ligne",
+        "offline": "Hors ligne",
+        "alert": "Attention requise"
+      },
+      "lastSeen": "vu {{time}}",
+      "locationTitle": "Dernière position",
+      "noLocation": "Aucune position partagée pour le moment.",
+      "locationHidden": "La position de ce membre est masquée — pas de consentement actif.",
+      "battery": "Batterie",
+      "lastPlace": "Dernier lieu",
+      "presence": "Vu pour la dernière fois",
+      "changePhoto": "Changer la photo du membre",
+      "manage": "Gérer",
+      "parental": "Contrôle parental",
+      "parentalBody": "Temps d'écran, applis et tâches",
+      "elder": "Soin des aînés",
+      "elderBody": "Médicaments et suivi",
+      "changeRole": "Changer le rôle",
+      "changeRoleBody": "Définit l'expérience de l'appli pour ce membre"
+    },
+    "roleSelect": {
+      "title": "Qui est {{name}} dans la famille ?",
+      "subtitle": "Le rôle décide de l'expérience de l'appli : enfants et aînés ont une version simplifiée et protégée.",
+      "child": "Mode protégé : limites d'écran, tâches et SOS",
+      "elder": "Mode simplifié : grand SOS et rappels de médicaments",
+      "member": "Adulte de la famille : carte, trajets et partage",
+      "guardian": "Gère les enfants, les aînés et les zones de sécurité"
+    },
+    "join": {
+      "title": "Rejoindre avec un code",
+      "subtitle": "Collez le code d'invitation reçu.",
+      "placeholder": "Code d'invitation",
+      "invalid": "Code invalide ou expiré.",
+      "success": "C'est fait ! Vous avez rejoint. Attendez l'approbation du responsable."
+    }
+  },
+  "trips": {
+    "title": "Trajets",
+    "subtitle": "Suivez itinéraires et trajets",
+    "create": "Créer un trajet",
+    "joinByCode": "Rejoindre avec un code",
+    "active": "Trajets actifs",
+    "history": "Historique",
+    "endsAt": "Se termine {{time}}",
+    "closedAt": "Fermé {{date}}",
+    "members": "{{count}} membres",
+    "quick": {
+      "title": "Suivi rapide",
+      "subtitle": "Partagez votre position pour une durée limitée.",
+      "defaultName": "Suivi rapide",
+      "start": "Démarrer"
+    },
+    "createModal": {
+      "subtitle": "Donnez un nom au trajet.",
+      "placeholder": "Ex. : Retour à la maison",
+      "name": "Nom du trajet",
+      "type": "Type",
+      "duration": "Durée",
+      "period": "Dates",
+      "pickStart": "Touchez le calendrier pour choisir les dates",
+      "pickEnd": "touchez la date de fin",
+      "days": "{{n}} jour(s)"
+    },
+    "join": {
+      "subtitle": "Saisissez le code d'invitation reçu.",
+      "placeholder": "Code d'invitation",
+      "invalid": "Invitation invalide ou expirée."
+    },
+    "empty": {
+      "title": "Pas encore de trajet",
+      "body": "Créez un trajet ou rejoignez-en un avec un code pour suivre votre itinéraire en toute sécurité."
+    },
+    "types": {
+      "individual": "Suivi individuel",
+      "group": "Voyage en groupe",
+      "temporary": "Suivi temporaire"
+    },
+    "detail": {
+      "active": "Trajet actif",
+      "closed": "Trajet terminé",
+      "live": "En direct",
+      "mapTitle": "Carte du trajet",
+      "mapEmpty": "Aucun membre n'a encore partagé sa position sur ce trajet.",
+      "members": "Membres",
+      "lastSeen": "Vu à {{time}}",
+      "noFix": "Pas encore de position",
+      "locationHidden": "Position masquée",
+      "you": "{{name}} (vous)",
+      "creator": "Créateur",
+      "invite": "Inviter au trajet",
+      "shareMessage": "Suivez mon trajet sur WardYou. Code : {{code}} — {{link}}",
+      "rename": "Renommer le trajet",
+      "close": "Terminer le trajet",
+      "closeConfirm": "Terminer ce trajet pour tous les membres ?",
+      "leave": "Quitter le trajet",
+      "leaveConfirm": "Quitter ce trajet ? Vous ne partagerez plus et ne verrez plus les positions.",
+      "delete": "Supprimer le trajet",
+      "deleteConfirm": "Supprimer ce trajet de l'historique ? Cette action est irréversible."
+    },
+    "map": {
+      "expand": "Agrandir",
+      "centerAll": "Tout centrer",
+      "webUnavailable": "La carte en direct est disponible dans l'application mobile ({{count}} avec une position)."
+    },
+    "tracking": {
+      "notificationTitle": "Voyage partagé actif",
+      "notificationBody": "Partage de votre position avec le groupe du voyage."
+    }
+  },
+  "sos": {
+    "title": "SOS",
+    "subtitle": "Maintenez pour envoyer une alerte d'urgence.",
+    "emergencyAlert": "Alerte d'urgence SOS",
+    "holdInstruction": "Sélectionnez des contacts et maintenez le bouton pour envoyer l'alerte.",
+    "holdButton": "Maintenir pour SOS",
+    "holdingButton": "Continuez à maintenir…",
+    "sentButton": "Envoyé",
+    "holdHint": "Maintenez pour éviter les déclenchements accidentels.",
+    "sentConfirm": "Alerte d'urgence envoyée à votre famille.",
+    "sendError": "Impossible d'envoyer l'alerte. Réessayez.",
+    "activeTitle": "SOS actif",
+    "activeBody": "Votre famille a été prévenue. Annulez une fois en sécurité.",
+    "cancelActive": "Annuler le SOS",
+    "cancelConfirm": "Annuler l'alerte d'urgence active ?",
+    "config": {
+      "title": "Réglages SOS",
+      "sendLocation": "Envoyer la position avec l'alerte",
+      "soundMode": "Mode alarme sonore"
+    }
+  },
+  "antifurto": {
+    "title": "Mode antivol",
+    "armTitle": "Mode Garde",
+    "armSubtitle": "Détecte un arrachage/une course, déclenche l’alarme et verrouille l’écran",
+    "changePin": "Changer le code PIN",
+    "pinSetupTitle": "Crée un code PIN à 4 chiffres",
+    "pinSetupSubtitle": "Ce code te servira à éteindre l'alarme quand elle se déclenche.",
+    "pinInvalid": "Le code PIN doit contenir exactement 4 chiffres.",
+    "alarmTitle": "Alarme déclenchée",
+    "alarmBody": "Mouvement brusque détecté. Ta famille a déjà été prévenue.",
+    "offlineTitle": "Pas de connexion",
+    "offlineBody": "L'appareil est hors ligne — la position peut ne pas arriver avant le retour de la connexion. Garde les données mobiles activées.",
+    "openSettings": "Ouvrir les réglages réseau",
+    "pinPrompt": "Entre le code PIN pour éteindre l'alarme",
+    "pinError": "Code PIN incorrect. Réessaie.",
+    "lockPromptTitle": "Verrouillage de l’écran en cas de vol",
+    "lockPromptBody": "Pour que le Mode Garde verrouille l’écran après un arrachage (seule votre empreinte ou le code PIN de l’appareil le déverrouille), activez le service d’accessibilité de WardYou dans les réglages.",
+    "lockPromptEnable": "Activer maintenant",
+    "lockPromptLater": "Armer sans verrouillage",
+    "lockDisabledTitle": "Verrouillage de l’écran inactif",
+    "lockDisabledBody": "L’alarme se déclenche, mais l’écran ne sera pas verrouillé en cas de vol. Touchez pour activer le service d’accessibilité de WardYou.",
+    "biometricUnlock": "Arrêter avec l’empreinte",
+    "biometricPrompt": "Authentifiez-vous pour arrêter l’alarme",
+    "setPin": "Définir un code PIN",
+    "pinOptional": "Facultatif — votre empreinte arrête déjà l’alarme"
+  },
+  "settings": {
+    "elderCare": "Aide aux aînés",
+    "devices": "Mes appareils",
+    "notifications": "Notifications",
+    "privacy": "Confidentialité et données",
+    "title": "Réglages",
+    "subtitle": "Gérez votre compte et vos préférences",
+    "profile": "Votre profil",
+    "profileAction": "Voir et modifier le profil",
+    "account": "Compte",
+    "language": "Langue",
+    "languageDescription": "Choisir la langue de l'application",
+    "languageChanged": "Langue mise à jour.",
+    "safetyZones": "Zones de sécurité",
+    "usageRestrictions": "Restrictions d'usage",
+    "locationSharing": "Partage de position",
+    "premium": "WardYou Premium",
+    "seePlans": "Voir les forfaits",
+    "logout": "Se déconnecter"
+  },
+  "consent": {
+    "family": {
+      "title": "Autorisations de la famille",
+      "subtitle": "Accordez des autorisations au nom des membres"
+    },
+    "title": "Centre de consentement",
+    "subtitle": "Contrôlez ce que vous partagez",
+    "note": "Vous pouvez revoir et modifier vos autorisations à tout moment.",
+    "permission": {
+      "deniedTitle": "Autorisation de localisation requise",
+      "deniedBody": "Pour partager votre position, autorisez l'accès dans les réglages du système.",
+      "openSettings": "Ouvrir les réglages",
+      "denied": "L'autorisation système est désactivée — appuyez pour l'accorder.",
+      "foregroundOnly": "Autorisez « tout le temps » pour que ça marche l'app fermée — appuyez pour ajuster."
+    },
+    "types": {
+      "LocationSharing": {
+        "title": "Partager la position",
+        "body": "Permet à votre famille de voir votre position tout le temps, même l'app fermée, pendant les voyages et les urgences."
+      },
+      "PreciseLocation": {
+        "title": "Position précise",
+        "body": "Partage les coordonnées exactes plutôt qu'approximatives."
+      },
+      "LiveLocation": {
+        "title": "Position en direct",
+        "body": "Permet le suivi en temps réel pendant l'utilisation."
+      },
+      "BatteryStatus": {
+        "title": "Niveau de batterie",
+        "body": "Affiche le niveau de batterie de votre appareil."
+      },
+      "DeviceStatus": {
+        "title": "État de l'appareil",
+        "body": "Permet de faire sonner ou localiser votre appareil à distance."
+      },
+      "Notifications": {
+        "title": "Notifications",
+        "body": "Recevez les alertes et rappels WardYou."
+      },
+      "SosReceive": {
+        "title": "Recevoir SOS",
+        "body": "Recevez les alertes d'urgence de la famille."
+      },
+      "DataAccess": {
+        "title": "Accès aux données",
+        "body": "Autorise le traitement de vos données selon la politique."
+      }
+    }
+  },
+  "zones": {
+    "membersCount": "{{n}} membre(s)",
+    "edit": {
+      "subtitle": "Modifier la zone",
+      "name": "Nom",
+      "radius": "Rayon",
+      "notifyEntry": "Alerter à l'entrée",
+      "notifyExit": "Alerter à la sortie",
+      "members": "Membres surveillés",
+      "membersBody": "Sans sélection, la zone s'applique à tous.",
+      "noMembers": "Aucun membre dans la famille."
+    },
+    "title": "Zones de sécurité",
+    "subtitle": "Les lieux qui comptent",
+    "empty": "Aucune zone pour le moment.",
+    "add": "Nouvelle zone",
+    "needFamily": "Créez d'abord une famille pour définir des zones.",
+    "radius": "rayon de {{m}} m",
+    "delete": "Supprimer",
+    "deleteConfirm": "Voulez-vous vraiment supprimer cette zone ?",
+    "create": {
+      "title": "Nouvelle zone",
+      "subtitle": "Nous utiliserons votre position actuelle comme centre.",
+      "placeholder": "Nom de la zone (ex. : Maison)"
+    }
+  },
+  "parental": {
+    "title": "Contrôle parental",
+    "subtitle": "Protégez vos enfants",
+    "empty": "Aucun enfant à gérer.",
+    "children": "Enfants",
+    "connected": "Connecté",
+    "disconnected": "Déconnecté",
+    "pending": "Approbations en attente",
+    "extraTime": "+{{n}} min de temps supplémentaire",
+    "extraTimeSubtitle": "Demande de temps supplémentaire",
+    "taskReward": "Récompense : {{n}} min",
+    "minutes": "{{n}} min",
+    "inactive": "Inactive",
+    "weekdays": "L,M,M,J,V,S,D",
+    "requests": {
+      "title": "En attente de toi",
+      "extraTitle": "A demandé +{{min}} min d'écran",
+      "extraBody": "Temps supplémentaire demandé par l'enfant",
+      "appBody": "A demandé à utiliser cette appli",
+      "approve": "Approuver",
+      "reject": "Refuser",
+      "allow": "Autoriser",
+      "allow1h": "Pour 1h"
+    },
+    "remote": {
+      "title": "Pause à distance",
+      "paused": "Écran en pause",
+      "active": "Écran actif",
+      "pause": "Mettre en pause",
+      "resume": "Reprendre",
+      "pausedUntil": "En pause jusqu’à {{time}} — seul WardYou fonctionne",
+      "pausePickerTitle": "Tout mettre en pause",
+      "pausePickerSubtitle": "Toutes les applis sont bloquées sur l’appareil de l’enfant. Avec une durée, la pause se lève toute seule.",
+      "pause30m": "Pendant 30 minutes",
+      "pause1h": "Pendant 1 heure",
+      "pause2h": "Pendant 2 heures",
+      "pauseIndefinite": "Jusqu’à ma reprise"
+    },
+    "menu": {
+      "apps": "Applis",
+      "schedules": "Horaires",
+      "usage": "Utilisation",
+      "websites": "Sites bloqués"
+    },
+    "apps": {
+      "subtitle": "Bloquez des applis précises",
+      "firewallSubtitle": "Tout bloqué par défaut — n'autorisez que ce que vous voulez",
+      "empty": "Aucune appli pour le moment.",
+      "firewallEmpty": "Les applis apparaissent ici dès que l'appareil de l'enfant ouvre WardYou. Autorisez celles que vous voulez et fixez le temps de chacune.",
+      "blocked": "Bloquée",
+      "allowed": "Autorisée",
+      "allowedTitle": "Autorisées ({{count}})",
+      "allowedEmpty": "Aucune appli autorisée — tout est bloqué.",
+      "blockedTitle": "Bloquées ({{count}})",
+      "noLimit": "Autorisée, sans limite de temps",
+      "limitLabel": "Autorisée · {{min}} min/jour",
+      "limitTitle": "Temps de {{app}}",
+      "limitSubtitle": "Minutes par jour (laissez vide pour aucune limite).",
+      "limitPlaceholder": "Ex. : 60",
+      "addTitle": "Ajouter une appli",
+      "addSubtitle": "Indiquez le package de l'appli à autoriser.",
+      "add": "Ajouter",
+      "newTitle": "Nouveaux sur l’appareil ({{count}})",
+      "newBadge": "à décider",
+      "blockedEmpty": "Aucune appli bloquée manuellement.",
+      "tempUntil": "Autorisée jusqu’à {{time}}",
+      "tempTitle": "Autoriser {{app}} temporairement",
+      "tempSubtitle": "L’appli fonctionne pendant la période choisie puis se rebloque toute seule — même pendant une pause.",
+      "tempHours_one": "{{count}} heure",
+      "tempHours_other": "{{count}} heures",
+      "tempClear": "Retirer l’autorisation temporaire"
+    },
+    "category": {
+      "Games": "Jeux",
+      "Social": "Social",
+      "Video": "Vidéo",
+      "Education": "Éducation",
+      "Other": "Autres"
+    },
+    "schedules": {
+      "subtitle": "Sommeil et blocages horaires",
+      "sleep": "Horaire de sommeil",
+      "sleepEnabled": "Bloquer au coucher",
+      "sleepBody": "Bloque l'écran pendant la période définie.",
+      "from": "De",
+      "to": "À",
+      "blocks": "Blocages horaires",
+      "addBlock": "Nouveau blocage",
+      "addBlockBody": "Créé de 08:00 à 12:00, tous les jours.",
+      "blockName": "Nom (ex. : École)",
+      "blocksEmpty": "Aucun blocage pour le moment.",
+      "editTime": "Modifier l'heure"
+    },
+    "usage": {
+      "subtitle": "Temps d'écran et applis",
+      "today": "Aujourd'hui",
+      "average": "Moy./jour",
+      "last7": "7 derniers jours",
+      "topApps": "Applis les plus utilisées",
+      "empty": "Aucune donnée d'utilisation."
+    },
+    "websites": {
+      "subtitle": "Sites bloqués dans le navigateur",
+      "empty": "Aucun site bloqué.",
+      "addTitle": "Bloquer un site",
+      "addSubtitle": "Indiquez le domaine (ex. : exemple.com).",
+      "add": "Bloquer"
+    },
+    "policy": {
+      "title": "Temps d'écran",
+      "limit": "Limite quotidienne",
+      "enabled": "Contrôle parental activé",
+      "enabledBody": "Applique limites et blocages sur l'appareil."
+    },
+    "tasks": "Tâches",
+    "tasksAdd": "Nouvelle tâche",
+    "tasksEmpty": "Aucune tâche pour le moment.",
+    "taskCreate": {
+      "title": "Nouvelle tâche",
+      "subtitle": "L'enfant gagne du temps supplémentaire en la terminant.",
+      "placeholder": "Titre de la tâche"
+    },
+    "addChild": {
+      "title": "Comment ajouter un enfant",
+      "body": "1) Installez WardYou sur le téléphone de l'enfant.\n2) Il crée un compte et rejoint votre famille avec le code.\n3) Vous approuvez en choisissant le rôle « Enfant ».\n\nVoilà : le mode protégé s'active sur son appareil et vous gérez tout ici.",
+      "invite": "Créer une invitation"
+    }
+  },
+  "elder": {
+    "med": {
+      "subtitle": "Touchez pour modifier",
+      "new": "Nouveau médicament",
+      "edit": "Modifier le médicament",
+      "dosage": "Dosage (ex. : 50mg)",
+      "times": "Horaires",
+      "noTimesYet": "Aucun horaire ajouté",
+      "addTime": "Ajouter",
+      "days": "Jours de la semaine"
+    },
+    "title": "Aide aux aînés",
+    "subtitle": "Prenez soin de ceux qui comptent",
+    "empty": "Aucun aîné à gérer.",
+    "medications": "Médicaments",
+    "addMedication": "Ajouter",
+    "addSubtitle": "Ajoute un rappel quotidien à 08:00.",
+    "namePlaceholder": "Nom du médicament",
+    "noMeds": "Aucun médicament pour le moment.",
+    "noTimes": "Aucun horaire",
+    "checkIn": {
+      "doneToday": "Check-in fait aujourd'hui",
+      "notYetToday": "Pas encore de check-in aujourd'hui",
+      "lastAt": "Dernier check-in : {{time}}",
+      "never": "Jamais fait de check-in",
+      "historyTitle": "Check-ins des 7 derniers jours"
+    },
+    "device": {
+      "battery": "Batterie de l’appareil : {{pct}}%",
+      "noBattery": "Batterie de l’appareil : aucune donnée",
+      "lastSeen": "Vu pour la dernière fois à {{time}}",
+      "neverSeen": "L’appareil n’a pas encore donné signe"
+    },
+    "adherence": {
+      "title": "Médicaments du jour"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "subtitle": "Recevez alertes et avis sur ce téléphone",
+    "note": "Les notifications vous informent des SOS, alertes de la famille et rappels — même l'app fermée.",
+    "enableTitle": "Activer les notifications",
+    "enableBody": "Appuyez pour recevoir des alertes sur ce téléphone",
+    "enabledTitle": "Notifications activées",
+    "enabledBody": "Ce téléphone reçoit les alertes WardYou",
+    "enabled": "Notifications activées !",
+    "denied": "Autorisation de notification refusée. Activez-la dans les réglages du système.",
+    "webUnsupported": "Les notifications push ne fonctionnent pas dans le navigateur.",
+    "precise": {
+      "title": "Position précise",
+      "body": "Affiche votre position exacte sur la carte au lieu d'une position approximative."
+    }
+  },
+  "devices": {
+    "push": {
+      "title": "Notifications",
+      "subtitle": "Recevez les alertes sur l'appareil",
+      "enabled": "Notifications activées !",
+      "denied": "Autorisation de notification refusée.",
+      "webUnsupported": "Les notifications push ne fonctionnent pas dans le navigateur."
+    },
+    "title": "Mes appareils",
+    "subtitle": "Appareils liés à votre compte",
+    "empty": "Aucun appareil enregistré.",
+    "register": "Enregistrer cet appareil",
+    "thisDevice": "(celui-ci)",
+    "precise": "Position précise",
+    "rename": "Renommer l'appareil",
+    "remove": "Retirer",
+    "removeConfirm": "Retirer cet appareil de votre compte ?"
+  },
+  "privacy": {
+    "title": "Confidentialité et données",
+    "subtitle": "Vos données et autorisations",
+    "dataSummary": "Résumé de vos données",
+    "count": {
+      "devices": "Appareils",
+      "locationEvents": "Positions",
+      "userConsents": "Consentements",
+      "sosEvents": "Événements SOS"
+    },
+    "export": "Exporter mes données",
+    "exportBody": "Téléchargez une copie JSON",
+    "exportReady": "Export prêt (voir la console du navigateur).",
+    "revokeAll": "Révoquer tous les consentements",
+    "revokeBody": "Désactive toutes les autorisations actives",
+    "revokeConfirm": "Révoquer tous les consentements actifs ?",
+    "revokeDone": "{{n}} consentement(s) révoqué(s).",
+    "recentActivity": "Activité récente",
+    "noActivity": "Aucune activité enregistrée.",
+    "delete": "Demander la suppression du compte",
+    "deleteConfirm": "Demander la suppression de votre compte ? Notre équipe traitera la demande.",
+    "deleteDone": "Demande de suppression enregistrée.",
+    "deleteNote": "La suppression est traitée manuellement conformément à la loi sur la protection des données."
+  },
+  "audit": {
+    "action": {
+      "UserLoggedIn": "Connexion",
+      "UserRegistered": "Compte créé",
+      "ConsentGranted": "Consentement accordé",
+      "ConsentRevoked": "Consentement révoqué",
+      "AllConsentsRevoked": "Tous les consentements révoqués",
+      "SosTriggered": "SOS déclenché",
+      "SosAcknowledged": "SOS pris en compte",
+      "SosClosed": "SOS clôturé",
+      "ParentalPolicyUpdated": "Politique parentale mise à jour",
+      "ExtraTimeApproved": "Temps supplémentaire approuvé",
+      "ExtraTimeRejected": "Temps supplémentaire refusé",
+      "DeviceRegistered": "Appareil enregistré",
+      "DeviceRemoved": "Appareil supprimé",
+      "FamilyCreated": "Famille créée",
+      "UserDataExportRequested": "Export de données",
+      "AccountDeletionRequested": "Suppression de compte demandée"
+    }
+  },
+  "childHome": {
+    "pausedTitle": "Pause activée",
+    "pausedBody": "Tes responsables ont mis l'écran en pause. Parle-leur si besoin.",
+    "enableAccessibilityTitle": "Active la protection complète",
+    "enableAccessibilityBody": "Touche pour permettre à WardYou d'appliquer les limites d'usage sur cet appareil.",
+    "enableUsageTitle": "Active le suivi d'utilisation",
+    "enableUsageBody": "Touche pour que WardYou compte le temps d'écran et applique la limite quotidienne.",
+    "noPolicyTitle": "Tout est libre pour l'instant",
+    "noPolicyBody": "Tes responsables n'ont pas encore défini de limites.",
+    "timeTitle": "Temps d'écran aujourd'hui",
+    "timeDetail": "{{used}} utilisés sur {{total}}",
+    "extraToday": "+{{min}}min en plus aujourd'hui",
+    "pendingRequest": "Demande de {{min}} min envoyée — en attente de réponse",
+    "askMoreTime": "Demander plus de temps",
+    "askSubtitle": "Combien de temps en plus veux-tu demander ?",
+    "sleepTitle": "Heure du coucher",
+    "sleepBody": "Écran bloqué de {{from}} à {{to}}",
+    "tasksTitle": "Gagne plus de temps",
+    "tasksBody": "{{count}} tâche(s) · gagne jusqu'à {{min}} min",
+    "tasksEmpty": "Termine des tâches pour gagner du temps d'écran.",
+    "sosTitle": "SOS",
+    "sosBody": "Besoin d'aide ? Alerte ta famille.",
+    "shieldCareTitle": "Renforcer la protection",
+    "shieldCareBody": "Cet appareil peut désactiver la protection tout seul. Touche pour la renforcer.",
+    "protectionActiveTitle": "Protection activée",
+    "protectionActiveBody": "Cet appareil est protégé par ta famille."
+  },
+  "blocked": {
+    "title": "Appli bloquée",
+    "body": "{{app}} n'est pas autorisée pour le moment. Tu peux demander à tes responsables.",
+    "askAccess": "Demander le déblocage",
+    "accessSent": "Demande envoyée !",
+    "askTime": "Demander plus de temps",
+    "extraSent": "Demande de temps envoyée !",
+    "goHome": "Retour à l'accueil"
+  },
+  "shieldSetup": {
+    "title": "Renforcer la protection",
+    "subtitle": "Certains téléphones ferment les applis en arrière-plan pour économiser la batterie. Fais ces étapes une seule fois pour que la protection ne s'arrête jamais.",
+    "adminTitle": "Empêcher la désinstallation",
+    "adminBody": "Active-le pour que WardYou ne puisse pas être désinstallé de cet appareil.",
+    "batteryTitle": "Batterie sans restrictions",
+    "batteryBody": "Autorise WardYou à ignorer l'optimisation de la batterie.",
+    "overlayTitle": "Superposer aux autres applis",
+    "overlayBody": "Autorise la superposition pour que l'écran de blocage apparaisse instantanément.",
+    "autostartTitle": "Démarrage automatique",
+    "autostartBody": "Active le démarrage automatique de WardYou sur l'écran qui va s'ouvrir.",
+    "recentsLockTitle": "Verrouiller dans les récents",
+    "recentsLockBody": "Ouvre les applis récentes, fais glisser la carte WardYou vers le bas et touche le cadenas. Ainsi « tout fermer » ne coupe pas la protection.",
+    "popupTitle": "Fenêtres en arrière-plan",
+    "popupBody": "Dans « Autres autorisations », autorise « Afficher des fenêtres contextuelles en arrière-plan ».",
+    "open": "Ouvrir les réglages",
+    "done": "Tout est prêt",
+    "diagOk": "Écran de blocage testé et fonctionnel sur cet appareil. ✓",
+    "diagFail": "L'écran de blocage n'a pas pu apparaître ({{detail}}). Accorde l'autorisation de superposition ci-dessus."
+  },
+  "elderHome": {
+    "sosTitle": "J'ai besoin d'aide",
+    "sosBody": "Touchez pour alerter votre famille",
+    "checkInTitle": "Je vais bien aujourd'hui",
+    "checkInBody": "Touchez pour prévenir la personne qui s'occupe de vous",
+    "checkInDone": "Check-in fait aujourd'hui",
+    "checkInDoneBody": "La personne qui s'occupe de vous le sait déjà",
+    "medsTitle": "Médicaments du jour",
+    "medsEmpty": "Aucun médicament pour aujourd'hui.",
+    "familyTitle": "Ma famille",
+    "familyBody": "Voyez qui prend soin de vous",
+    "medTake": "Pris",
+    "medTaken": "Pris ✓ Votre famille a été prévenue.",
+    "medTakeAction": "Confirmer la prise de {{name}}"
+  },
+  "childTasks": {
+    "title": "Mes tâches",
+    "subtitle": "Termine des tâches et gagne du temps d'écran",
+    "empty": {
+      "title": "Pas encore de tâche",
+      "body": "Quand tes responsables créeront des tâches, elles apparaîtront ici."
+    },
+    "done": "Terminé !",
+    "waitingReview": "En attente de l'approbation de tes responsables",
+    "approved": "+{{min}} min approuvées 🎉",
+    "rejected": "Pas approuvée cette fois",
+    "recent": "Envoyées récemment",
+    "noteSubtitle": "Tu veux raconter comment ça s'est passé ? (facultatif)",
+    "notePlaceholder": "Ex. : J'ai fini mes devoirs de maths",
+    "send": "Envoyer pour approbation"
+  },
+  "language": {
+    "pt": "Português",
+    "en": "English",
+    "es": "Español",
+    "fr": "Français"
+  },
+  "profile": {
+    "title": "Mon profil",
+    "account": "Compte",
+    "email": "E-mail",
+    "appMode": "Mode de l'app",
+    "families": "Familles",
+    "noFamilies": "Vous ne faites pas encore partie d'une famille.",
+    "changePhoto": "Changer la photo",
+    "removePhoto": "Retirer la photo",
+    "photoTitle": "Photo de profil",
+    "photoError": "Impossible de mettre à jour la photo. Réessayez.",
+    "logout": "Se déconnecter",
+    "roles": {
+      "child": "Enfant",
+      "elder": "Aîné",
+      "guardian": "Tuteur",
+      "member": "Membre",
+      "onboarding": "Tout juste arrivé",
+      "pending": "Invitation en attente"
+    },
+    "memberStatus": {
+      "pending": "En attente",
+      "active": "Actif"
+    },
+    "privacy": "Confidentialité",
+    "locationSharing": "Ma position",
+    "locationSharingOn": "Votre famille peut voir où vous êtes.",
+    "locationSharingOff": "Vous êtes masqué sur la carte familiale."
+  },
+  "appLock": {
+    "section": "Sécurité",
+    "settingTitle": "Verrouillage biométrique",
+    "settingBody": "Exiger votre empreinte ou votre visage pour ouvrir WardYou.",
+    "title": "WardYou verrouillé",
+    "body": "Utilisez votre empreinte ou votre visage pour ouvrir.",
+    "unlock": "Déverrouiller",
+    "prompt": "Déverrouillez WardYou",
+    "confirm": "Confirmez pour modifier le verrouillage"
+  }
+}

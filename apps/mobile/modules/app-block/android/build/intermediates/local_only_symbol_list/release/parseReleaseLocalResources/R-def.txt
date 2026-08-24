@@ -1,0 +1,19 @@
+R_DEF: Internal format may change without notice
+local
+string app_block_admin_description
+string app_block_admin_disable_warning
+string app_block_admin_label
+string app_block_overlay_ask_access
+string app_block_overlay_ask_time
+string app_block_overlay_body
+string app_block_overlay_close
+string app_block_overlay_min
+string app_block_overlay_sent
+string app_block_overlay_title
+string app_block_service_description
+string app_block_service_label
+string app_block_shield_body
+string app_block_shield_channel
+string app_block_shield_title
+xml app_block_accessibility_service_config
+xml app_block_device_admin

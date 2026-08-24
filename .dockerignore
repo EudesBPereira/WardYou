@@ -1,0 +1,12 @@
+# Build context for apps/api/Dockerfile (context = repo root).
+# Keep the upload small: only root manifests + apps/api sources are needed.
+node_modules
+**/node_modules
+.git
+apps/mobile
+docs
+**/dist
+apps/api/.env
+apps/api/.env.*
+**/*.log
+.expo
