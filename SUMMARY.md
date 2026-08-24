@@ -15,6 +15,32 @@
 > **Todo o código acionável foi entregue** — o que resta é validação em aparelho (usuário) + ações externas
 > (Google OAuth público, LGPD, pagamentos, Play Store) — ver seções abaixo.
 
+## 📁 Estado do Git (2026-08-24)
+O repo `EudesBPereira/WardYou` (**privado**) hospeda **duas bases de codigo lado a lado**:
+
+| Branch | Conteudo | Ultimo commit |
+|---|---|---|
+| **`main`** ← **trabalhe aqui** | Rebuild **React Native** (este monorepo) | 2026-08-24 |
+| `master` | **MAUI legado** em .NET (`Wityu.sln`, `src/`, `infra/`) — referencia historica, nao mexer | 2026-06-14 |
+| `bloco-*`, `feat/*` (10 branches) | Historico do desenvolvimento MAUI | — |
+
+Ate 2026-08-24 o rebuild RN **nunca tinha sido versionado** — o diretorio local nao tinha `.git`.
+Foi criado o branch orfao `main` (735 arquivos) sem tocar em `master`.
+
+**Nao versionados** (ver `.gitignore`): `.env`, `google-services.json`, `node_modules/`,
+`apps/api/dist/`, `.expo/`, `.idea/` e os projetos nativos gerados por prebuild
+(`apps/mobile/android/`, `apps/mobile/ios/`).
+
+⚠️ **`apps/mobile/android/` nao e versionado**, entao o pin do CMake 3.30.5 em
+`android/app/build.gradle` (necessario no Windows por causa do MAX_PATH) **precisa ser reaplicado
+manualmente depois de cada `expo prebuild`** — ver `CLAUDE.md` -> "Windows MAX_PATH gotcha".
+
+⬜ **Pendente (so voce pode fazer, precisa das Settings do GitHub):**
+- Tornar **`main` o branch padrao**: Settings -> General -> Default branch -> `main`.
+  Enquanto nao fizer, quem clonar o repo cai no MAUI legado (`master`).
+- Opcional: `master` carrega **390 arquivos de lixo** (`publish/api-logs/`, `wityu-api-deploy.zip`,
+  `stage9_*.log`) commitados por engano — vale limpar num commit futuro se for reutilizar aquele branch.
+
 ## ✅ REBRANDING: Wityu -> WardYou (2026-08-23)
 Dominio **`wardyou.com`** (ja comprado). `withyou.com`/`wityu.com` estavam ocupados por terceiros.
 Tambem livres e reservaveis: `wardyou.app`, `wardyou.io`, `wardyou.co`.
@@ -38,9 +64,7 @@ recursos Azure (`wityu-api-96164`, `wityuacr96164`, `wityu-kv-mvpsf`) e `app.wit
 
 ⬜ **Pendente (acao externa, fora do meu alcance):**
 1. ~~Renomear o repo GitHub~~ **FEITO (2026-08-24)**: `https://github.com/EudesBPereira/WardYou.git`.
-   ⚠️ **Pendencia relacionada**: o diretorio local `d:/ProjetosPessoais/Withyou` **nao e um repo git**
-   (sem `.git`), enquanto o remoto tem 11 branches + `master`. O trabalho local esta descolado do
-   versionamento — ver secao "Git local desconectado" abaixo.
+   ~~Versionar o projeto RN~~ **FEITO**: ver "Estado do Git" logo abaixo.
 2. Reservar `wardyou.app` / `wardyou.io` / `wardyou.co` na Cloudflare (opcional, protecao de marca).
 3. Novo logo/wordmark com o nome WardYou (os SVGs atuais ainda desenham a marca antiga).
 4. Checar marca "WardYou" no INPI + disponibilidade do nome na Play Store/App Store.
