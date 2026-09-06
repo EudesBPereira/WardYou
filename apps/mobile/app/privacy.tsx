@@ -29,7 +29,7 @@ export default function PrivacyScreen() {
         const url = URL.createObjectURL(blob);
         const link = document.createElement("a");
         link.href = url;
-        link.download = `wityu-data-export-${new Date().toISOString().slice(0, 10)}.json`;
+        link.download = `wardyou-data-export-${new Date().toISOString().slice(0, 10)}.json`;
         link.click();
         URL.revokeObjectURL(url);
         Alert.alert(t("privacy.export"), t("privacy.exportReady"));

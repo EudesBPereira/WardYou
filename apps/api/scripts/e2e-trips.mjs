@@ -25,7 +25,7 @@ async function api(path, { method = "GET", token, body } = {}) {
 }
 
 async function registerAndLogin(tag) {
-  const email = `wityu-e2e-trip-${tag}-${STAMP}@test.local`;
+  const email = `wardyou-e2e-trip-${tag}-${STAMP}@test.local`;
   const password = "E2e!Trip12345";
   const reg = await api("/api/v1/auth/register", {
     method: "POST",

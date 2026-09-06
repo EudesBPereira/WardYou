@@ -30,7 +30,7 @@ async function fetchMyProfile(): Promise<ProfileDto> {
     return {
       userId: s?.userId ?? "mock",
       fullName: s?.fullName ?? "Guardião",
-      email: s?.email ?? "mock@wityu.app",
+      email: s?.email ?? "mock@wardyou.com",
       avatarUrl: null,
       appProfile: "guardian",
       families: [],

@@ -51,7 +51,7 @@ export const authApi = {
    */
   async googleSignIn(): Promise<AuthResponse> {
     if (useMocks) {
-      const auth = mockAuth("usuario.google@wityu.app", "Usuário Google");
+      const auth = mockAuth("usuario.google@wardyou.com", "Usuário Google");
       await useSession.getState().setSession(auth);
       return auth;
     }

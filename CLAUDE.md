@@ -33,6 +33,7 @@ templates de e-mail, docs, comentarios e nomes de pacote npm (`@wardyou/mobile`,
 | `wityu://` (scheme) | `app.config.ts`, `auth.ts`, deep links | Registrado nos consoles OAuth (Google/Apple). Trocar sem atualizar la quebra o login externo |
 | `wityu_*` (storage keys) | `stores/*.ts`, `pushService.ts`, etc. | Trocar faz todo usuario instalado perder sessao e configuracoes. So com codigo de migracao |
 | `wityu_sos` / `wityu_sos_v2` | `pushService.ts`, `fcm.ts` | Canais de notificacao Android sao **imutaveis** apos criados |
+| `wityu-trip-location-broadcast` / `wityu-push-background` | `tripLocationTracking.native.ts`, `pushBackgroundTask.native.ts` | Nomes de task do expo-task-manager, **registrados no SO** e persistidos entre reinicios. Trocar orfana a task ja registrada nos aparelhos instalados |
 | `wityu-api-96164`, `wityuacr96164`, `wityu-kv-mvpsf` | Azure | Azure nao renomeia Web App/ACR/Key Vault in-place; exige recriar infra + novo DNS |
 | `app.wityu.com` | deep links / `INVITE_BASE_URL` | Migrar exige hospedar `assetlinks.json` + AASA no dominio novo e manter o antigo pelos links ja distribuidos |
 

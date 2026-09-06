@@ -13,7 +13,7 @@ export interface MockMember {
   lastSeen: string;
 }
 
-export const mockUser = { name: "Eudes Pereira", email: "eudes@wityu.app" };
+export const mockUser = { name: "Eudes Pereira", email: "eudes@wardyou.com" };
 
 export const mockMembers: MockMember[] = [
   { id: "0", name: "Eudes", role: "admin", status: "online", locationLabel: "Office", battery: 64, lastSeen: "now" },

@@ -11,7 +11,7 @@ import { Text, Button } from "@/components/ui";
 import { getBiometricSupport, authenticateBiometric } from "@/services/auth/biometrics";
 
 const SIREN_SOUND = require("../../../assets/sounds/siren.wav");
-const KEEP_AWAKE_TAG = "wityu-antifurto";
+const KEEP_AWAKE_TAG = "wardyou-antifurto";
 // Enough time for the siren to start and the SOS request to leave before the
 // device locks (the app keeps running in background after the lock).
 const LOCK_DELAY_MS = 1_200;
