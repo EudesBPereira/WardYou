@@ -1,4 +1,0 @@
-expo.modules.appblock
-string app_block_service_description
-string app_block_service_label
-xml app_block_accessibility_service_config

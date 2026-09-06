@@ -42,3 +42,8 @@ apps/mobile/ios/
 
 # Build output da API
 apps/api/dist/
+
+# Build output do modulo nativo local (gradle) — gerado, nunca versionar
+apps/mobile/modules/app-block/android/build/
+apps/mobile/modules/app-block/android/.cxx/
+apps/mobile/modules/app-block/android/.gradle/

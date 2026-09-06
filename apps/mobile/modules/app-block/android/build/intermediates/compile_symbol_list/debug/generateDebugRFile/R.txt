@@ -1,3 +1,0 @@
-int string app_block_service_description 0x0
-int string app_block_service_label 0x0
-int xml app_block_accessibility_service_config 0x0

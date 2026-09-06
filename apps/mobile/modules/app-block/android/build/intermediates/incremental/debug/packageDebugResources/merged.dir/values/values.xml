@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_block_service_description">Permite que o Wityu aplique os limites de uso de apps definidos pelo responsável (fecha apps bloqueados ou fora do horário permitido). Não lê nem coleta conteúdo da tela.</string>
-    <string name="app_block_service_label">Proteção Wityu</string>
-</resources>
