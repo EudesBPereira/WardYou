@@ -9,11 +9,79 @@
 > **nenhum código foi alterado a partir dos achados de SOS/Accessibility/trip** (são pendências de
 > validação em device real, não fixes aplicados ainda). **5ª rodada (2026-07-10): 4 bugs visuais de
 > device corrigidos e verificados no emulador** (splash, SOS, modais, botões trajeto — ver "Correções de
-> UI" abaixo + checklist Play Store no doc de agentes §8). Último APK: `wityu-20260725-childmode.apk`
-> (= `wityu-latest.apk`). Emulador Android (`wityu_test`, AVD x86_64) disponível localmente pra QA — AVD
+> UI" abaixo + checklist Play Store no doc de agentes §8). Último APK: `wityu-20260829-rebrand-api11.apk`
+> (= `wityu-latest.apk`, 2026-08-29). Emulador Android (`wityu_test`, AVD x86_64) disponível localmente pra QA — AVD
 > é x86_64, então testes locais usam um build `-PreactNativeArchitectures=x86_64` à parte do arm64 de produção.
 > **Todo o código acionável foi entregue** — o que resta é validação em aparelho (usuário) + ações externas
 > (Google OAuth público, LGPD, pagamentos, Play Store) — ver seções abaixo.
+
+## 🔎 Auditoria de estado (2026-08-29) — o que esta funcionando de verdade
+
+Verificado **por execucao**, nao por leitura: typecheck api+mobile OK, `node --test` **7/7 api + 21/21
+mobile**, `tsc` build da API OK. Infra viva de novo: assinatura Azure **reativada**, Web App `Running`,
+Postgres `mvp-sf-pg-96164` `Ready`, `/health` 200, login responde `InvalidCredentials` (= banco
+alcancavel), Socket.IO faz handshake em `/realtime`, guard JWT devolve 401. App settings de prod tem
+`FCM_SERVICE_ACCOUNT_JSON`, `ACS_CONNECTION_STRING`/`MAIL_FROM`, OAuth Google.
+
+**Achados (em ordem de impacto):**
+1. 🔴 **API de prod esta DEFASADA** — imagem `wityu-api:latest` do ACR e de **2026-07-26 15:01**, anterior a
+   rodada 11. Sondagem das 120 rotas locais contra prod: **117 existem, 3 dao 404**:
+   `GET /parental/children/:id/requests`, `POST .../requests/app-access`, `PUT /families/:f/members/:m/avatar`.
+   O APK de 23/08 (`wityu-latest.apk`) **ja chama essas rotas** → card "Aguardando voce" e foto do
+   membro **falham em campo** ate redeployar. Bateria/"ultimo lugar" (mesma rodada) tambem so funcionam
+   com a API nova. ~~**Acao: deploy da API**~~ **FEITO 2026-08-29 ~11:50** — imagem nova no ACR
+   (`lastUpdate 14:47Z`), `webapp restart`, container novo no ar em ~40s; re-sondagem: **120/120 rotas
+   respondem, 0 × 404**; `/health` agora devolve `service: "wardyou-api"`; Socket.IO OK.
+2. 🟡 **APK de 23/08 22:50 e anterior ao ultimo toque em `ChildHome.tsx`/`enforcementLogic.ts`**
+   (24/08) — provavel so rename cosmetico, mas o header da home da crianca pode ainda mostrar "Wityu".
+   ~~Rebuild so-JS (`assembleRelease`) resolve.~~ **FEITO 2026-08-29 12:07** — APK
+   **`wityu-20260829-rebrand-api11.apk`** (= `wityu-latest.apk`, 55,97 MB, arm64, Blob `mvpsfapk80840/apk`,
+   SAS 7 dias gerado). ⚠️ O 1º rebuild so-JS saiu com `application-label:'Wityu'` (launcher) porque
+   `android/` e gerado e nao passou por `prebuild` desde o rename; corrigido `app_name` em `strings.xml`,
+   recompilado incremental e reenviado — `aapt` confirma `'WardYou'`. ⬜ **Instalar no aparelho (voce)**.
+3. 🟡 **Deep links mortos**: `app.wityu.com`, `app.wardyou.com` e `wardyou.com` **nao resolvem DNS**. Links
+   de convite `https://app.wityu.com/join?...` gerados pela API (`INVITE_BASE_URL`) nao abrem em lugar
+   nenhum — hoje o convite so funciona pelo codigo digitado. Precisa DNS + `assetlinks.json`/AASA.
+   **Preparado (2026-08-29):** `docs/deeplinks/` tem os dois arquivos prontos (assetlinks com o SHA-256 do
+   debug keystore atual; AASA com `TEAMID` placeholder) + README com DNS, validacao e o aviso de trocar o
+   fingerprint pro keystore de release antes da Play Store. **Falta so hospedar (acao do fundador).**
+4. 🟡 **`npm audit`: 15 high / 11 moderate** (o SUMMARY anterior dizia "so moderada de build"). Com fix
+   sem major: `find-my-way` (router do Fastify, DDoS HTTP/2), `socket.io-parser` (memory exhaustion),
+   `fast-uri`, `js-yaml`, `brace-expansion`, `nanoid`, `postcss`, `image-size`, `deepmerge-ts`/`prisma`.
+   Os moderados de `@expo/config-plugins`/`uuid` continuam sem fix sem rebaixar o Expo.
+   **Parcialmente feito 2026-08-29** (o `audit fix` rodou so na cadeia `@expo/cli`/`metro` antes de ser
+   interrompido; fundador optou por **manter**): audit **26 → 18 (high 15 → 7)**, typecheck + testes +
+   `npm ls` OK, APK compilado com esse lock. ⬜ Restam os high de runtime da API (`find-my-way`,
+   `socket.io-parser`, `fast-uri`, `js-yaml`, `nanoid`, `brace-expansion`) — proxima rodada:
+   `npm audit fix` de novo (sem `--force`) + retestar + redeploy.
+6. 🟡 **444 artefatos de build versionados** em `apps/mobile/modules/app-block/android/build/` (entraram
+   no commit inicial). **Corrigido 2026-08-29**: `.gitignore` + `git rm -r --cached` (disco intacto).
+7. ⚪ Sem mudanca: Google OAuth em modo Testing, Facebook sem App ID (`EXPO_PUBLIC_FACEBOOK_APP_ID` vazio),
+   Premium placeholder, PRIVACY/TERMS rascunho, `family_elder_settings` sem UI, Antifurto fase 2 nao
+   iniciado, validacoes device-only da secao "Modo crianca" ainda abertas.
+
+## 🏷️ Rebrand WardYou — pontas soltas fechadas (2026-08-29)
+
+O rename cosmetico de 2026-08-23 tinha deixado 7 identificadores em `wityu` que **nao estao** na tabela
+de congelados do `CLAUDE.md`. Todos trocados agora (typecheck api + mobile OK):
+
+| Onde | Antes → Depois |
+|---|---|
+| `app/privacy.tsx` | `wityu-data-export-*.json` → `wardyou-data-export-*.json` — **nome de arquivo que o usuario baixa** |
+| `routes/health.ts` | `service: "wityu-api"` → `"wardyou-api"` (payload do `/health`, nao o repo do ACR) |
+| `mockData.ts`, `profile/queries.ts`, `api/auth.ts` | e-mails mock `@wityu.app` → `@wardyou.com` |
+| `scripts/e2e-{kids,trips}.mjs` | prefixo de conta de teste `wityu-e2e-*` → `wardyou-e2e-*` |
+| `AntifurtoAlarmOverlay.tsx` | `KEEP_AWAKE_TAG` → `wardyou-antifurto` |
+| `apps/api/.env.example` | banco local `wityu_dev` → `wardyou_dev` |
+| `apps/mobile/.env`, `apps/api/.env` | cabecalho do comentario |
+
+**Decisao (2026-08-29):** `com.wityu.app` e `app.wityu.com` **continuam congelados** — trocar o package
+criaria um app novo na Play Store e exigiria refazer Firebase/FCM, client OAuth (pacote + SHA-1) e chave
+Maps Android. `README.md` mantem `wityu://` (scheme congelado) e o link para
+`PROMPT_Migracao_Wityu_MAUI_para_ReactNative.md` (nome real do arquivo legado).
+
+Adicionado a tabela de congelados do `CLAUDE.md`: os nomes de task do expo-task-manager
+(`wityu-trip-location-broadcast`, `wityu-push-background`) — ficam registrados no SO do aparelho.
 
 ## 📁 Estado do Git (2026-08-24)
 O repo `EudesBPereira/WardYou` (**privado**) hospeda **duas bases de codigo lado a lado**:
@@ -68,6 +136,14 @@ recursos Azure (`wityu-api-96164`, `wityuacr96164`, `wityu-kv-mvpsf`) e `app.wit
 2. Reservar `wardyou.app` / `wardyou.io` / `wardyou.co` na Cloudflare (opcional, protecao de marca).
 3. Novo logo/wordmark com o nome WardYou (os SVGs atuais ainda desenham a marca antiga).
 4. Checar marca "WardYou" no INPI + disponibilidade do nome na Play Store/App Store.
+5. **Atualizar o Firebase / Google Cloud** (projeto `wityu-499413`) — ainda esta com a marca antiga:
+   - display name do projeto Firebase (o *project ID* `wityu-499413` e o bucket
+     `wityu-499413.firebasestorage.app` sao **imutaveis** — so o nome de exibicao muda);
+   - **app name da tela de consentimento OAuth** (Cloud Console > APIs & Services > OAuth consent screen):
+     este e **visivel ao usuario** — no login com Google aparece "<app name> quer acessar sua conta";
+   - nickname do app Android no Firebase (cosmetico).
+   Como `com.wityu.app` segue congelado, **nao** e preciso registrar app novo nem gerar um
+   `google-services.json` novo.
 
 ## 🔴 INFRA FORA DO AR: assinatura Azure desabilitada (2026-07-26) + e2e kids 44/44 em ambiente local
 **Sintoma**: app do fundador "só fica carregando". **Causa**: NÃO é código — a assinatura Azure
@@ -875,6 +951,10 @@ cd android && ./gradlew.bat :app:assembleRelease -PreactNativeArchitectures=arm6
 # → app/build/outputs/apk/release/app-release.apk (~55MB, arm64, debug keystore)
 ```
 - Rebuild **só-JS** (sem pacote nativo novo) dispensa o prebuild — só `assembleRelease`.
+- ⚠️ **Mas `android/` e gerado e gitignored**: qualquer coisa de `app.config.ts` que vira recurso nativo
+  (`name` → `strings.xml` `app_name`, scheme/host do manifest, icones) **so muda com `prebuild`**. Pego em
+  2026-08-29: rebuild so-JS pos-rename saiu com `application-label:'Wityu'` no launcher. Conferir sempre com
+  `aapt dump badging app-release.apk | grep application-label` antes de distribuir.
 - **Fix Windows MAX_PATH (obrigatório, New Arch)**: `LongPathsEnabled=1` no registro (admin) **+** CMake `3.30.5`
   pinado em `apps/mobile/android/app/build.gradle`. Após prebuild, apagar `android/app/.cxx`. O pin sobrevive ao prebuild.
 - **Distribuição**: Blob `mvpsfapk80840`/container `apk` (`allowBlobPublicAccess=false` → gerar SAS read-only de 7 dias).

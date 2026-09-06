@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.wityu.app",
+        "paths": ["/join", "/join/*", "/auth/*", "/travel/*"]
+      }
+    ]
+  }
+}
