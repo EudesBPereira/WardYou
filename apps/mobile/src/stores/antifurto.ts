@@ -5,7 +5,6 @@ const KEY = "wardyou_antifurto";
 
 interface Persisted {
   armed: boolean;
-  pin: string | null;
   soundEnabled: boolean;
 }
 
@@ -13,7 +12,6 @@ interface AntifurtoState extends Persisted {
   hydrated: boolean;
   hydrate: () => Promise<void>;
   setArmed: (armed: boolean) => Promise<void>;
-  setPin: (pin: string) => Promise<void>;
   setSoundEnabled: (enabled: boolean) => Promise<void>;
 }
 
@@ -22,14 +20,18 @@ async function persist(state: Persisted) {
 }
 
 /**
- * "Modo Guarda" (antifurto Fase 1 — see docs/antifurto.md): armed state, the
- * dismiss PIN, and the siren toggle, persisted via SecureStore so they survive
- * app restarts. This is a device-local deterrent, not a real device lock —
- * see the doc for the platform limits that shape that decision.
+ * "Modo Guarda" (antifurto Fase 1 — see docs/antifurto.md): armed state e o
+ * toggle da sirene, persistidos no SecureStore.
+ *
+ * O PIN proprio do app foi REMOVIDO em 2026-09-09. Ele era redundante:
+ * `authenticateBiometric` usa `disableDeviceFallback: false`, entao o proprio SO
+ * ja cai para o PIN/padrao do aparelho quando a digital falha. Manter um PIN do
+ * app significava um segredo a mais, guardado em texto puro, mais fraco que o do
+ * SO e que o usuario ainda tinha de lembrar. Chaves antigas com `pin` no JSON
+ * persistido sao simplesmente ignoradas na hidratacao.
  */
 export const useAntifurtoStore = create<AntifurtoState>((set, get) => ({
   armed: false,
-  pin: null,
   soundEnabled: true,
   hydrated: false,
 
@@ -43,7 +45,6 @@ export const useAntifurtoStore = create<AntifurtoState>((set, get) => ({
       const parsed = JSON.parse(raw) as Partial<Persisted>;
       set({
         armed: parsed.armed ?? false,
-        pin: parsed.pin ?? null,
         soundEnabled: parsed.soundEnabled ?? true,
         hydrated: true,
       });
@@ -53,19 +54,13 @@ export const useAntifurtoStore = create<AntifurtoState>((set, get) => ({
   },
 
   setArmed: async (armed) => {
-    const next = { armed, pin: get().pin, soundEnabled: get().soundEnabled };
+    const next = { armed, soundEnabled: get().soundEnabled };
     await persist(next);
     set({ armed });
   },
 
-  setPin: async (pin) => {
-    const next = { armed: get().armed, pin, soundEnabled: get().soundEnabled };
-    await persist(next);
-    set({ pin });
-  },
-
   setSoundEnabled: async (soundEnabled) => {
-    const next = { armed: get().armed, pin: get().pin, soundEnabled };
+    const next = { armed: get().armed, soundEnabled };
     await persist(next);
     set({ soundEnabled });
   },

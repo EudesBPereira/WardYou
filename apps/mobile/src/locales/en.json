@@ -301,17 +301,11 @@
     "title": "Anti-theft mode",
     "armTitle": "Guard mode",
     "armSubtitle": "Detects a snatch/run, fires the alarm and locks the screen",
-    "changePin": "Change PIN",
-    "pinSetupTitle": "Create a 4-digit PIN",
-    "pinSetupSubtitle": "You'll use this PIN to turn off the alarm when it goes off.",
-    "pinInvalid": "The PIN must be exactly 4 digits.",
     "alarmTitle": "Alarm triggered",
     "alarmBody": "Sudden movement detected. Your family has already been notified.",
     "offlineTitle": "No connection",
     "offlineBody": "The device is offline — location may not arrive until connectivity returns. Keep mobile data on.",
     "openSettings": "Open network settings",
-    "pinPrompt": "Enter the PIN to turn off the alarm",
-    "pinError": "Wrong PIN. Try again.",
     "lockPromptTitle": "Screen lock on theft",
     "lockPromptBody": "For Guard Mode to lock the screen after a snatch (only your fingerprint or device PIN unlocks it), enable the WardYou accessibility service in settings.",
     "lockPromptEnable": "Enable now",
@@ -320,8 +314,9 @@
     "lockDisabledBody": "The alarm still fires, but the screen won't lock on theft. Tap to enable the WardYou accessibility service.",
     "biometricUnlock": "Turn off with fingerprint",
     "biometricPrompt": "Authenticate to turn off the alarm",
-    "setPin": "Set a PIN",
-    "pinOptional": "Optional — your fingerprint already turns off the alarm"
+    "needsDeviceAuthTitle": "Screen lock required",
+    "needsDeviceAuthBody": "Guard Mode can only be turned off with your fingerprint or the device lock. Set up a screen lock in Android settings before enabling it.",
+    "confirmDisarm": "Authenticate to disarm Guard Mode"
   },
   "settings": {
     "elderCare": "Elder care",
@@ -341,7 +336,8 @@
     "locationSharing": "Location sharing",
     "premium": "WardYou Premium",
     "seePlans": "See plans",
-    "logout": "Sign out"
+    "logout": "Sign out",
+    "confirmLogout": "Authenticate to sign out"
   },
   "consent": {
     "family": {
@@ -391,7 +387,8 @@
         "title": "Data access",
         "body": "Allows processing of your data per the policy."
       }
-    }
+    },
+    "confirmRevoke": "Authenticate to revoke consent"
   },
   "zones": {
     "membersCount": "{{n}} member(s)",
@@ -545,7 +542,8 @@
       "title": "How to add a child",
       "body": "1) Install WardYou on the child's phone.\n2) They create an account and join your family with the invite code.\n3) You approve the request choosing the \"Child\" role.\n\nDone: protected mode turns on for their device and you manage everything here.",
       "invite": "Create invite"
-    }
+    },
+    "confirmDisable": "Authenticate to turn protection off"
   },
   "elder": {
     "med": {

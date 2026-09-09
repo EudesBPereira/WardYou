@@ -301,17 +301,11 @@
     "title": "Modo antifurto",
     "armTitle": "Modo Guarda",
     "armSubtitle": "Detecta arrancada/corrida, dispara alarme e bloqueia a tela",
-    "changePin": "Alterar PIN",
-    "pinSetupTitle": "Crie um PIN de 4 dígitos",
-    "pinSetupSubtitle": "Você vai usar esse PIN para desligar o alarme quando ele disparar.",
-    "pinInvalid": "O PIN precisa ter exatamente 4 números.",
     "alarmTitle": "Alarme ativado",
     "alarmBody": "Movimento brusco detectado. Sua família já foi avisada.",
     "offlineTitle": "Sem conexão",
     "offlineBody": "O aparelho está offline — a localização pode não chegar até a conexão voltar. Mantenha os dados móveis ligados.",
     "openSettings": "Abrir configurações de rede",
-    "pinPrompt": "Digite o PIN para desligar o alarme",
-    "pinError": "PIN incorreto. Tente de novo.",
     "lockPromptTitle": "Bloqueio de tela no roubo",
     "lockPromptBody": "Para o Modo Guarda bloquear a tela após uma arrancada (só a sua digital ou PIN do aparelho desbloqueia), ative o serviço de acessibilidade do WardYou nas configurações.",
     "lockPromptEnable": "Ativar agora",
@@ -320,8 +314,9 @@
     "lockDisabledBody": "O alarme dispara, mas a tela não será bloqueada no roubo. Toque para ativar o serviço de acessibilidade do WardYou.",
     "biometricUnlock": "Desligar com a digital",
     "biometricPrompt": "Autentique para desligar o alarme",
-    "setPin": "Definir um PIN",
-    "pinOptional": "Opcional — sua digital já desliga o alarme"
+    "needsDeviceAuthTitle": "Bloqueio de tela necessário",
+    "needsDeviceAuthBody": "O Modo Guarda só desliga com a sua digital ou o bloqueio do aparelho. Cadastre um bloqueio de tela nas configurações do Android antes de ativar.",
+    "confirmDisarm": "Autentique para desarmar o Modo Guarda"
   },
   "settings": {
     "elderCare": "Cuidado com idosos",
@@ -341,7 +336,8 @@
     "locationSharing": "Compartilhamento de localização",
     "premium": "WardYou Premium",
     "seePlans": "Ver planos",
-    "logout": "Sair da conta"
+    "logout": "Sair da conta",
+    "confirmLogout": "Autentique para sair da conta"
   },
   "consent": {
     "family": {
@@ -391,7 +387,8 @@
         "title": "Acesso aos dados",
         "body": "Permite o processamento dos seus dados conforme a política."
       }
-    }
+    },
+    "confirmRevoke": "Autentique para revogar o consentimento"
   },
   "zones": {
     "membersCount": "{{n}} membro(s)",
@@ -545,7 +542,8 @@
       "title": "Como adicionar uma criança",
       "body": "1) Instale o WardYou no celular da criança.\n2) Ela cria a conta e entra na sua família com o código do convite.\n3) Você aprova o pedido escolhendo o papel \"Criança\".\n\nPronto: o modo protegido é ativado no aparelho dela e você gerencia tudo por aqui.",
       "invite": "Gerar convite"
-    }
+    },
+    "confirmDisable": "Autentique para desligar a proteção"
   },
   "elder": {
     "med": {

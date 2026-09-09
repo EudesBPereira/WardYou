@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Modal, View, TextInput, BackHandler, Platform } from "react-native";
+import { Modal, View, BackHandler, Platform } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import * as Network from "expo-network";
@@ -18,14 +18,13 @@ const LOCK_DELAY_MS = 1_200;
 
 export interface AntifurtoAlarmOverlayProps {
   visible: boolean;
-  pin: string;
   soundEnabled: boolean;
   onDismiss: () => void;
   /** Omit when the caller already triggered the SOS itself (manual hold
    *  button) — only rush-detection needs the overlay to fire it. */
   onTriggerSos?: () => void;
   /** Rush-detection (theft) path: also lock the device like the power button —
-   *  the thief can't reach banking apps without the owner's biometrics/PIN.
+   *  the thief can't reach banking apps without the owner's device auth.
    *  Never set for the manual SOS hold (the owner is holding the phone). */
   lockOnActivate?: boolean;
 }
@@ -37,12 +36,11 @@ export interface AntifurtoAlarmOverlayProps {
  * the device via the accessibility service (Fase 2 "trava real", no Device
  * Admin needed) — the siren keeps playing behind the lockscreen because the
  * audio session is set to background mode (Spotify-style), and the owner
- * dismisses it after unlocking with their own biometrics/PIN.
+ * dismisses it with the device authentication (biometrics, falling back to the
+ * device PIN/pattern via the OS prompt).
  */
-export function AntifurtoAlarmOverlay({ visible, pin, soundEnabled, onDismiss, onTriggerSos, lockOnActivate = false }: AntifurtoAlarmOverlayProps) {
+export function AntifurtoAlarmOverlay({ visible, soundEnabled, onDismiss, onTriggerSos, lockOnActivate = false }: AntifurtoAlarmOverlayProps) {
   const { t } = useTranslation();
-  const [pinInput, setPinInput] = useState("");
-  const [error, setError] = useState(false);
   const [offline, setOffline] = useState(false);
   const player = useAudioPlayer(SIREN_SOUND);
   const sosFiredRef = useRef(false);
@@ -78,8 +76,6 @@ export function AntifurtoAlarmOverlay({ visible, pin, soundEnabled, onDismiss, o
       setAudioModeAsync({ shouldPlayInBackground: false }).catch(() => {});
       return;
     }
-    setPinInput("");
-    setError(false);
     if (!sosFiredRef.current && onTriggerSos) {
       sosFiredRef.current = true;
       onTriggerSos();
@@ -109,24 +105,16 @@ export function AntifurtoAlarmOverlay({ visible, pin, soundEnabled, onDismiss, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, soundEnabled]);
 
-  // The owner's biometric is proof enough — only they can pass it — so it
-  // dismisses the alarm without the PIN. Available regardless of the app-lock
-  // setting (it's just "is a fingerprint/face enrolled on this device").
+  // A autenticacao do aparelho e a UNICA forma de desligar: so o dono passa por
+  // ela, e o SO ja cai para PIN/padrao do aparelho se a digital falhar. Nao ha
+  // PIN proprio do app (removido em 2026-09-09 — era um segredo a mais, em texto
+  // puro, mais fraco que o do SO).
   useEffect(() => {
     if (visible) getBiometricSupport().then((s) => setBiometricAvailable(s.available));
   }, [visible]);
 
   async function unlockWithBiometric() {
     if (await authenticateBiometric(t("antifurto.biometricPrompt"))) onDismiss();
-  }
-
-  function submitPin(value: string) {
-    if (value === pin) {
-      onDismiss();
-    } else {
-      setError(true);
-      setPinInput("");
-    }
   }
 
   return (
@@ -152,44 +140,13 @@ export function AntifurtoAlarmOverlay({ visible, pin, soundEnabled, onDismiss, o
           </View>
         ) : null}
 
-        {/* So mostra o campo de PIN quando existe um PIN. Com biometria o Modo
-            Guarda arma sem PIN, e um campo que nunca aceita nada e pior que
-            campo nenhum: parece que o dono esqueceu a senha do proprio alarme. */}
-        {pin ? (
-          <View className="w-full gap-2">
-            <Text variant="label" color="inverse">
-              {t("antifurto.pinPrompt")}
-            </Text>
-            <TextInput
-              value={pinInput}
-              onChangeText={(v) => {
-                setError(false);
-                const digits = v.replace(/\D/g, "").slice(0, 4);
-                setPinInput(digits);
-                if (digits.length === 4) submitPin(digits);
-              }}
-              keyboardType="number-pad"
-              secureTextEntry
-              maxLength={4}
-              autoFocus={!biometricAvailable}
-              className="h-14 rounded-xl bg-white px-4 text-center text-2xl text-ink"
-            />
-            {error ? (
-              <Text variant="caption" color="inverse">
-                {t("antifurto.pinError")}
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
-
-        {biometricAvailable ? (
-          <Button
-            label={t("antifurto.biometricUnlock")}
-            variant="secondary"
-            icon="finger-print"
-            onPress={unlockWithBiometric}
-          />
-        ) : null}
+        <Button
+          label={t("antifurto.biometricUnlock")}
+          variant="secondary"
+          icon="finger-print"
+          onPress={unlockWithBiometric}
+          disabled={!biometricAvailable}
+        />
       </View>
     </Modal>
   );

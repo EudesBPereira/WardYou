@@ -21,6 +21,7 @@ import { setLanguage, SUPPORTED_LANGUAGES, type AppLanguage } from "@/i18n";
 import { useSession } from "@/stores/session";
 import { useAppLock } from "@/stores/appLock";
 import { getBiometricSupport, authenticateBiometric } from "@/services/auth/biometrics";
+import { confirmSensitive } from "@/services/auth/confirmSensitive";
 import { authApi } from "@/services/api/auth";
 import { useMyProfile } from "@/features/profile/queries";
 import { ProfileButton } from "@/components/ProfileButton";
@@ -49,6 +50,13 @@ export default function SettingsScreen() {
   useEffect(() => {
     getBiometricSupport().then(setBio);
   }, []);
+
+  // Sair da conta derruba TODA a protecao de uma vez: sem sessao nao ha
+  // localizacao, nem regras, nem SOS. Exige autenticacao como as demais.
+  async function handleLogout() {
+    if (!(await confirmSensitive(t("settings.confirmLogout")))) return;
+    await authApi.logout();
+  }
 
   async function toggleAppLock(next: boolean) {
     // Confirm the owner is present before either enabling OR disabling.
@@ -169,7 +177,7 @@ export default function SettingsScreen() {
         variant="secondary"
         icon="log-out"
         className="mt-6"
-        onPress={() => authApi.logout()}
+        onPress={handleLogout}
       />
 
       {/* Dev-only shortcut to the component gallery (hidden in release builds) */}

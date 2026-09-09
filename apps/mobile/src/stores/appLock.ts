@@ -21,9 +21,19 @@ interface AppLockState {
  * runtime state driven by AppLockGate (locks on cold start and whenever the
  * app returns from the background). The login screen is never locked — the
  * gate only arms while authenticated.
+ *
+ * LIGADO POR PADRAO desde 2026-09-09. Num app cujo proposito e proteger
+ * crianca, o adversario mais provavel nao e um invasor remoto: e a propria
+ * crianca com o telefone do responsavel na mao. Deixar isto opt-in, escondido
+ * em Ajustes, significava que quase ninguem teria. Quem nao quiser, desliga —
+ * e desligar pede autenticacao.
+ *
+ * Isto NAO substitui o `confirmSensitive` nas acoes destrutivas: o app lock so
+ * re-tranca quando o app volta do background, entao nao cobre a janela em que o
+ * responsavel esta com o app aberto e passa o telefone.
  */
 export const useAppLock = create<AppLockState>((set) => ({
-  enabled: false,
+  enabled: true,
   hydrated: false,
   // Start locked so a cold start with the lock enabled prompts immediately,
   // before any authenticated screen is painted.
@@ -32,7 +42,9 @@ export const useAppLock = create<AppLockState>((set) => ({
   hydrate: async () => {
     try {
       const raw = await storage.getItem(KEY);
-      set({ enabled: raw === "1", hydrated: true });
+      // Sem valor gravado = instalacao nova ou usuario que nunca mexeu:
+      // vale o padrao ligado. So `"0"` explicito desliga.
+      set({ enabled: raw !== "0", hydrated: true });
     } catch {
       set({ hydrated: true });
     }

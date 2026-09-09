@@ -301,17 +301,11 @@
     "title": "Modo antirrobo",
     "armTitle": "Modo Guardia",
     "armSubtitle": "Detecta un tirón/carrera, dispara la alarma y bloquea la pantalla",
-    "changePin": "Cambiar PIN",
-    "pinSetupTitle": "Crea un PIN de 4 dígitos",
-    "pinSetupSubtitle": "Usarás este PIN para apagar la alarma cuando se active.",
-    "pinInvalid": "El PIN debe tener exactamente 4 números.",
     "alarmTitle": "Alarma activada",
     "alarmBody": "Se detectó un movimiento brusco. Tu familia ya fue notificada.",
     "offlineTitle": "Sin conexión",
     "offlineBody": "El dispositivo está sin conexión — la ubicación puede no llegar hasta que vuelva la conectividad. Mantén los datos móviles activados.",
     "openSettings": "Abrir configuración de red",
-    "pinPrompt": "Ingresa el PIN para apagar la alarma",
-    "pinError": "PIN incorrecto. Inténtalo de nuevo.",
     "lockPromptTitle": "Bloqueo de pantalla ante robo",
     "lockPromptBody": "Para que el Modo Guardia bloquee la pantalla tras un tirón (solo tu huella o el PIN del dispositivo la desbloquean), activa el servicio de accesibilidad de WardYou en los ajustes.",
     "lockPromptEnable": "Activar ahora",
@@ -320,8 +314,9 @@
     "lockDisabledBody": "La alarma se dispara, pero la pantalla no se bloqueará ante un robo. Toca para activar el servicio de accesibilidad de WardYou.",
     "biometricUnlock": "Apagar con la huella",
     "biometricPrompt": "Autentícate para apagar la alarma",
-    "setPin": "Definir un PIN",
-    "pinOptional": "Opcional — tu huella ya apaga la alarma"
+    "needsDeviceAuthTitle": "Se requiere bloqueo de pantalla",
+    "needsDeviceAuthBody": "El Modo Guardia solo se apaga con tu huella o el bloqueo del dispositivo. Configura un bloqueo de pantalla en los ajustes de Android antes de activarlo.",
+    "confirmDisarm": "Autentícate para desarmar el Modo Guardia"
   },
   "settings": {
     "elderCare": "Cuidado de mayores",
@@ -341,7 +336,8 @@
     "locationSharing": "Compartir ubicación",
     "premium": "WardYou Premium",
     "seePlans": "Ver planes",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "confirmLogout": "Autentícate para cerrar sesión"
   },
   "consent": {
     "family": {
@@ -391,7 +387,8 @@
         "title": "Acceso a datos",
         "body": "Permite el procesamiento de tus datos según la política."
       }
-    }
+    },
+    "confirmRevoke": "Autentícate para revocar el consentimiento"
   },
   "zones": {
     "membersCount": "{{n}} miembro(s)",
@@ -545,7 +542,8 @@
       "title": "Cómo agregar un niño",
       "body": "1) Instala WardYou en el teléfono del niño.\n2) Crea una cuenta y se une a tu familia con el código.\n3) Apruebas la solicitud eligiendo el rol \"Niño\".\n\nListo: se activa el modo protegido en su dispositivo y gestionas todo aquí.",
       "invite": "Generar invitación"
-    }
+    },
+    "confirmDisable": "Autentícate para desactivar la protección"
   },
   "elder": {
     "med": {

@@ -301,17 +301,11 @@
     "title": "Mode antivol",
     "armTitle": "Mode Garde",
     "armSubtitle": "Détecte un arrachage/une course, déclenche l’alarme et verrouille l’écran",
-    "changePin": "Changer le code PIN",
-    "pinSetupTitle": "Crée un code PIN à 4 chiffres",
-    "pinSetupSubtitle": "Ce code te servira à éteindre l'alarme quand elle se déclenche.",
-    "pinInvalid": "Le code PIN doit contenir exactement 4 chiffres.",
     "alarmTitle": "Alarme déclenchée",
     "alarmBody": "Mouvement brusque détecté. Ta famille a déjà été prévenue.",
     "offlineTitle": "Pas de connexion",
     "offlineBody": "L'appareil est hors ligne — la position peut ne pas arriver avant le retour de la connexion. Garde les données mobiles activées.",
     "openSettings": "Ouvrir les réglages réseau",
-    "pinPrompt": "Entre le code PIN pour éteindre l'alarme",
-    "pinError": "Code PIN incorrect. Réessaie.",
     "lockPromptTitle": "Verrouillage de l’écran en cas de vol",
     "lockPromptBody": "Pour que le Mode Garde verrouille l’écran après un arrachage (seule votre empreinte ou le code PIN de l’appareil le déverrouille), activez le service d’accessibilité de WardYou dans les réglages.",
     "lockPromptEnable": "Activer maintenant",
@@ -320,8 +314,9 @@
     "lockDisabledBody": "L’alarme se déclenche, mais l’écran ne sera pas verrouillé en cas de vol. Touchez pour activer le service d’accessibilité de WardYou.",
     "biometricUnlock": "Arrêter avec l’empreinte",
     "biometricPrompt": "Authentifiez-vous pour arrêter l’alarme",
-    "setPin": "Définir un code PIN",
-    "pinOptional": "Facultatif — votre empreinte arrête déjà l’alarme"
+    "needsDeviceAuthTitle": "Verrouillage d'écran requis",
+    "needsDeviceAuthBody": "Le Mode Garde ne se désactive qu'avec votre empreinte ou le verrouillage de l'appareil. Configurez un verrouillage d'écran dans les paramètres Android avant de l'activer.",
+    "confirmDisarm": "Authentifiez-vous pour désarmer le Mode Garde"
   },
   "settings": {
     "elderCare": "Aide aux aînés",
@@ -341,7 +336,8 @@
     "locationSharing": "Partage de position",
     "premium": "WardYou Premium",
     "seePlans": "Voir les forfaits",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "confirmLogout": "Authentifiez-vous pour vous déconnecter"
   },
   "consent": {
     "family": {
@@ -391,7 +387,8 @@
         "title": "Accès aux données",
         "body": "Autorise le traitement de vos données selon la politique."
       }
-    }
+    },
+    "confirmRevoke": "Authentifiez-vous pour révoquer le consentement"
   },
   "zones": {
     "membersCount": "{{n}} membre(s)",
@@ -545,7 +542,8 @@
       "title": "Comment ajouter un enfant",
       "body": "1) Installez WardYou sur le téléphone de l'enfant.\n2) Il crée un compte et rejoint votre famille avec le code.\n3) Vous approuvez en choisissant le rôle « Enfant ».\n\nVoilà : le mode protégé s'active sur son appareil et vous gérez tout ici.",
       "invite": "Créer une invitation"
-    }
+    },
+    "confirmDisable": "Authentifiez-vous pour désactiver la protection"
   },
   "elder": {
     "med": {

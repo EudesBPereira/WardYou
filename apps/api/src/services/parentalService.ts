@@ -111,6 +111,47 @@ async function requireTutorChild(tutorUserId: string, childUserId: string) {
   return { manager, child };
 }
 
+/**
+ * Avisa os DEMAIS responsaveis quando alguem desliga a protecao de uma crianca.
+ *
+ * Sem isto, desligar a protecao e uma acao silenciosa: quem desliga nao precisa
+ * esconder nada, porque ninguem fica sabendo. Combinado com a autenticacao que
+ * o app passou a exigir (`confirmSensitive`), fecha os dois lados — e preciso
+ * ser o dono do aparelho para desligar, e mesmo assim os outros responsaveis
+ * veem que aconteceu. Melhor esforco: nunca derruba a operacao principal.
+ */
+async function avisarOutrosResponsaveis(atorUserId: string, childUserId: string, familyId: string): Promise<void> {
+  try {
+    const [ator, crianca, responsaveis] = await Promise.all([
+      prisma.users.findUnique({ where: { Id: atorUserId }, select: { FullName: true } }),
+      prisma.users.findUnique({ where: { Id: childUserId }, select: { FullName: true } }),
+      prisma.family_members.findMany({
+        where: {
+          FamilyId: familyId,
+          Role: { in: [...MANAGEMENT_ROLES] },
+          Status: STATUS.active,
+          UserId: { not: atorUserId },
+        },
+        select: { UserId: true },
+      }),
+    ]);
+    // `UserId` e anulavel no schema (convite aceito ainda sem conta vinculada).
+    const destinos = responsaveis.map((r) => r.UserId).filter((id): id is string => !!id);
+    if (destinos.length === 0) return;
+    await pushToUsers(
+      destinos,
+      {
+        title: "Proteção desligada",
+        body: `${ator?.FullName ?? "Alguém"} desligou a proteção de ${crianca?.FullName ?? "uma criança"}.`,
+        highPriority: true,
+        data: { type: "parental-disabled", childUserId },
+      },
+    );
+  } catch {
+    /* best-effort: avisar nunca pode quebrar a acao principal */
+  }
+}
+
 async function getOrCreatePolicy(childUserId: string, managedByUserId: string) {
   const existing = await prisma.child_device_policies.findFirst({ where: { ChildUserId: childUserId } });
   if (existing) return existing;
@@ -273,8 +314,9 @@ export async function upsertPolicy(userId: string, childUserId: string, input: U
   if (input.dailyScreenTimeLimitMinutes <= 0) {
     throw new AppError("ValidationError", "O limite diário precisa ser maior que zero.");
   }
-  await requireTutorChild(userId, childUserId);
+  const { child } = await requireTutorChild(userId, childUserId);
   const policy = await getOrCreatePolicy(childUserId, userId);
+  const desligando = policy.IsEnabled && input.isEnabled === false;
   const updated = await prisma.child_device_policies.update({
     where: { Id: policy.Id },
     data: {
@@ -289,6 +331,7 @@ export async function upsertPolicy(userId: string, childUserId: string, input: U
   emitToUser(childUserId, "PolicyUpdated", { childUserId });
   notifyChildPolicyChanged(childUserId);
   await writeAudit({ actorUserId: userId, action: "ParentalPolicyUpdated", sourceType: "Parental", targetUserId: childUserId, metadata: { dailyScreenTimeLimitMinutes: input.dailyScreenTimeLimitMinutes, isEnabled: input.isEnabled } });
+  if (desligando) await avisarOutrosResponsaveis(userId, childUserId, child.FamilyId);
   return mapPolicy(updated);
 }
 

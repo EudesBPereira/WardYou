@@ -14,6 +14,7 @@ import {
   useDeleteTask,
 } from "@/features/parental/queries";
 import { PendingRequestsCard } from "@/features/parental/PendingRequestsCard";
+import { confirmSensitive } from "@/services/auth/confirmSensitive";
 
 const STEP = 15;
 
@@ -41,8 +42,14 @@ export default function ChildDetailScreen() {
     remote.mutate({ action: "Pause", ...(minutes ? { durationMinutes: minutes } : {}) });
   }
 
-  function saveLimit(next: { limit?: number; enabled?: boolean }) {
+  async function saveLimit(next: { limit?: number; enabled?: boolean }) {
     if (!policy) return;
+    // DESLIGAR a protecao exige a autenticacao do responsavel. Ligar e ajustar
+    // o limite nao — so a acao que remove protecao. Sem isto, a crianca que
+    // pegar o telefone do pai desbloqueado desliga tudo com um toque.
+    if (next.enabled === false && !(await confirmSensitive(t("parental.confirmDisable")))) {
+      return;
+    }
     upsert.mutate({
       dailyScreenTimeLimitMinutes: Math.max(STEP, next.limit ?? policy.dailyScreenTimeLimitMinutes),
       isEnabled: next.enabled ?? policy.isEnabled,

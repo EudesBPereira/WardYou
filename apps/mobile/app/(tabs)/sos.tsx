@@ -11,11 +11,11 @@ import {
   Toggle,
   Button,
   HoldButton,
-  InputModal,
 } from "@/components/ui";
 import { useMocks } from "@/lib/env";
 import * as AppBlock from "@modules/app-block";
 import { getBiometricSupport } from "@/services/auth/biometrics";
+import { confirmSensitive } from "@/services/auth/confirmSensitive";
 import { getCurrentPosition } from "@/services/location/locationService";
 import { useMyFamilies } from "@/features/family/queries";
 import { useActiveSos, useTriggerSos, useCloseSos } from "@/features/sos/queries";
@@ -31,17 +31,16 @@ export default function SosScreen() {
   const trigger = useTriggerSos();
   const close = useCloseSos();
 
-  const { armed, pin, soundEnabled, hydrated, setArmed, setPin, setSoundEnabled } = useAntifurtoStore();
-  const [pinSetupOpen, setPinSetupOpen] = useState(false);
-  const [pinError, setPinError] = useState<string | null>(null);
+  const { armed, soundEnabled, hydrated, setArmed, setSoundEnabled } = useAntifurtoStore();
   const [alarmActive, setAlarmActive] = useState(false);
   // Whether the alarm overlay still needs to fire the SOS itself: true when
   // rush-detection opened it (nothing has posted yet), false when the manual
   // hold button opened it (already posted — avoids a duplicate SOS event).
   const [alarmShouldFireSos, setAlarmShouldFireSos] = useState(false);
 
-  // When a biometric is enrolled, Guard Mode can arm without a PIN — the alarm
-  // is dismissed by the owner's fingerprint/face (only they can pass it).
+  // O Modo Guarda depende da autenticacao do aparelho: so o dono desliga o
+  // alarme. Nao ha PIN proprio do app (removido em 2026-09-09) — o SO ja cai
+  // para PIN/padrao do aparelho quando a digital falha.
   const [biometricAvailable, setBiometricAvailable] = useState(false);
   useEffect(() => {
     useAntifurtoStore.getState().hydrate();
@@ -81,9 +80,8 @@ export default function SosScreen() {
   async function handleActivate() {
     try {
       await fireSos();
-      // Abre o alarme desde que exista ALGUM jeito de desliga-lo. Antes exigia
-      // `pin`, o que silenciava o alarme de quem usa so a digital.
-      if (soundEnabled && (pin || biometricAvailable)) {
+      // Abre o alarme so se houver como desliga-lo (autenticacao do aparelho).
+      if (soundEnabled && biometricAvailable) {
         setAlarmShouldFireSos(false);
         setAlarmActive(true);
       } else if (!useMocks) {
@@ -97,21 +95,25 @@ export default function SosScreen() {
   // Antifurto Fase 1 (docs/antifurto.md): while armed, a sudden-movement spike
   // opens the full-screen alarm, which fires the SOS itself.
   //
-  // NAO voltar a condicionar isto a `!!pin`. Com biometria disponivel o Modo
-  // Guarda arma SEM PIN (ver handleArmToggle), entao `armed && !!pin` deixava o
-  // toggle ligado na tela com a deteccao DESLIGADA — protecao que se anuncia e
-  // nao existe. `armed` ja implica pin ou biometria, porque armar sem nenhum
-  // dos dois e bloqueado.
+  // NAO voltar a condicionar isto a nada alem de `armed`. Ja houve um
+  // `armed && !!pin` aqui que deixava o toggle ligado na tela com a deteccao
+  // DESLIGADA para quem armava so com digital — protecao que se anuncia e nao
+  // existe. Armar sem autenticacao do aparelho ja e bloqueado em handleArmToggle.
   useRushDetection(armed, () => {
     setAlarmShouldFireSos(true);
     setAlarmActive(true);
   });
 
-  function handleArmToggle(next: boolean) {
-    // No PIN yet? Require setting one ONLY when there's no biometric fallback —
-    // otherwise arm straight away and let the fingerprint dismiss the alarm.
-    if (next && !pin && !biometricAvailable) {
-      setPinSetupOpen(true);
+  async function handleArmToggle(next: boolean) {
+    // DESARMAR exige autenticacao: sem isso quem pega o telefone desliga o
+    // antifurto antes de levar o aparelho.
+    if (!next && !(await confirmSensitive(t("antifurto.confirmDisarm")))) return;
+    // O alarme so se desliga com a autenticacao do aparelho (digital, e o SO ja
+    // cai para PIN/padrao do proprio Android). Sem nenhuma credencial cadastrada
+    // nao ha como desligar, entao nem armamos — armar seria criar um alarme que
+    // o dono nao consegue calar.
+    if (next && !biometricAvailable) {
+      Alert.alert(t("antifurto.needsDeviceAuthTitle"), t("antifurto.needsDeviceAuthBody"));
       return;
     }
     if (next) maybePromptForLockService();
@@ -127,18 +129,6 @@ export default function SosScreen() {
       { text: t("antifurto.lockPromptLater"), style: "cancel" },
       { text: t("antifurto.lockPromptEnable"), onPress: () => AppBlock.openAccessibilitySettings() },
     ]);
-  }
-
-  async function handlePinSetup(value: string) {
-    if (!/^\d{4}$/.test(value)) {
-      setPinError(t("antifurto.pinInvalid"));
-      return;
-    }
-    setPinError(null);
-    await setPin(value);
-    await setArmed(true);
-    setPinSetupOpen(false);
-    maybePromptForLockService();
   }
 
   function handleCancel() {
@@ -226,16 +216,6 @@ export default function SosScreen() {
               iconTone="danger"
               trailing={<Toggle value={armed && hydrated} onValueChange={handleArmToggle} disabled={!hydrated} />}
             />
-            {/* Always offer PIN management — with biometric-only arming there's
-                no PIN yet, but the user can still add one as a backup. */}
-            <View className="h-px bg-border" />
-            <ListItem
-              title={pin ? t("antifurto.changePin") : t("antifurto.setPin")}
-              subtitle={!pin && biometricAvailable ? t("antifurto.pinOptional") : undefined}
-              icon="keypad"
-              iconTone="neutral"
-              onPress={() => setPinSetupOpen(true)}
-            />
           </Card>
 
           {/* Armed but the screen lock can't fire: without the accessibility
@@ -262,26 +242,8 @@ export default function SosScreen() {
         </>
       ) : null}
 
-      <InputModal
-        visible={pinSetupOpen}
-        title={t("antifurto.pinSetupTitle")}
-        subtitle={t("antifurto.pinSetupSubtitle")}
-        placeholder="0000"
-        confirmLabel={t("common.save")}
-        keyboardType="number-pad"
-        secureTextEntry
-        maxLength={4}
-        error={pinError}
-        onConfirm={handlePinSetup}
-        onClose={() => {
-          setPinError(null);
-          setPinSetupOpen(false);
-        }}
-      />
-
       <AntifurtoAlarmOverlay
         visible={alarmActive}
-        pin={pin ?? ""}
         soundEnabled={soundEnabled}
         onDismiss={() => setAlarmActive(false)}
         onTriggerSos={alarmShouldFireSos ? fireSos : undefined}

@@ -12,6 +12,7 @@ import {
 } from "@/services/location/locationService";
 import { useConsents, useSetConsent, useFamilyConsents, useGrantFamilyConsent, CONSENT_TYPES, type ConsentTypeName } from "@/features/consent/queries";
 import { useMyFamilies, useFamilyMembers } from "@/features/family/queries";
+import { confirmSensitive } from "@/services/auth/confirmSensitive";
 
 function FamilyPermissions() {
   const { t } = useTranslation();
@@ -102,6 +103,9 @@ export default function ConsentsScreen() {
   // background/closed-app sharing won't work). If the OS grant is refused we
   // don't flip the consent on.
   async function onToggle(type: ConsentTypeName, active: boolean) {
+    // REVOGAR consentimento tira a familia de vista — exige autenticacao.
+    // Conceder nao pede nada: e a acao que aumenta protecao.
+    if (!active && !(await confirmSensitive(t("consent.confirmRevoke")))) return;
     if (type === "LocationSharing" && active && Platform.OS !== "web") {
       const level = await requestLocationAlwaysPermission();
       setLocationPerm(level);
