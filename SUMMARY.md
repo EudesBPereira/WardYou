@@ -62,10 +62,20 @@ código aparenta ter **não está em vigor**. Não corrigido ainda — decisão 
 - `min-replicas 0` → cold start no primeiro request. Para uma sessão de testes:
   `az containerapp update -g wardyou -n wardyou-qa-api --min-replicas 1` (e voltar para 0 depois).
 
-### Rede corporativa NEOBPO intercepta TLS
-CA próprio quebrou **npm, winget e az CLI** com erro de certificado. Contornado com um bundle combinado
-(certifi + 122 CAs do Windows) em `~/.azure/cacert-corp.pem`, exportado via `REQUESTS_CA_BUNDLE`. Para
-Node é `NODE_EXTRA_CA_CERTS`. Se o CI rodar dentro da rede, isso vira configuração fixa.
+### 🔴 Norton AntiVirus desta máquina intercepta TLS (NÃO é a rede)
+**Correção:** atribuí isso à "rede corporativa NEOBPO" durante a sessão — estava errado. O interceptador
+é local: o **Norton AntiVirus** (`NortonSvc`) faz SSL/TLS scanning e reassina todo HTTPS com o CA
+`CN=Norton Web/Mail Shield Root`. Verificado inspecionando o emissor do certificado de
+`dl.google.com`, `repo.maven.apache.org` e `registry.npmjs.org` — os três vêm assinados pelo Norton.
+
+Quebrou **cinco** ferramentas: npm, winget, az CLI, sdkmanager e Gradle. As quatro primeiras por não
+confiarem no CA; o Gradle por algo pior — `(bad_record_mac) Tag mismatch!`, ou seja, o Norton
+**corrompendo bytes em trânsito** em TLS 1.3 durante downloads grandes e paralelos.
+
+**Correção de raiz: desligar o HTTPS scanning do Norton.** Isso elimina os cinco problemas de uma vez,
+em vez de um workaround por runtime. Enquanto não for feito: `REQUESTS_CA_BUNDLE` (az),
+`NODE_EXTRA_CA_CERTS` (Node), `-Djavax.net.ssl.trustStoreType=Windows-ROOT` (Java) e
+`-Djdk.tls.client.protocols=TLSv1.2 --max-workers=2` (Gradle).
 
 ### ⬜ Pendente nesta frente
 - **Projeto Firebase novo** para o package `com.wardyou.app` (decisão tomada) — ação no console, sua.
