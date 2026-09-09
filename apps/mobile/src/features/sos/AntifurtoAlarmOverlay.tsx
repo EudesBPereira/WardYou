@@ -152,30 +152,35 @@ export function AntifurtoAlarmOverlay({ visible, pin, soundEnabled, onDismiss, o
           </View>
         ) : null}
 
-        <View className="w-full gap-2">
-          <Text variant="label" color="inverse">
-            {t("antifurto.pinPrompt")}
-          </Text>
-          <TextInput
-            value={pinInput}
-            onChangeText={(v) => {
-              setError(false);
-              const digits = v.replace(/\D/g, "").slice(0, 4);
-              setPinInput(digits);
-              if (digits.length === 4) submitPin(digits);
-            }}
-            keyboardType="number-pad"
-            secureTextEntry
-            maxLength={4}
-            autoFocus
-            className="h-14 rounded-xl bg-white px-4 text-center text-2xl text-ink"
-          />
-          {error ? (
-            <Text variant="caption" color="inverse">
-              {t("antifurto.pinError")}
+        {/* So mostra o campo de PIN quando existe um PIN. Com biometria o Modo
+            Guarda arma sem PIN, e um campo que nunca aceita nada e pior que
+            campo nenhum: parece que o dono esqueceu a senha do proprio alarme. */}
+        {pin ? (
+          <View className="w-full gap-2">
+            <Text variant="label" color="inverse">
+              {t("antifurto.pinPrompt")}
             </Text>
-          ) : null}
-        </View>
+            <TextInput
+              value={pinInput}
+              onChangeText={(v) => {
+                setError(false);
+                const digits = v.replace(/\D/g, "").slice(0, 4);
+                setPinInput(digits);
+                if (digits.length === 4) submitPin(digits);
+              }}
+              keyboardType="number-pad"
+              secureTextEntry
+              maxLength={4}
+              autoFocus={!biometricAvailable}
+              className="h-14 rounded-xl bg-white px-4 text-center text-2xl text-ink"
+            />
+            {error ? (
+              <Text variant="caption" color="inverse">
+                {t("antifurto.pinError")}
+              </Text>
+            ) : null}
+          </View>
+        ) : null}
 
         {biometricAvailable ? (
           <Button

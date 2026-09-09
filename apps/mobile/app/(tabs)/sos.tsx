@@ -81,7 +81,9 @@ export default function SosScreen() {
   async function handleActivate() {
     try {
       await fireSos();
-      if (soundEnabled && pin) {
+      // Abre o alarme desde que exista ALGUM jeito de desliga-lo. Antes exigia
+      // `pin`, o que silenciava o alarme de quem usa so a digital.
+      if (soundEnabled && (pin || biometricAvailable)) {
         setAlarmShouldFireSos(false);
         setAlarmActive(true);
       } else if (!useMocks) {
@@ -94,7 +96,13 @@ export default function SosScreen() {
 
   // Antifurto Fase 1 (docs/antifurto.md): while armed, a sudden-movement spike
   // opens the full-screen alarm, which fires the SOS itself.
-  useRushDetection(armed && !!pin, () => {
+  //
+  // NAO voltar a condicionar isto a `!!pin`. Com biometria disponivel o Modo
+  // Guarda arma SEM PIN (ver handleArmToggle), entao `armed && !!pin` deixava o
+  // toggle ligado na tela com a deteccao DESLIGADA — protecao que se anuncia e
+  // nao existe. `armed` ja implica pin ou biometria, porque armar sem nenhum
+  // dos dois e bloqueado.
+  useRushDetection(armed, () => {
     setAlarmShouldFireSos(true);
     setAlarmActive(true);
   });
