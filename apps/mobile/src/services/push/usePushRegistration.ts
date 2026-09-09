@@ -79,7 +79,7 @@ export function usePushRegistration() {
       const token = await registerForPush();
       if (cancelled || !token) return;
 
-      const key = `wityu_push_device_${userId}`;
+      const key = `wardyou_push_device_${userId}`;
       let deviceId = await storage.getItem(key);
       if (!deviceId) {
         const device = await apiClient.post<DeviceDto>("/api/v1/devices", {

@@ -11,7 +11,7 @@ const EXTRA_TIME_OPTIONS = [15, 30, 60];
 
 /**
  * Full-screen "this app is blocked" explainer, opened by the native
- * AccessibilityService via the `wityu://blocked?pkg=…&label=…` deep link the
+ * AccessibilityService via the `wardyou://blocked?pkg=…&label=…` deep link the
  * moment it kicks a blocked app to Home. Turns a silent kick into a moment the
  * child understands — and can act on: ask the guardian to allow the app, or
  * ask for more screen time (both land as pushes on the guardian's phone).

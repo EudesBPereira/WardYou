@@ -15,10 +15,10 @@ import { storage } from "@/lib/storage";
 // in a headless JS context when the app is killed, so it reads the token and the
 // active trip list straight from SecureStore instead of in-memory state.
 
-const TASK_NAME = "wityu-trip-location-broadcast";
-const ACTIVE_TRIPS_KEY = "wityu_active_trip_ids";
+const TASK_NAME = "wardyou-trip-location-broadcast";
+const ACTIVE_TRIPS_KEY = "wardyou_active_trip_ids";
 // Must match SESSION_KEY in stores/session.ts — the persisted auth session.
-const SESSION_KEY = "wityu_session";
+const SESSION_KEY = "wardyou_session";
 
 interface StoredSession {
   accessToken: string;
@@ -164,7 +164,7 @@ TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
   }
 });
 
-const BATTERY_OPT_ASKED_KEY = "wityu_battery_opt_asked";
+const BATTERY_OPT_ASKED_KEY = "wardyou_battery_opt_asked";
 
 /**
  * Ask Android to exempt WardYou from battery optimization while a trip is being
@@ -181,7 +181,7 @@ async function ensureBatteryOptimizationExemption(): Promise<void> {
     if (!optimized) return;
     if (await storage.getItem(BATTERY_OPT_ASKED_KEY)) return;
     await storage.setItem(BATTERY_OPT_ASKED_KEY, "1");
-    const pkg = Constants.expoConfig?.android?.package ?? "com.wityu.app";
+    const pkg = Constants.expoConfig?.android?.package ?? "com.wardyou.app";
     await IntentLauncher.startActivityAsync(
       IntentLauncher.ActivityAction.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS,
       { data: `package:${pkg}` },

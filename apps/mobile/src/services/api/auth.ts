@@ -46,7 +46,7 @@ export const authApi = {
   /**
    * Google Sign-In (server-side auth-code flow). Opens the API's /external/google/start
    * in an auth session; the API bounces through Google and redirects back to
-   * `wityu://auth/callback?code=…`, which we exchange for real tokens. First sign-in
+   * `wardyou://auth/callback?code=…`, which we exchange for real tokens. First sign-in
    * auto-creates the account server-side.
    */
   async googleSignIn(): Promise<AuthResponse> {
@@ -56,7 +56,7 @@ export const authApi = {
       return auth;
     }
 
-    const redirectUrl = "wityu://auth/callback";
+    const redirectUrl = "wardyou://auth/callback";
     const startUrl = `${env.apiBaseUrl.replace(/\/+$/, "")}/api/v1/auth/external/google/start`;
     const result = await WebBrowser.openAuthSessionAsync(startUrl, redirectUrl);
 

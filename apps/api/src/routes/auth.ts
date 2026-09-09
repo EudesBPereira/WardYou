@@ -11,7 +11,7 @@ import { resetPasswordEmail, resetPage, resetResultPage } from "../lib/resetTemp
 import * as authService from "../services/authService.js";
 import { writeAudit } from "../services/auditService.js";
 
-const APP_AUTH_CALLBACK = "wityu://auth/callback";
+const APP_AUTH_CALLBACK = "wardyou://auth/callback";
 const GOOGLE_AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
 
 /**
@@ -178,7 +178,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   // --- Google Sign-In (server-side auth-code flow, ported from the .NET API) ---
   // The mobile app opens this in a browser; we bounce to Google's consent screen.
   app.get<{ Querystring: { returnTo?: string } }>("/external/google/start", async (request, reply) => {
-    // Web passes its own http origin here; native omits it and gets the wityu://
+    // Web passes its own http origin here; native omits it and gets the wardyou://
     // deep link. Always run through the allowlist.
     const returnTo = safeReturnTo(request.query.returnTo);
     if (!env.GOOGLE_OAUTH_CLIENT_ID || !env.GOOGLE_OAUTH_CLIENT_SECRET) {
@@ -197,7 +197,7 @@ export async function registerAuthRoutes(app: FastifyInstance) {
   });
 
   // Google redirects here with ?code. We exchange it, find-or-create the user,
-  // then hand a one-time code back to the app via the wityu:// deep link.
+  // then hand a one-time code back to the app via the wardyou:// deep link.
   app.get("/external/google/complete", async (request, reply) => {
     const query = request.query as { code?: string; error?: string; state?: string };
     // `state` round-trips our (allowlisted) return URL through Google.

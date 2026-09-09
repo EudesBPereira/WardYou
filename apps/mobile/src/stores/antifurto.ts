@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { storage } from "@/lib/storage";
 
-const KEY = "wityu_antifurto";
+const KEY = "wardyou_antifurto";
 
 interface Persisted {
   armed: boolean;

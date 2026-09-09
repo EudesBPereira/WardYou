@@ -7,7 +7,7 @@ import { Platform } from "react-native";
  *
  * - Web: unsupported → null.
  * - Native: requests permission, sets up the Android channels (a general one
- *   and a high-importance `wityu_sos` one that can wake the device), then
+ *   and a high-importance `wardyou_sos` one that can wake the device), then
  *   fetches the device token. Requires `expo-notifications` + a Firebase-
  *   configured build (google-services.json); loaded lazily so the web bundle
  *   never pulls native-only code. Any failure resolves to null (never throws).
@@ -32,7 +32,7 @@ export async function registerForPush(): Promise<string | null> {
       // Kept only for pushes from an API that predates the v2 channel below —
       // Android channel settings are IMMUTABLE after creation, so the stronger
       // vibration required a brand-new channel id, not an edit to this one.
-      await Notifications.setNotificationChannelAsync("wityu_sos", {
+      await Notifications.setNotificationChannelAsync("wardyou_sos", {
         name: "Alertas SOS",
         importance: Notifications.AndroidImportance?.MAX ?? 5,
         sound: "default",
@@ -41,7 +41,7 @@ export async function registerForPush(): Promise<string | null> {
       });
       // v2: long, insistent vibration (Uber-style) so a family SOS physically
       // grabs attention. The API sends SOS pushes to this channel id.
-      await Notifications.setNotificationChannelAsync("wityu_sos_v2", {
+      await Notifications.setNotificationChannelAsync("wardyou_sos_v2", {
         name: "Alertas SOS",
         importance: Notifications.AndroidImportance?.MAX ?? 5,
         sound: "default",

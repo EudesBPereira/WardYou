@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { storage } from "@/lib/storage";
 
-const KEY = "wityu_app_lock_enabled";
+const KEY = "wardyou_app_lock_enabled";
 
 interface AppLockState {
   /** The user turned the biometric app lock on (persisted). */

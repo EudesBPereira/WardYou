@@ -3,7 +3,7 @@
     "apps": [],
     "details": [
       {
-        "appID": "TEAMID.com.wityu.app",
+        "appID": "TEAMID.com.wardyou.app",
         "paths": ["/join", "/join/*", "/auth/*", "/travel/*"]
       }
     ]

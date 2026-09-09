@@ -4,7 +4,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import org.json.JSONArray
 
-private const val PREFS_NAME = "wityu_app_block_prefs"
+private const val PREFS_NAME = "wardyou_app_block_prefs"
 private const val KEY_ENABLED = "enforcement_enabled"
 private const val KEY_BLOCK_ALL = "block_all"
 private const val KEY_BLOCKED_PACKAGES = "blocked_packages"

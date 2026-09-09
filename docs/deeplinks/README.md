@@ -1,8 +1,8 @@
-# Deep links — o que hospedar em `app.wityu.com` (ou `app.wardyou.com`)
+# Deep links — o que hospedar em `app.wardyou.com` (ou `app.wardyou.com`)
 
-Hoje (2026-08-29) **nenhum** dos hosts resolve DNS: `app.wityu.com`, `app.wardyou.com`, `wardyou.com`.
+Hoje (2026-08-29) **nenhum** dos hosts resolve DNS: `app.wardyou.com`, `app.wardyou.com`, `wardyou.com`.
 Consequencia: o link de convite que a API gera (`INVITE_BASE_URL` em `familyService.ts`,
-`https://app.wityu.com/join?familyInvite=CODE`) nao abre em lugar nenhum — o convite so funciona
+`https://app.wardyou.com/join?familyInvite=CODE`) nao abre em lugar nenhum — o convite so funciona
 digitando o codigo. Universal Links (iOS) e App Links (Android) tambem ficam sem verificacao.
 
 ## Passos (acao do fundador)
@@ -16,8 +16,8 @@ digitando o codigo. Universal Links (iOS) e App Links (Android) tambem ficam sem
 3. **Fallback web**: qualquer outra rota (ex. `/join?familyInvite=CODE`) deve mostrar uma pagina
    simples "Abra no app WardYou" com link pra loja — e o que o usuario ve se o app nao estiver instalado.
 4. Validar:
-   - Android: `adb shell pm verify-app-links --re-verify com.wityu.app` e depois
-     `adb shell pm get-app-links com.wityu.app` → esperado `verified`.
+   - Android: `adb shell pm verify-app-links --re-verify com.wardyou.app` e depois
+     `adb shell pm get-app-links com.wardyou.app` → esperado `verified`.
    - iOS: https://app-site-association.cdn-apple.com/a/v1/app.<dominio>
 
 ## Atencao — fingerprint do certificado
@@ -35,7 +35,7 @@ publicar na Play Store:
 
 ## Se o dominio for `app.wardyou.com`
 
-`app.wityu.com` esta na tabela de identificadores congelados do `CLAUDE.md`. Migrar exige trocar,
+`app.wardyou.com` esta na tabela de identificadores congelados do `CLAUDE.md`. Migrar exige trocar,
 no mesmo commit: `INVITE_BASE_URL` (`familyService.ts`), `associatedDomains` + `intentFilters[].data.host`
 (`app.config.ts`), `CORS_ORIGIN` na Azure, `DEPLOY.md` — e rebuild do APK (o host fica no manifest).
 Como nada foi distribuido com o dominio antigo funcionando, nao ha links legados a preservar.

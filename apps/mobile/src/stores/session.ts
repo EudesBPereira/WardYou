@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { storage } from "@/lib/storage";
 import type { AuthResponse } from "@/services/api/types";
 
-const SESSION_KEY = "wityu_session";
+const SESSION_KEY = "wardyou_session";
 
 export interface Session {
   userId: string;

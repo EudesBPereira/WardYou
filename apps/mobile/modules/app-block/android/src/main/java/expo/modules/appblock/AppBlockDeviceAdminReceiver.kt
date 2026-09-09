@@ -6,7 +6,7 @@ import android.content.Intent
 
 /**
  * Device Admin registration — the only thing that stops a child from simply
- * long-pressing the Wityu icon and tapping "Desinstalar": while an app is an
+ * long-pressing the WardYou icon and tapping "Desinstalar": while an app is an
  * active device administrator, Android REFUSES to uninstall it (the option
  * fails with "this app is a device administrator"). Deactivating it first is a
  * deliberate, multi-step trip into Settings → Security → Device admin apps,

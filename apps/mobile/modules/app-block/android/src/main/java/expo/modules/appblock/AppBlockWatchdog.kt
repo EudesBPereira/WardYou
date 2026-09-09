@@ -20,7 +20,7 @@ import android.os.SystemClock
  * doing nothing but a prefs read when everything is already healthy.
  */
 object AppBlockWatchdog {
-  const val ACTION_TICK = "com.wityu.app.APPBLOCK_WATCHDOG"
+  const val ACTION_TICK = "com.wardyou.app.APPBLOCK_WATCHDOG"
   // 10 min: short enough that a killed process is back quickly, long enough to
   // stay within the OEM/Doze budget for allow-while-idle alarms. The shield's
   // own 5-min heartbeat covers the "process still alive" case for free.

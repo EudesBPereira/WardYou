@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 
 /**
  * One-time codes bridging the server-side OAuth callback and the mobile app.
- * After a successful external login the API redirects to `wityu://auth/callback?code=…`;
+ * After a successful external login the API redirects to `wardyou://auth/callback?code=…`;
  * the app then POSTs that code to `/external/exchange` to receive the real tokens.
  * Ports `ExternalAuthCodeStore` from the legacy .NET API. In-memory + short-lived —
  * fine for a single instance; move to Redis if the API is ever scaled out.

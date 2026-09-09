@@ -9,18 +9,18 @@ const iosMapsKey = process.env.GOOGLE_MAPS_IOS_KEY ?? "";
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: "WardYou",
-  slug: "wityu",
-  scheme: "wityu",
+  slug: "wardyou",
+  scheme: "wardyou",
   version: "0.1.0",
   orientation: "portrait",
   icon: "./assets/icon.png",
   userInterfaceStyle: "light",
   ios: {
     supportsTablet: true,
-    bundleIdentifier: "com.wityu.app",
-    // Universal Links: https://app.wityu.com/... opens the app (requires the
+    bundleIdentifier: "com.wardyou.app",
+    // Universal Links: https://app.wardyou.com/... opens the app (requires the
     // matching apple-app-site-association file hosted at that domain).
-    associatedDomains: ["applinks:app.wityu.com"],
+    associatedDomains: ["applinks:app.wardyou.com"],
     config: {
       googleMapsApiKey: iosMapsKey,
     },
@@ -30,19 +30,19 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
   },
   android: {
-    package: "com.wityu.app",
+    package: "com.wardyou.app",
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? "./google-services.json",
     // Lets the app show the system "ignore battery optimizations" dialog so the
     // trip-tracking foreground service survives aggressive OEM power managers
     // (Xiaomi & co. kill optimized apps' services when the app is swiped away).
     permissions: ["android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS"],
-    // App Links: verified https://app.wityu.com/... deep links (requires the
+    // App Links: verified https://app.wardyou.com/... deep links (requires the
     // assetlinks.json file hosted at that domain).
     intentFilters: [
       {
         action: "VIEW",
         autoVerify: true,
-        data: [{ scheme: "https", host: "app.wityu.com" }],
+        data: [{ scheme: "https", host: "app.wardyou.com" }],
         category: ["BROWSABLE", "DEFAULT"],
       },
     ],

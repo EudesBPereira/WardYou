@@ -6,7 +6,7 @@ import type { PolicyDto, AppRuleDto, SleepDto, BlockDto } from "./queries";
 
 // Must match apps/mobile/app.config.ts `android.package` — always allowed,
 // on top of whatever an admin marks IsWhitelisted in app rules.
-export const WARDYOU_PACKAGE = "com.wityu.app";
+export const WARDYOU_PACKAGE = "com.wardyou.app";
 
 export interface EnforcementDecision {
   enabled: boolean;

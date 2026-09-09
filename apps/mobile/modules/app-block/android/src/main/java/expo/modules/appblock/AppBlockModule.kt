@@ -275,7 +275,7 @@ class AppBlockModule : Module() {
     // --- Antifurto (Modo Guarda) screen lock ---
     // Locks the device like the power button (unlock requires the owner's
     // biometrics/device PIN) via the AccessibilityService global action — no
-    // Device Admin needed. Requires the Wityu accessibility service to be
+    // Device Admin needed. Requires the WardYou accessibility service to be
     // enabled and Android 9+ (GLOBAL_ACTION_LOCK_SCREEN is API 28).
 
     Function("canLockScreen") {

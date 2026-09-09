@@ -21,7 +21,7 @@ export const LINK_TYPE = { accountLinked: 1, managedProfile: 2, pendingInvite: 3
 const ONLINE_WINDOW_MS = 5 * 60_000;
 const LOW_BATTERY = 15;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const INVITE_BASE_URL = "https://app.wityu.com/join";
+const INVITE_BASE_URL = "https://app.wardyou.com/join";
 
 export function presence(lastSeenAt: Date | null, battery: number | null): "online" | "offline" | "alert" {
   if (battery !== null && battery <= LOW_BATTERY) return "alert";

@@ -7,7 +7,7 @@ import android.provider.Settings
 import android.view.accessibility.AccessibilityEvent
 
 /**
- * Enforces Wityu's parental app-blocking policy on-device. Soft enforcement
+ * Enforces WardYou's parental app-blocking policy on-device. Soft enforcement
  * only: when a blocked (or, in firewall/block-all mode, any non-allowed)
  * package comes to the foreground, it sends the user Home. No Device Admin /
  * real lock (out of scope).
@@ -15,7 +15,7 @@ import android.view.accessibility.AccessibilityEvent
  * Firewall mode = block-all + a whitelist of allowed apps. To avoid bricking
  * the phone (and an infinite Home loop) it ALWAYS allows a small set of
  * essentials — the launcher itself, the dialer, Settings and system UI — on top
- * of Wityu and whatever the guardian allowed. Only reads the foreground package
+ * of WardYou and whatever the guardian allowed. Only reads the foreground package
  * name; never screen content, never sends anything off-device.
  */
 class AppBlockAccessibilityService : AccessibilityService() {
@@ -46,7 +46,7 @@ class AppBlockAccessibilityService : AccessibilityService() {
     super.onServiceConnected()
     instance = this
     // The shield (and its watchdog) must NOT depend on the RN app being alive:
-    // the guardian closes Wityu, the OEM kills the process, and enforcement
+    // the guardian closes WardYou, the OEM kills the process, and enforcement
     // used to die with it. This service is OS-bound and survives/rebinds on its
     // own, so IT is the right owner of the keep-alive — start both from here
     // whenever a policy is active. Idempotent.
@@ -89,7 +89,7 @@ class AppBlockAccessibilityService : AccessibilityService() {
 
     val whitelisted = AppBlockPrefs.whitelistedPackages(applicationContext).contains(packageName) &&
       !expiredTemp.contains(packageName) // an expired grant is no longer a pass
-    // During sleep/schedule the whitelist collapses (only Wityu + live temp
+    // During sleep/schedule the whitelist collapses (only WardYou + live temp
     // allows survive) — same rule as computeEnforcementState's hardBlock.
     if (whitelisted && !hardBlockNow) return
 

@@ -24,7 +24,7 @@ const EXTRA_SOURCE = { ChildRequest: 0, TaskReward: 1, ManualGrant: 2 } as const
 const COMPLETION_STATUS = { PendingApproval: 0, Approved: 1, Rejected: 2, Expired: 3 } as const;
 const COMPLETION_STATUS_NAMES: Record<number, string> = { 0: "PendingApproval", 1: "Approved", 2: "Rejected", 3: "Expired" };
 
-const PROTECTED_APP = "wityu";
+const PROTECTED_APP = "wardyou";
 
 // ── Timed states (encoded — the legacy schema is frozen, no new columns) ──
 // A future expiry rides inside the AppCategory varchar(40) as
@@ -32,8 +32,8 @@ const PROTECTED_APP = "wityu";
 // clean `allowedUntil`/`pausedUntil` ISO fields. The timed remote pause uses a
 // synthetic app_rules row (PAUSE_SENTINEL) that is hidden from every listing.
 const UNTIL_SEP = "|until:";
-const SENTINEL_PREFIX = "__wityu.";
-const PAUSE_SENTINEL = "__wityu.pause";
+const SENTINEL_PREFIX = "__wardyou.";
+const PAUSE_SENTINEL = "__wardyou.pause";
 
 function encodeCategory(base: string | null | undefined, until: Date | null): string {
   const clean = (base ?? "Other").split(UNTIL_SEP)[0].trim().slice(0, 20) || "Other";

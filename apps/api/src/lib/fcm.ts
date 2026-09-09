@@ -76,12 +76,12 @@ export async function sendPush(deviceToken: string, message: PushMessage): Promi
       ...(message.data ? { data: message.data } : {}),
       android: {
         priority: message.highPriority || message.dataOnly ? "high" : "normal",
-        // wityu_sos_v2: channel with the long attention-grabbing vibration
+        // wardyou_sos_v2: channel with the long attention-grabbing vibration
         // pattern (Android channels are immutable, hence the v2 id). Clients
         // that predate v2 fall back to their default channel via FCM.
         ...(message.dataOnly
           ? {}
-          : { notification: { channel_id: message.highPriority ? "wityu_sos_v2" : "default" } }),
+          : { notification: { channel_id: message.highPriority ? "wardyou_sos_v2" : "default" } }),
       },
     },
   };

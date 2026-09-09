@@ -116,7 +116,7 @@ object AppBlockOverlay {
     }
   }
 
-  private const val FSI_CHANNEL = "wityu_blocked_fullscreen"
+  private const val FSI_CHANNEL = "wardyou_blocked_fullscreen"
   private const val FSI_NOTIF_ID = 4212
 
   private fun fireFullScreenIntent(context: Context, pkg: String, label: String): Boolean {
@@ -127,7 +127,7 @@ object AppBlockOverlay {
         nm.createNotificationChannel(ch)
       }
       val uri = android.net.Uri.parse(
-        "wityu://blocked?pkg=${android.net.Uri.encode(pkg)}&label=${android.net.Uri.encode(label)}",
+        "wardyou://blocked?pkg=${android.net.Uri.encode(pkg)}&label=${android.net.Uri.encode(label)}",
       )
       val activityIntent = Intent(Intent.ACTION_VIEW, uri).apply {
         setPackage(context.packageName)
@@ -213,7 +213,7 @@ object AppBlockOverlay {
       setPadding(dp(24), dp(28), dp(24), dp(24))
     }
 
-    // Brand badge: the real Wityu launcher icon (not an emoji) — it's the app's
+    // Brand badge: the real WardYou launcher icon (not an emoji) — it's the app's
     // own identity the child already recognises on the home screen.
     val badge = android.widget.ImageView(ctx).apply {
       val icon = try {

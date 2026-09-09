@@ -8,7 +8,7 @@ import { colors } from "@/theme";
 import { storage } from "@/lib/storage";
 import * as AppBlock from "@modules/app-block";
 
-export const SHIELD_SETUP_DONE_KEY = "wityu_shield_setup_done";
+export const SHIELD_SETUP_DONE_KEY = "wardyou_shield_setup_done";
 
 /**
  * One-time "harden the shield" walkthrough for the child's device. Aggressive

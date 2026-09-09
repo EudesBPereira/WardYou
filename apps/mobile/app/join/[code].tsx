@@ -1,2 +1,2 @@
-// Matches the path form wityu://join/CODE and https://app.wityu.com/join/CODE.
+// Matches the path form wardyou://join/CODE and https://app.wardyou.com/join/CODE.
 export { JoinInviteScreen as default } from "@/features/family/JoinInviteScreen";

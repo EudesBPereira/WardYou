@@ -58,7 +58,7 @@ function localDateString(d = new Date()): string {
 export async function reportUsage(childUserId: string): Promise<void> {
   if (Platform.OS !== "android" || !AppBlock.hasUsageAccess()) return;
   try {
-    const deviceId = await storage.getItem(`wityu_push_device_${childUserId}`);
+    const deviceId = await storage.getItem(`wardyou_push_device_${childUserId}`);
     if (!deviceId) return; // no registered device yet → nothing to attribute usage to
     const items = AppBlock.getUsageToday()
       .filter((i) => i.packageName !== WARDYOU_PACKAGE && i.minutes > 0)

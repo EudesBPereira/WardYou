@@ -4,7 +4,7 @@ import { Text } from "@/components/ui";
 import { colors } from "@/theme";
 
 /**
- * Landing route for the OAuth deep link (`wityu://auth/callback?code=…`).
+ * Landing route for the OAuth deep link (`wardyou://auth/callback?code=…`).
  * The auth session (WebBrowser) consumes the code and sets the session, but
  * Expo Router ALSO navigates to the link's path — without this screen that
  * navigation hit the default "Unmatched Route" 404 for a flash right after

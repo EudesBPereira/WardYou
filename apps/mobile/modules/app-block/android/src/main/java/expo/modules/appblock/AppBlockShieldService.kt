@@ -12,7 +12,7 @@ import android.os.IBinder
 
 /**
  * "Escudo" foreground service: a lightweight always-on FGS whose only job is
- * to keep the Wityu process at foreground priority while parental enforcement
+ * to keep the WardYou process at foreground priority while parental enforcement
  * is enabled, so aggressive OEM task killers (MIUI/EMUI/ColorOS…) don't kill
  * the process and silently flip the AccessibilityService toggle off. It does
  * no work of its own — the AccessibilityService enforces; this keeps it alive.
@@ -20,7 +20,7 @@ import android.os.IBinder
  */
 class AppBlockShieldService : Service() {
   companion object {
-    private const val CHANNEL_ID = "wityu_protection"
+    private const val CHANNEL_ID = "wardyou_protection"
     private const val NOTIFICATION_ID = 4211
     /** Enforcement state passed IN, so this service never has to read
      *  SharedPreferences: it runs in its own process (`:shield`) where a prefs
@@ -88,7 +88,7 @@ class AppBlockShieldService : Service() {
   }
 
   /**
-   * The guardian swiped Wityu out of recents ("fechar todos"). On aggressive
+   * The guardian swiped WardYou out of recents ("fechar todos"). On aggressive
    * OEMs that kills the app's task — but this service lives in its OWN process
    * (`android:process=":shield"` + stopWithTask="false"), so it stays up and
    * the child's phone remains enforced with the app closed. Re-assert anyway.

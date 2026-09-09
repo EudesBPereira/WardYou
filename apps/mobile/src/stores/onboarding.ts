@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { storage } from "@/lib/storage";
 
-const KEY = "wityu_onboarding_ack";
+const KEY = "wardyou_onboarding_ack";
 
 /** Which adult experience a brand-new account picked on the first-login setup
  *  screen, while it still has no family membership (server profile

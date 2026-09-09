@@ -10,7 +10,7 @@ import { useSession } from "@/stores/session";
 // restarts the location service without any user interaction, even with the
 // app killed. Runs in the same headless JS context as the location task.
 
-const TASK_NAME = "wityu-push-background";
+const TASK_NAME = "wardyou-push-background";
 
 /** The payload shape varies across expo-notifications versions/platforms —
  *  hunt for our `type` field wherever the FCM data ended up. */

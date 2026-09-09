@@ -8,7 +8,7 @@ import java.util.Calendar
 /**
  * Native evaluation of the TIME-dependent parental rules, against the device's
  * own clock. The JS layer still computes the full policy every ~60s, but that
- * decision is a snapshot: with the Wityu app closed (the normal state on a
+ * decision is a snapshot: with the WardYou app closed (the normal state on a
  * child's phone) nothing re-evaluates it, so a sleep window would never start
  * blocking and a "liberado por 1h" grant would never expire. Both are enforced
  * here instead, so the AccessibilityService alone is a complete enforcer.

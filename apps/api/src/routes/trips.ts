@@ -544,7 +544,7 @@ export async function registerTripsRoutes(app: FastifyInstance) {
       travelGroupId: invite.TravelGroupId,
       inviteCode: invite.InviteCode,
       expiresAt: invite.ExpiresAt.toISOString(),
-      inviteLink: `wityu://travel/invite/${invite.InviteCode}`,
+      inviteLink: `wardyou://travel/invite/${invite.InviteCode}`,
     });
   });
 
