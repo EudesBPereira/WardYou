@@ -15,34 +15,56 @@ MAUI client — the MAUI app is discarded, but the **existing Azure PostgreSQL d
   finishing a unit of work; it tracks phase status, what's wired end-to-end, and what's still open
   (deploy, Maps keys, push FCM, payments, legal review).
 
-### Marca "WardYou" vs. identificadores tecnicos congelados (rename 2026-08-23)
+### Marca "WardYou" — rename tecnico CONCLUIDO (2026-09-09)
 
-O produto se chamava **Wityu** e foi renomeado para **WardYou** (dominio `wardyou.com`). O rename foi
-aplicado apenas ao que e **visivel ou cosmetico**: nome de exibicao do app, strings dos 4 locales,
-templates de e-mail, docs, comentarios e nomes de pacote npm (`@wardyou/mobile`, `@wardyou/api`).
+O produto se chamava **Wityu** e foi renomeado para **WardYou** (dominio `wardyou.com`). O rename
+cosmetico saiu em 2026-08-23; o rename dos **identificadores tecnicos** saiu em **2026-09-09**.
 
-**Os identificadores abaixo continuam `wityu` DE PROPOSITO — nao "corrija" nenhum deles:**
+> **A tabela de "identificadores congelados" que existia aqui foi REMOVIDA de proposito.**
+> Ela se justificava por producao existir — usuarios com o app instalado, linhas `__wityu.*` gravadas
+> em `app_rules`, tokens ja emitidos, canais de notificacao ja criados no aparelho, convites ja
+> distribuidos. **Nada disso existia.** Confirmado em 2026-09-09: nao ha producao; o ambiente `mvp-sf`
+> era legado e esta fora do ar. Aproveitada a janela, tudo foi renomeado antes do lancamento.
 
-| Identificador | Onde | Por que esta congelado |
-|---|---|---|
-| `com.wityu.app` | `app.config.ts` (package/bundleId), `enforcementLogic.ts` | Trocar cria um app NOVO na Play Store: usuarios existentes nao recebem update, a assinatura muda e o vinculo com o Firebase quebra |
-| `google-services.json` (`wityu-499413`) | `apps/mobile/` | Arquivo gerado pelo Firebase, amarrado ao package acima. Editar a mao quebra o FCM |
-| `PROTECTED_APP = "wityu"` | `parentalService.ts` | Casa com `com.wityu.app` via `.includes()` para impedir que o app bloqueie a si mesmo. Trocar **desliga a autoprotecao do modo crianca** |
-| `__wityu.` / `__wityu.pause` | `parentalService.ts` (sentinelas) | Valores **gravados na tabela `app_rules`** em producao. Trocar orfana as regras existentes |
-| `JWT_ISSUER=Wityu` / `JWT_AUDIENCE=Wityu.App` | `env.ts`, `.env` | Trocar invalida todo token emitido (logout forcado da base) e quebra a compat com o legado .NET |
-| `wityu://` (scheme) | `app.config.ts`, `auth.ts`, deep links | Registrado nos consoles OAuth (Google/Apple). Trocar sem atualizar la quebra o login externo |
-| `wityu_*` (storage keys) | `stores/*.ts`, `pushService.ts`, etc. | Trocar faz todo usuario instalado perder sessao e configuracoes. So com codigo de migracao |
-| `wityu_sos` / `wityu_sos_v2` | `pushService.ts`, `fcm.ts` | Canais de notificacao Android sao **imutaveis** apos criados |
-| `wityu-trip-location-broadcast` / `wityu-push-background` | `tripLocationTracking.native.ts`, `pushBackgroundTask.native.ts` | Nomes de task do expo-task-manager, **registrados no SO** e persistidos entre reinicios. Trocar orfana a task ja registrada nos aparelhos instalados |
-| `wityu-api-96164`, `wityuacr96164`, `wityu-kv-mvpsf` | Azure | Azure nao renomeia Web App/ACR/Key Vault in-place; exige recriar infra + novo DNS |
-| `app.wityu.com` | deep links / `INVITE_BASE_URL` | Migrar exige hospedar `assetlinks.json` + AASA no dominio novo e manter o antigo pelos links ja distribuidos |
+**Renomeado** (typecheck api+mobile limpos, 28/28 unitarios, 59/59 e2e contra o QA):
+`com.wityu.app` -> `com.wardyou.app` · `wityu://` -> `wardyou://` · `app.wityu.com` -> `app.wardyou.com` ·
+`JWT_ISSUER/AUDIENCE` -> `WardYou`/`WardYou.App` · chaves de storage `wityu_*` -> `wardyou_*` ·
+canais `wityu_sos`/`wityu_sos_v2`/`wityu_protection`/`wityu_blocked_fullscreen` -> `wardyou_*` ·
+prefs nativas `wityu_app_block_prefs` -> `wardyou_app_block_prefs` · action do watchdog
+`com.wityu.app.APPBLOCK_WATCHDOG` -> `com.wardyou.app....` · tasks `wityu-trip-location-broadcast` /
+`wityu-push-background` -> `wardyou-*` · sentinelas `__wityu.*` -> `__wardyou.*` ·
+`PROTECTED_APP` -> `"wardyou"` · `slug`/`scheme` -> `wardyou` · strings nativas dos 4 locales.
 
-Ao migrar qualquer um deles, faca como projeto proprio, com plano de migracao de dados/usuarios.
+**Consequencias operacionais do rename** (nao "corrija" achando que e bug):
+- `google-services.json` ainda aponta para `com.wityu.app` no projeto `wityu-499413`. **O build Android
+  quebra ate registrar o package novo num projeto Firebase novo e baixar o arquivo.** Acao do fundador.
+- `apps/mobile/android/` e gerado: o package novo so chega no APK via `expo prebuild`.
+- Redirect URIs `wardyou://auth/callback` precisam ser cadastrados nos consoles OAuth (Google/Apple).
+- `app.wardyou.com` precisa de DNS + `assetlinks.json`/AASA (arquivos prontos em `docs/deeplinks/`).
+
+**Mantido em `wityu` de proposito:** o comentario `Wityu.Contracts.Auth.AuthResponse` em
+`routes/auth.ts` (referencia historica a um tipo do .NET legado, que nunca se chamou WardYou).
+
+Auditoria original dos residuos e estrategia de convivencia (hoje so valor historico):
+[docs/RENAME-WITYU-WARDYOU.md](docs/RENAME-WITYU-WARDYOU.md).
 
 npm workspaces monorepo:
 - `apps/mobile` — Expo (SDK 56) client: Expo Router, TypeScript strict, NativeWind v4, Reanimated 4,
   i18next (pt/en/es/fr), Zustand, TanStack Query, react-native-maps.
 - `apps/api` — Node/TypeScript API ("Caminho B") over the existing Azure PostgreSQL, introspected via Prisma.
+
+### Autorizacao duravel: commit e push por conta propria (2026-09-09)
+
+O fundador autorizou **commitar e dar push conforme julgar necessario**, sem pedir a cada vez, e manter
+o repositorio atualizado ao longo do trabalho. Nao e preciso perguntar antes de cada commit.
+
+Continua valendo o bom senso:
+- **Commits pequenos e tematicos**, nao um despejo unico de tudo que mudou.
+- **Nunca commitar segredo.** `apps/api/.env*`, `apps/mobile/.env` e `google-services.json` sao
+  gitignored — conferir com `git check-ignore -q <arquivo>` antes, se houver duvida.
+- **Verificar antes de commitar**: typecheck (api + mobile) e `npm test` nos dois workspaces.
+- ⚠️ **`sed -i` do Git Bash converte CRLF -> LF** e suja o `git status` com dezenas de arquivos que
+  nao mudaram de conteudo. Conferir com `git diff --name-only` (mudanca real) antes de `git add -A`.
 
 ## Build / Run Commands
 
@@ -79,14 +101,26 @@ safety-critical logic added 2026-07-09 (`deriveAppProfile` in the API, `computeE
 `tsconfig.json` (`exclude: ["**/*.test.ts"]`) since `node:test`/`node:assert` types would otherwise
 need `@types/node`, which clashes with RN/DOM global types elsewhere in the app.
 
-### Deployed API (production)
+### Deployed API — QA (nao existe producao)
 
-The Node API is **live** on Azure: `https://wityu-api-96164.azurewebsites.net` (Web App for Containers
-`wityu-api-96164`, image in ACR `wityuacr96164`, RG `mvp-sf`). `apps/mobile/.env`'s
-`EXPO_PUBLIC_API_BASE_URL` points here. Redeploy = `az acr build -r wityuacr96164 -t wityu-api:latest -f
-apps/api/Dockerfile .` (from repo root) then `az webapp restart`. Env/secrets live in the Web App's app
-settings, not the repo. Full deploy runbook is in SUMMARY.md → "Deploy da API". Note: the API does **not**
-run migrations (schema is owned by the introspected DB).
+**Nao ha ambiente de producao.** O antigo `wityu-api-96164` / RG `mvp-sf` (subscription pessoal) e
+**legado e esta fora do ar**. O caminho e: validar no QA -> depois criar producao.
+
+A API roda em **QA** no Azure Container Apps, tenant NEOBPO
+(subscription `9bbce015-49c1-4a55-98b3-33a39cfebc23`, RG `wardyou`, westus3):
+
+- URL: `https://wardyou-qa-api.orangesand-7bad7871.westus3.azurecontainerapps.io`
+- Container App `wardyou-qa-api` · imagem `cloudorinqaacr.azurecr.io/wardyou-api:qa`
+- Banco: `wardyou-qa-psql` / database `wardyou_qa` (PG 16, B1ms). Schema criado por `prisma db push`
+  a partir do `schema.prisma` introspectado — **nao ha migrations e a API nao roda nenhuma**.
+- ACR e Container Apps env sao **reusados do `cloudorin-qa`** (outro projeto na mesma subscription).
+- Redeploy: `powershell -File apps/api/scripts/deploy-qa.ps1` (da raiz do repo).
+- Segredos: `apps/api/.env.qa` (gitignored) + secrets do Container App, nao o repo.
+
+⚠️ `min-replicas 0` — o primeiro request sofre cold start. ⚠️ O `az acr build` **precisa** de um contexto
+limpo (o `deploy-qa.ps1` monta um): rodar da raiz estoura o MAX_PATH do Windows dentro de `node_modules`.
+⚠️ A rede NEOBPO intercepta TLS — `REQUESTS_CA_BUNDLE=~/.azure/cacert-corp.pem` para o az,
+`NODE_EXTRA_CA_CERTS` para o Node, senao tudo falha com erro de certificado.
 
 ### Android APK build (local, no EAS)
 
@@ -107,6 +141,32 @@ cd android
 `HKLM\SYSTEM\CurrentControlSet\Control\FileSystem` (needs admin), and (2) CMake ≥3.30 pinned in
 `apps/mobile/android/app/build.gradle` (`android { externalNativeBuild { cmake { version "3.30.5" } } }`) —
 the default 3.22.1 isn't long-path-aware. `subst`/junctions don't help (Expo autolinking realpath-resolves).
+
+### Rede corporativa NEOBPO: interceptacao de TLS quebra TODA ferramenta nova
+
+A rede intercepta HTTPS com um CA proprio. O Windows confia nele (navegador funciona), mas **cada
+runtime tem truststore proprio** e nenhum o conhece. Ja derrubou quatro ferramentas, cada uma com uma
+correcao diferente. Ao introduzir qualquer ferramenta nova que baixe algo, assuma que vai falhar assim:
+
+| Runtime | Sintoma | Correcao |
+|---|---|---|
+| Python (az CLI) | `CERTIFICATE_VERIFY_FAILED` | `REQUESTS_CA_BUNDLE=~/.azure/cacert-corp.pem` |
+| Java (sdkmanager, **Gradle**) | `Failed to download any source lists!` | `JAVA_OPTS=-Djavax.net.ssl.trustStoreType=Windows-ROOT` |
+| Node | erro de certificado em fetch/https | `NODE_EXTRA_CA_CERTS=~/.azure/cacert-corp.pem` |
+| winget | `0x8a15005e` certificado nao confere | `--source winget` (quem falha e a fonte `msstore`) |
+| npm | `ERR_SSL_WRONG_VERSION_NUMBER` | intermitente; repetir costuma passar |
+
+O bundle `~/.azure/cacert-corp.pem` = certifi do az CLI + os 122 CAs do store do Windows, concatenados.
+
+**Duas armadilhas do `sdkmanager` no Windows** (ambas fazem ele sair com **exit 0 sem instalar nada**):
+1. **Licencas**: canalizar `y` para o `.bat` NAO funciona — ele le do console e ignora o stdin. Gravar
+   os hashes em `C:\Android\licenses\android-sdk-license` (e afins), como CI faz.
+2. **Exit code mentiroso**: `& $sdkm ... | Select-String ...` faz `$LASTEXITCODE` refletir o
+   `Select-String`, nao o sdkmanager. **Sempre conferir no disco** (`Test-Path C:\Android\platform-tools`)
+   em vez de confiar na saida do comando.
+
+**Scripts `.ps1` deste repo precisam ser ASCII PURO.** O PowerShell 5.1 le `.ps1` como ANSI quando nao
+ha BOM; um travessao ou acento dentro de string corrompe o parser dali em diante.
 
 ### Environment
 

@@ -15,6 +15,105 @@
 > **Todo o código acionável foi entregue** — o que resta é validação em aparelho (usuário) + ações externas
 > (Google OAuth público, LGPD, pagamentos, Play Store) — ver seções abaixo.
 
+## 🟢 AMBIENTE DE QA NO AR (2026-09-09) — Azure NEOBPO, 59/59 e2e passando
+
+**Produção não existe.** O ambiente `mvp-sf` (subscription pessoal, `wityu-api-96164`) é legado e está
+fora do ar; a partir de agora o caminho é: QA → validar → **depois** criar produção. Isso invalidou a
+tabela de identificadores congelados do CLAUDE.md (ver seção seguinte).
+
+**Subscription:** `9bbce015-49c1-4a55-98b3-33a39cfebc23` — "Assinatura do Visual Studio Professional",
+tenant NEOBPO (`neobpo.com.br`), usuário `eudes.pereira@neohype.co`. ⚠️ Benefício VS tem **teto de
+crédito mensal** e a subscription **já hospeda o `cloudorin-qa` inteiro** — atenção ao custo somado.
+
+### Recursos criados (RG `wardyou`)
+
+| Recurso | Nome | Detalhe |
+|---|---|---|
+| PostgreSQL Flexible | `wardyou-qa-psql` | B1ms Burstable, PG **16.15**, 32 GB, westus3, ~US$ 13/mês |
+| Database | `wardyou_qa` | **33 tabelas** criadas via `prisma db push` |
+| Container App | `wardyou-qa-api` | 0.25 vCPU / 0.5 GiB, **min-replicas 0**, max 2 |
+| Managed Identity | `wardyou-qa-id` | AcrPull em `cloudorinqaacr` |
+
+**Reusado do `cloudorin-qa`** (compartilhável, sem dado): ACR `cloudorinqaacr` (repo `wardyou-api:qa`)
+e Container Apps env `cloudorin-qa-cae`. O **banco é próprio** — dados de localização de menores não
+dividem servidor com outro produto.
+
+**URL da API de QA:** `https://wardyou-qa-api.orangesand-7bad7871.westus3.azurecontainerapps.io`
+Segredos em `apps/api/.env.qa` (gitignored) + secrets do Container App. Deploy: `apps/api/scripts/deploy-qa.ps1`.
+
+### Verificado por execução contra o QA real
+- `/health` → `{"status":"ok","service":"wardyou-api"}`
+- Register → grava no banco; Login → PBKDF2 round-trip OK; rota protegida sem token → 401
+- **`e2e-kids.mjs` 44/44** e **`e2e-trips.mjs` 15/15** — módulo parental e trajetos ponta a ponta
+- typecheck api+mobile limpos, **28/28** testes unitários
+
+### 🔴 Achado de segurança novo (encontrado pelo QA)
+**O JWT sai sem `iss` e sem `aud`, e a API aceita tokens sem esses claims.** `server.ts:42-43` registra
+`sign: { iss, aud }` + `verify: { allowedIss, allowedAud }`, mas `buildAuthResponse` chama
+`app.jwt.sign(payload, { expiresIn })` — as opções por chamada **substituem** as do plugin em vez de
+somar, então o token sai só com `sub/email/name/iat/exp`. Payload real capturado do QA:
+`{"sub":"…","email":"…","name":"…","iat":…,"exp":…}`. Ou seja, a validação de issuer/audience que o
+código aparenta ter **não está em vigor**. Não corrigido ainda — decisão pendente.
+
+### ⚠️ Postura de QA que NÃO pode ir para produção
+- Regra de firewall **`AllowAzureServices-QA-ONLY` (0.0.0.0)** no `wardyou-qa-psql`: necessária porque um
+  Container App de plano Consumption tem **160+ IPs de saída instáveis**. Produção precisa de VNet +
+  private endpoint, não desta regra.
+- `min-replicas 0` → cold start no primeiro request. Para uma sessão de testes:
+  `az containerapp update -g wardyou -n wardyou-qa-api --min-replicas 1` (e voltar para 0 depois).
+
+### Rede corporativa NEOBPO intercepta TLS
+CA próprio quebrou **npm, winget e az CLI** com erro de certificado. Contornado com um bundle combinado
+(certifi + 122 CAs do Windows) em `~/.azure/cacert-corp.pem`, exportado via `REQUESTS_CA_BUNDLE`. Para
+Node é `NODE_EXTRA_CA_CERTS`. Se o CI rodar dentro da rede, isso vira configuração fixa.
+
+### ⬜ Pendente nesta frente
+- **Projeto Firebase novo** para o package `com.wardyou.app` (decisão tomada) — ação no console, sua.
+  Sem `google-services.json` novo, o build Android quebra e não há push.
+- APK de QA com `EXPO_PUBLIC_API_BASE_URL` apontando para a URL acima (exige `expo prebuild`).
+### ✅ Falha de rede deixou de se disfarçar de "não há nada" (2026-09-09)
+
+**Correção de diagnóstico:** o SUMMARY e o relatório de 08/09 diziam "o spinner gira para sempre".
+**Está errado.** Verificado no código: os dois usos de `isPending` (`blocked.tsx`, `ElderHome.tsx`) são
+de **mutations**, não de queries. No TanStack Query v5, quando uma query falha, `isLoading` volta a
+`false` e `data` fica `undefined` — então o default do destructuring (`= []`) assume e a tela renderiza
+o **estado vazio**.
+
+O bug real era pior que travar: uma falha de rede aparecia como *"Nenhuma zona cadastrada"* ou
+*"Nenhum membro na família"*. Num app de segurança familiar, o responsável pode concluir que não há o
+que ver — quando na verdade não houve resposta do servidor.
+
+**Corrigido de forma central**, no `QueryCache` do root layout, cobrindo as 29 telas de uma vez em vez
+de 29 edições: `stores/connection.ts` (sinal global), `components/ConnectionBanner.tsx` (faixa âmbar com
+"tentar de novo" que refaz todas as queries) e o wiring em `app/_layout.tsx`. Também criei
+`components/ui/ErrorState.tsx` para uso inline por tela, seguindo o formato do estado vazio existente.
+i18n: `common.loadError` + `common.retry` nos 4 locales (paridade 611 × 4). Typecheck limpo, 21/21.
+
+## 🏷️ Auditoria final do rename Wityu → WardYou (2026-09-08) — sobrou 1 item, e ele é P0
+
+Varredura completa (`git grep -i wityu`): **~180 ocorrências em 51 arquivos**, classificadas em
+[docs/RENAME-WITYU-WARDYOU.md](docs/RENAME-WITYU-WARDYOU.md). Resultado:
+
+- 🔴 **Único resíduo funcional:** os `strings.xml` do módulo nativo `app-block` (4 locales × 5 strings)
+  nunca foram renomeados. São os textos que **o Android** mostra em Ajustes → Acessibilidade, na
+  notificação persistente do escudo e na tela de Device Admin — ou seja, um app "WardYou" pede
+  acessibilidade em nome de "Wityu". **Corrigir antes do lançamento**; risco técnico zero (é só texto
+  de exibição, os nomes dos recursos e IDs de canal não mudam).
+- 🔒 **~95 ocorrências congeladas de propósito.** A auditoria achou **5 congelados não documentados**,
+  agora na tabela do CLAUDE.md: `wityu_app_block_prefs` (SharedPreferences no aparelho),
+  `com.wityu.app.APPBLOCK_WATCHDOG` (action de PendingIntent no AlarmManager), e os canais
+  `wityu_protection` / `wityu_blocked_fullscreen`.
+- ⚪ **Boa parte da lista de rename não se aplica:** não há mais nenhum `.csproj`/`.sln`/`Migrations/`
+  no repo e a branch `master` (MAUI legado) **não existe mais no remoto** — logo "renomear projetos
+  `Wityu.*`", "namespaces" e "compat com migrações EF Core" são N/A. Também não há fila (sem Service
+  Bus/BullMQ), nem telemetria nomeada (só `Fastify({ logger: true })`).
+- ⚠️ **Achado lateral:** não existe OpenAPI/Swagger no `apps/api`. Não é resíduo de marca — é falta de
+  documentação de API. Backlog próprio.
+- ✅ Já 100% WardYou: nome no launcher, os 4 locales JS (21 ocorrências cada, zero "Wityu"), templates
+  de e-mail, ícones/splash, pacotes npm.
+- 🧪 O doc traz o comando de guarda (`git grep` + allowlist) que deve devolver **vazio** pós-fix — dá
+  pra plugar no `ci.yml` como `scripts/check-brand.sh`.
+
 ## 🔎 Auditoria de estado (2026-08-29) — o que esta funcionando de verdade
 
 Verificado **por execucao**, nao por leitura: typecheck api+mobile OK, `node --test` **7/7 api + 21/21
