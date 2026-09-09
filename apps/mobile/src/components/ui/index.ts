@@ -12,6 +12,8 @@ export { Badge } from "./Badge";
 export type { BadgeProps } from "./Badge";
 export { ListItem } from "./ListItem";
 export type { ListItemProps } from "./ListItem";
+export { ErrorState } from "./ErrorState";
+export type { ErrorStateProps } from "./ErrorState";
 export { ScreenContainer } from "./ScreenContainer";
 export type { ScreenContainerProps } from "./ScreenContainer";
 export { ScreenHeader } from "./ScreenHeader";

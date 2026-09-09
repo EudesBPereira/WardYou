@@ -83,7 +83,9 @@
     "online": "Online",
     "offline": "Offline",
     "needsAttention": "Needs attention",
-    "seeAll": "See all"
+    "seeAll": "See all",
+    "loadError": "Couldn't load. Check your connection.",
+    "retry": "Try again"
   },
   "nav": {
     "home": "Home",

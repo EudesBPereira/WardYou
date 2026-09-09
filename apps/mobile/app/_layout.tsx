@@ -11,7 +11,7 @@ import { StatusBar } from "expo-status-bar";
 import * as SplashScreenNative from "expo-splash-screen";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryCache, QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useFonts, Sora_600SemiBold, Sora_700Bold } from "@expo-google-fonts/sora";
 import {
   Inter_400Regular,
@@ -31,10 +31,20 @@ import { useTripLocationBroadcast } from "@/features/trips/useTripLocationBroadc
 import { usePushRegistration } from "@/services/push/usePushRegistration";
 import { useAppBlockRequests } from "@/features/parental/useAppBlockRequests";
 import { useMyProfile } from "@/features/profile/queries";
+import { useConnection } from "@/stores/connection";
+import { ConnectionBanner } from "@/components/ConnectionBanner";
 
 SplashScreenNative.preventAutoHideAsync().catch(() => {});
 
+// O `queryCache` alimenta a faixa global de erro (ConnectionBanner). Sem ele,
+// uma query que falha deixa `data` undefined, o default do destructuring (`= []`)
+// assume e a tela mostra o ESTADO VAZIO — uma falha de rede vira "Nenhuma zona
+// cadastrada". Ver `stores/connection.ts`.
 const queryClient = new QueryClient({
+  queryCache: new QueryCache({
+    onError: () => useConnection.getState().setHasError(true),
+    onSuccess: () => useConnection.getState().setHasError(false),
+  }),
   defaultOptions: {
     queries: { retry: 2, staleTime: 30_000 },
   },
@@ -150,9 +160,12 @@ export default function RootLayout() {
           {/* Not ready yet: just the product background under the native splash
               — no second branded screen to flash through. */}
           {ready ? (
-            <AppLockGate>
-              <AuthGate />
-            </AppLockGate>
+            <View className="flex-1">
+              <ConnectionBanner />
+              <AppLockGate>
+                <AuthGate />
+              </AppLockGate>
+            </View>
           ) : (
             <View className="flex-1 bg-background" />
           )}

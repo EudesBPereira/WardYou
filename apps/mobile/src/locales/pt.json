@@ -83,7 +83,9 @@
     "online": "Online",
     "offline": "Offline",
     "needsAttention": "Precisa de atenção",
-    "seeAll": "Ver todos"
+    "seeAll": "Ver todos",
+    "loadError": "Não foi possível carregar. Verifique sua conexão.",
+    "retry": "Tentar de novo"
   },
   "nav": {
     "home": "Início",

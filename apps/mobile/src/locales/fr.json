@@ -83,7 +83,9 @@
     "online": "En ligne",
     "offline": "Hors ligne",
     "needsAttention": "Attention requise",
-    "seeAll": "Tout voir"
+    "seeAll": "Tout voir",
+    "loadError": "Chargement impossible. Vérifiez votre connexion.",
+    "retry": "Réessayer"
   },
   "nav": {
     "home": "Accueil",
