@@ -47,3 +47,10 @@ apps/api/dist/
 apps/mobile/modules/app-block/android/build/
 apps/mobile/modules/app-block/android/.cxx/
 apps/mobile/modules/app-block/android/.gradle/
+
+# Chaves de service account (FCM/Firebase/GCP). NUNCA versionar: contem chave
+# privada RSA que permite enviar push para qualquer aparelho do projeto.
+# A do FCM vive em ~/.wardyou/wardyou-fcm.json, fora do repo.
+*fcm*.json
+*service-account*.json
+*-adminsdk-*.json

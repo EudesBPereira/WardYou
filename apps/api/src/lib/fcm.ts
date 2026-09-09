@@ -39,7 +39,16 @@ function init(): void {
   const raw = process.env.FCM_SERVICE_ACCOUNT_JSON;
   if (!raw?.trim()) return;
   try {
-    const sa = JSON.parse(raw) as ServiceAccount;
+    // Aceita JSON cru OU base64. Passar o JSON cru por CLI perde as aspas em
+    // algumas plataformas: em 2026-09-09 o `az containerapp secret set` no
+    // Windows gravou `{type:service_account,...}` (az.cmd -> cmd come as aspas),
+    // e o push ficou silenciosamente desligado. Base64 nao tem esse problema em
+    // lugar nenhum, e nao muda nada para quem ja passa JSON.
+    let texto = raw.trim();
+    if (!texto.startsWith("{")) {
+      texto = Buffer.from(texto, "base64").toString("utf8");
+    }
+    const sa = JSON.parse(texto) as ServiceAccount;
     jwtClient = new JWT({
       email: sa.client_email,
       key: sa.private_key,

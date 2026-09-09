@@ -1,4 +1,4 @@
-# Deploy da API para o ambiente de QA (Azure Container Apps) — rodar da RAIZ do repo.
+# Deploy da API para o ambiente de QA (Azure Container Apps) - rodar da RAIZ do repo.
 #
 #   powershell -File apps/api/scripts/deploy-qa.ps1
 #
@@ -41,7 +41,7 @@ Push-Location $stage
 & $az acr build --no-logs -r $acr -t $img -f apps/api/Dockerfile . --only-show-errors
 $buildOk = $?
 Pop-Location
-if (-not $buildOk) { throw "ACR build falhou — imagem NAO publicada." }
+if (-not $buildOk) { throw "ACR build falhou - imagem NAO publicada." }
 
 Write-Host "==> Atualizando o Container App"
 & $az containerapp update -g $rg -n $app --image "$acr.azurecr.io/$img" --only-show-errors --output none
@@ -64,11 +64,11 @@ Write-Host "    health: 200 OK"
 Write-Host "==> Smoke test (401 = rota existe e exige auth; 404 = imagem velha)"
 try {
   Invoke-WebRequest -Uri "$base/api/v1/profile/me" -TimeoutSec 10 -UseBasicParsing | Out-Null
-  Write-Warning "Esperava 401 e veio 2xx — verificar."
+  Write-Warning "Esperava 401 e veio 2xx - verificar."
 } catch {
   $code = $_.Exception.Response.StatusCode.value__
   if ($code -eq 401) { Write-Host "    profile/me: 401 OK" }
-  elseif ($code -eq 404) { throw "profile/me: 404 — a imagem no ar esta desatualizada." }
+  elseif ($code -eq 404) { throw "profile/me: 404 - a imagem no ar esta desatualizada." }
   else { Write-Warning "profile/me: $code (inesperado)" }
 }
 
