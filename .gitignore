@@ -54,3 +54,5 @@ apps/mobile/modules/app-block/android/.gradle/
 *fcm*.json
 *service-account*.json
 *-adminsdk-*.json
+*client_secret*.json
+*oauth*client*.json
