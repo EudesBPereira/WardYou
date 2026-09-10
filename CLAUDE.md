@@ -68,6 +68,20 @@ Continua valendo o bom senso:
 - ⚠️ **`sed -i` do Git Bash converte CRLF -> LF** e suja o `git status` com dezenas de arquivos que
   nao mudaram de conteudo. Conferir com `git diff --name-only` (mudanca real) antes de `git add -A`.
 
+### Autorizacao duravel: corrigir bug e entregar build, sem perguntar (2026-09-09)
+
+O fundador autorizou: **ao encontrar um bug, corrigir e ja gerar/publicar um APK
+novo**, sem perguntar antes. Vale para bug — mudanca de comportamento de produto
+(remover recurso, mudar fluxo, trocar identidade) continua sendo decisao dele.
+
+Ciclo completo em um comando: `powershell -File apps/mobile/scripts/ship.ps1`
+(build -> publica no Blob e no Firebase App Distribution). Ver o script.
+
+Antes de entregar, sempre: typecheck (api + mobile), `npm test` nos dois, e o
+e2e que cobre a area mexida. **Nunca publicar binario compilado antes da
+correcao** — em 2026-09-09 quase distribui um APK sem o fix do travamento do app
+lock porque o build era anterior a correcao.
+
 ## Build / Run Commands
 
 Run from repo root (workspaces):
