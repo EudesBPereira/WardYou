@@ -33,8 +33,13 @@ import { useAppBlockRequests } from "@/features/parental/useAppBlockRequests";
 import { useMyProfile } from "@/features/profile/queries";
 import { useConnection } from "@/stores/connection";
 import { ConnectionBanner } from "@/components/ConnectionBanner";
+import { wireQueryToAppLifecycle } from "@/lib/queryFocus";
 
 SplashScreenNative.preventAutoHideAsync().catch(() => {});
+
+// No React Native o TanStack nao tem `window`, entao `refetchOnWindowFocus` e
+// `refetchOnReconnect` ficam inertes sem esta ponte. Ver `lib/queryFocus.ts`.
+wireQueryToAppLifecycle();
 
 // O `queryCache` alimenta a faixa global de erro (ConnectionBanner). Sem ele,
 // uma query que falha deixa `data` undefined, o default do destructuring (`= []`)
@@ -46,7 +51,13 @@ const queryClient = new QueryClient({
     onSuccess: () => useConnection.getState().setHasError(false),
   }),
   defaultOptions: {
-    queries: { retry: 2, staleTime: 30_000 },
+    queries: {
+      retry: 2,
+      staleTime: 30_000,
+      // So passam a valer com o `wireQueryToAppLifecycle` acima.
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+    },
   },
 });
 

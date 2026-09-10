@@ -1,9 +1,9 @@
 import { useEffect } from "react";
-import { Platform, Vibration } from "react-native";
+import { AppState, Platform, Vibration } from "react-native";
 import { useQueryClient } from "@tanstack/react-query";
 import { env, useMocks } from "@/lib/env";
 import { useSession } from "@/stores/session";
-import { connectRealtime, disconnectRealtime, type RealtimeHandlers } from "./realtimeService";
+import { connectRealtime, disconnectRealtime, isRealtimeConnected, type RealtimeHandlers } from "./realtimeService";
 import { fullParentalSync } from "@/features/parental/enforcement";
 
 // Long, insistent buzz (Uber-style "driver arriving") so a family SOS grabs
@@ -87,6 +87,31 @@ export function useRealtimeSync() {
     };
 
     connectRealtime(env.apiBaseUrl, token, handlers);
-    return () => disconnectRealtime();
+
+    // RECONEXAO AO VOLTAR DO SEGUNDO PLANO.
+    //
+    // Sem isto, todo evento em tempo real se perdia depois que o app ia para o
+    // background: o Android suspende o thread de JS, o socket morre, e as deps
+    // deste efeito ([status, token, qc]) nao mudam no retorno — entao ele nunca
+    // reconectava. Encontrado em QA (2026-09-09): o responsavel aprovou a
+    // entrada e a tela do novo membro ficou parada em "Conta em analise" para
+    // sempre, apesar de o servidor ter emitido `MembershipApproved`
+    // corretamente (validado por e2e-approval-realtime.mjs, 9/9).
+    //
+    // Ao voltar tambem invalidamos TUDO: o socket estava morto durante o
+    // periodo em background, entao qualquer evento daquela janela foi perdido e
+    // reconectar sozinho nao recupera o que passou.
+    const sub = AppState.addEventListener("change", (estado) => {
+      if (estado !== "active") return;
+      if (!isRealtimeConnected()) {
+        connectRealtime(env.apiBaseUrl, token, handlers);
+      }
+      qc.invalidateQueries();
+    });
+
+    return () => {
+      sub.remove();
+      disconnectRealtime();
+    };
   }, [status, token, qc]);
 }
