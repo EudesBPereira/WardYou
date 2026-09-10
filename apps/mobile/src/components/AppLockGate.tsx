@@ -6,7 +6,7 @@ import { Text, Button } from "@/components/ui";
 import { colors } from "@/theme";
 import { useSession } from "@/stores/session";
 import { useAppLock } from "@/stores/appLock";
-import { authenticateBiometric } from "@/services/auth/biometrics";
+import { authenticateBiometric, hasDeviceAuth } from "@/services/auth/biometrics";
 
 /**
  * WhatsApp-style biometric lock. Wraps the app: while authenticated and the
@@ -22,7 +22,17 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
   const [prompting, setPrompting] = useState(false);
   const appState = useRef(AppState.currentState);
 
-  const active = authed && hydrated && enabled;
+  // Um aparelho SEM biometria e SEM bloqueio de tela nao tem como autenticar
+  // ninguem: `authenticateBiometric` sempre falha. Como o app lock passou a vir
+  // LIGADO por padrao, armar nesse aparelho trancaria o usuario para fora do app
+  // PARA SEMPRE — inclusive de Ajustes, que fica atras do proprio bloqueio.
+  // `null` = ainda verificando; nao arma ate saber.
+  const [podeAutenticar, setPodeAutenticar] = useState<boolean | null>(null);
+  useEffect(() => {
+    hasDeviceAuth().then(setPodeAutenticar);
+  }, []);
+
+  const active = authed && hydrated && enabled && podeAutenticar === true;
 
   // Re-lock on every background → foreground transition (like WhatsApp).
   useEffect(() => {
