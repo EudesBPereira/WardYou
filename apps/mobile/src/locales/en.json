@@ -148,7 +148,7 @@
       "title": "Invite to your family",
       "subtitle": "Share a link to add a member",
       "action": "Share invite link",
-      "shareMessage": "Join my family on WardYou. Code: {{code}} — {{link}}"
+      "shareMessage": "Join my family on WardYou.\n\nCode: {{code}}\n\n{{link}}"
     },
     "create": {
       "title": "Create family",

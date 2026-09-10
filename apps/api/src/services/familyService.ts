@@ -1,5 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 import { prisma } from "../db.js";
+import { env } from "../env.js";
 import { AppError } from "../lib/errors.js";
 import { writeAudit } from "./auditService.js";
 import { emitToUser, emitToUsers } from "../realtime.js";
@@ -21,7 +22,11 @@ export const LINK_TYPE = { accountLinked: 1, managedProfile: 2, pendingInvite: 3
 const ONLINE_WINDOW_MS = 5 * 60_000;
 const LOW_BATTERY = 15;
 const CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-const INVITE_BASE_URL = "https://app.wardyou.com/join";
+/** Base do link de convite. Antes era fixa em `https://app.wardyou.com/join`,
+ *  dominio que NAO tem DNS — todo convite compartilhado levava a lugar nenhum.
+ *  Agora cai para a landing da propria API, que funciona hoje. */
+const inviteBaseUrl = () =>
+  env.INVITE_BASE_URL ?? `${(env.PUBLIC_API_URL ?? "").replace(/\/+$/, "")}/join`;
 
 export function presence(lastSeenAt: Date | null, battery: number | null): "online" | "offline" | "alert" {
   if (battery !== null && battery <= LOW_BATTERY) return "alert";
@@ -95,7 +100,7 @@ async function uniqueInvitationCode(): Promise<string> {
 }
 
 function inviteLink(code: string): string {
-  return `${INVITE_BASE_URL}?familyInvite=${encodeURIComponent(code)}`;
+  return `${inviteBaseUrl()}?familyInvite=${encodeURIComponent(code)}`;
 }
 
 async function requireUser(userId: string) {

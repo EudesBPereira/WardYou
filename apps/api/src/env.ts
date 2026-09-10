@@ -27,6 +27,11 @@ const schema = z.object({
   // an "Authorized redirect URI" registered on the Google OAuth client. When unset,
   // it is derived from the incoming request (proto+host).
   PUBLIC_API_URL: z.string().optional(),
+  // Base do link de convite. Sem valor, cai para `${PUBLIC_API_URL}/join`, que
+  // serve a landing da propria API — o link funciona sem depender de DNS de
+  // dominio proprio. Apontar para `https://app.wardyou.com/join` quando o
+  // dominio subir (exige assetlinks.json/AASA para o App Link verificar).
+  INVITE_BASE_URL: z.string().optional(),
   // Azure Communication Services Email — powers the password-reset email. When
   // unset, the reset link is logged instead of sent (dev fallback).
   ACS_CONNECTION_STRING: z.string().optional(),

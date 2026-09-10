@@ -44,8 +44,15 @@ Pop-Location
 if (-not $buildOk) { throw "ACR build falhou - imagem NAO publicada." }
 
 Write-Host "==> Atualizando o Container App"
-& $az containerapp update -g $rg -n $app --image "$acr.azurecr.io/$img" --only-show-errors --output none
+# --revision-suffix e OBRIGATORIO aqui. `containerapp update --image` com a MESMA
+# tag e no-op no Azure: a string da imagem nao mudou, entao ele nao cria revisao
+# nova e o app segue servindo a imagem ANTIGA. Pego em 2026-09-09: o ACR tinha
+# imagem de 00:10 e a revisao ativa era de 22:17, com o deploy reportando sucesso
+# (health 200 + smoke 401, porque as rotas antigas continuavam existindo).
+$suffix = "r" + (Get-Date -Format "MMddHHmmss")
+& $az containerapp update -g $rg -n $app --image "$acr.azurecr.io/$img" --revision-suffix $suffix --only-show-errors --output none
 if (-not $?) { throw "Update do Container App falhou." }
+Write-Host "    revisao nova: $app--$suffix"
 
 $fqdn = & $az containerapp show -g $rg -n $app --query properties.configuration.ingress.fqdn -o tsv
 $base = "https://$fqdn"

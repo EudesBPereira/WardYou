@@ -4,6 +4,7 @@ import jwt from "@fastify/jwt";
 import { env } from "./env.js";
 import { AppError } from "./lib/errors.js";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerJoinRoutes } from "./routes/join.js";
 import { registerAuthRoutes } from "./routes/auth.js";
 import { registerFamilyRoutes } from "./routes/family.js";
 import { registerTripsRoutes } from "./routes/trips.js";
@@ -66,6 +67,8 @@ async function main() {
   });
 
   await app.register(registerHealthRoutes);
+  // Landing publica do convite — sem prefixo, para o link ficar curto.
+  await app.register(registerJoinRoutes);
   await app.register(registerAuthRoutes, { prefix: "/api/v1/auth" });
   await app.register(registerFamilyRoutes, { prefix: "/api/v1/families" });
   await app.register(registerTripsRoutes, { prefix: "/api/v1/travels" });
