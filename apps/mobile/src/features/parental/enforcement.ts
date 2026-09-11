@@ -139,6 +139,12 @@ export async function syncEnforcement(childUserId: string, remainingMinutes: num
       hardBlockWindowsJson: JSON.stringify(hardBlockWindows(sleepSchedule, blockSchedules)),
       tempAllowsJson: JSON.stringify(tempAllowDeadlines(appRules)),
       pauseUntilMillis: pauseUntil != null ? String(pauseUntil) : "0",
+      // Website blocking (see websites.tsx / upsertBlockedWebsites): reused
+      // as-is, already normalized host strings from the server. Shipped
+      // regardless of `firewall`/hardBlock — a website block is independent
+      // of the app-level allow/block decision (a whitelisted browser can
+      // still have specific sites blocked inside it).
+      blockedWebsites: policy.blockedWebsites ?? [],
     });
   } catch {
     // Best-effort — the AccessibilityService just keeps enforcing whatever it

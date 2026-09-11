@@ -48,6 +48,24 @@ export default function WebsitesScreen() {
         }
       />
 
+      {/* Honest scope disclosure: this reads the browser's address bar, it
+          does not filter DNS/network traffic. A guardian who doesn't know
+          that will assume "blocked" means blocked everywhere, including an
+          incognito tab or a link opened inside another app — neither is
+          covered. Always visible, not just on empty state, since it matters
+          the moment a guardian is deciding whether to rely on this. */}
+      <Card className="mt-2 flex-row items-start gap-3 border border-warning-300 bg-warning-100">
+        <Ionicons name="information-circle" size={20} color={colors.warning[700]} />
+        <View className="flex-1 gap-1">
+          <Text variant="label" className="font-body-semibold text-warning-700">
+            {t("parental.websites.coverageTitle")}
+          </Text>
+          <Text variant="caption" className="text-warning-700">
+            {t("parental.websites.coverageBody")}
+          </Text>
+        </View>
+      </Card>
+
       {isLoading ? (
         <ActivityIndicator className="mt-10" color={colors.brand[500]} />
       ) : domains.length === 0 ? (

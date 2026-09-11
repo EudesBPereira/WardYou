@@ -35,6 +35,11 @@ class EnforcementStateRecord(
    *  child phone doesn't stay hard-blocked past the guardian's intended
    *  pause duration — see enforcementLogic.ts `pauseDeadlineMillis`. */
   @Field var pauseUntilMillis: String = "0",
+  /** Domains to block inside a recognized mobile browser (address-bar text
+   *  read via AccessibilityService — see AppBlockWebsiteRules.kt). Already
+   *  normalized host strings from the server (see parentalService.ts
+   *  normalizeDomain); this side just persists and matches them. */
+  @Field var blockedWebsites: List<String> = emptyList(),
 ) : Record, Serializable
 
 /**
@@ -125,6 +130,7 @@ class AppBlockModule : Module() {
         state.hardBlockWindowsJson,
         state.tempAllowsJson,
         state.pauseUntilMillis,
+        state.blockedWebsites,
       )
       // The shield FGS tracks enforcement: alive while a policy is enabled,
       // gone the moment the guardian disables it. Keeps the process (and with

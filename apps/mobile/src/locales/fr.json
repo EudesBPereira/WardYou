@@ -528,7 +528,9 @@
       "empty": "Aucun site bloqué.",
       "addTitle": "Bloquer un site",
       "addSubtitle": "Indiquez le domaine (ex. : exemple.com).",
-      "add": "Bloquer"
+      "add": "Bloquer",
+      "coverageTitle": "Comment fonctionne ce blocage",
+      "coverageBody": "Nous lisons l'adresse saisie dans le navigateur (Chrome et autres navigateurs courants) pour bloquer le site. Cela ne couvre pas les onglets de navigation privée, ni les sites ouverts dans d'autres applis (comme le navigateur intégré d'Instagram)."
     },
     "policy": {
       "title": "Temps d'écran",

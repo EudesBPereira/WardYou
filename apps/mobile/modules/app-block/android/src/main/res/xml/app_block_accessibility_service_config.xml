@@ -1,6 +1,20 @@
+<!--
+  canRetrieveWindowContent=true + typeWindowContentChanged were added
+  2026-09-11 for website blocking (reading a browser's address bar text — see
+  AppBlockAccessibilityService.checkBlockedWebsite / AppBlockWebsiteRules.kt).
+  Before that, this service only knew the FOREGROUND PACKAGE, never screen
+  content — app-level blocking never needed it. IMPORTANT: on a device where
+  WardYou's accessibility permission was already granted before this change,
+  Android is known to cache the previously-granted AccessibilityServiceInfo
+  (including canRetrieveWindowContent) at bind time and NOT pick up a new
+  capability from an updated APK on its own — the user must turn the WardYou
+  accessibility service off and back on in Settings once after installing a
+  build with this change, or the new capability silently doesn't apply (app-
+  level blocking keeps working either way; only website blocking needs it).
+-->
 <accessibility-service xmlns:android="http://schemas.android.com/apk/res/android"
-  android:accessibilityEventTypes="typeWindowStateChanged"
+  android:accessibilityEventTypes="typeWindowStateChanged|typeWindowContentChanged"
   android:accessibilityFeedbackType="feedbackGeneric"
-  android:canRetrieveWindowContent="false"
+  android:canRetrieveWindowContent="true"
   android:notificationTimeout="100"
   android:description="@string/app_block_service_description" />

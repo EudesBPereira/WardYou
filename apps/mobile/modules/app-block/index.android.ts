@@ -18,6 +18,14 @@ export interface EnforcementState {
    *  against the device clock on every accessibility event so a closed
    *  child phone doesn't stay paused past the guardian's intended duration. */
   pauseUntilMillis?: string;
+  /** Domains to block inside a recognized mobile browser (address-bar text
+   *  read via AccessibilityService — see AppBlockAccessibilityService.kt /
+   *  AppBlockWebsiteRules.kt). Best-effort: covers Chrome, Firefox, Edge,
+   *  Samsung Internet and a generic fallback for other browsers, by reading
+   *  what's typed in the address bar; does NOT reach a private/incognito tab
+   *  reliably (unverified on-device), an in-app webview (e.g. a link opened
+   *  inside Instagram), or a browser this heuristic fails to recognize. */
+  blockedWebsites?: string[];
 }
 
 export interface UsageItem {

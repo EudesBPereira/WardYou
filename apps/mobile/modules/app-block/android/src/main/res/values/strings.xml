@@ -1,6 +1,6 @@
 <resources>
   <string name="app_block_service_label">Proteção WardYou</string>
-  <string name="app_block_service_description">Permite que o WardYou aplique os limites de uso de apps definidos pelo responsável (fecha apps bloqueados ou fora do horário permitido). Não lê nem coleta conteúdo da tela.</string>
+  <string name="app_block_service_description">Permite que o WardYou aplique os limites de uso de apps e o bloqueio de sites definidos pelo responsável (fecha apps bloqueados, fora do horário permitido, ou sites bloqueados no navegador). Para bloquear sites, lê apenas o endereço mostrado na barra de endereço do navegador — nunca o conteúdo das páginas, senhas ou mensagens — e nada é enviado para fora do aparelho.</string>
   <string name="app_block_shield_channel">Proteção ativa</string>
   <string name="app_block_shield_title">Proteção WardYou ativa</string>
   <string name="app_block_shield_body">Este aparelho está protegido pela sua família.</string>

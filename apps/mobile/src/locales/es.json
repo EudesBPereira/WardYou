@@ -528,7 +528,9 @@
       "empty": "No hay sitios bloqueados.",
       "addTitle": "Bloquear sitio",
       "addSubtitle": "Indica el dominio (ej.: ejemplo.com).",
-      "add": "Bloquear"
+      "add": "Bloquear",
+      "coverageTitle": "Cómo funciona este bloqueo",
+      "coverageBody": "Leemos la dirección escrita en el navegador (Chrome y otros populares) para bloquear el sitio. No cubre pestañas de incógnito ni sitios abiertos dentro de otras apps (como el navegador interno de Instagram)."
     },
     "policy": {
       "title": "Tiempo de pantalla",

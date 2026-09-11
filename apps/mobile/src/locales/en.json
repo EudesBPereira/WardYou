@@ -528,7 +528,9 @@
       "empty": "No blocked sites.",
       "addTitle": "Block site",
       "addSubtitle": "Enter the domain (e.g. example.com).",
-      "add": "Block"
+      "add": "Block",
+      "coverageTitle": "How this block works",
+      "coverageBody": "We read the address typed into the browser (Chrome and other popular ones) to block the site. It doesn't cover private/incognito tabs or sites opened inside other apps (like Instagram's built-in browser)."
     },
     "policy": {
       "title": "Screen time",

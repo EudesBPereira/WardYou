@@ -528,7 +528,9 @@
       "empty": "Nenhum site bloqueado.",
       "addTitle": "Bloquear site",
       "addSubtitle": "Informe o domínio (ex.: exemplo.com).",
-      "add": "Bloquear"
+      "add": "Bloquear",
+      "coverageTitle": "Como esse bloqueio funciona",
+      "coverageBody": "Lemos o endereço digitado no navegador (Chrome e outros populares) para bloquear o site. Não cobre abas anônimas nem sites abertos dentro de outros apps (como o navegador interno do Instagram)."
     },
     "policy": {
       "title": "Tempo de tela",

@@ -8,6 +8,7 @@ export interface EnforcementState {
   hardBlockWindowsJson?: string;
   tempAllowsJson?: string;
   pauseUntilMillis?: string;
+  blockedWebsites?: string[];
 }
 
 export interface UsageItem {

@@ -9,6 +9,7 @@ private const val KEY_ENABLED = "enforcement_enabled"
 private const val KEY_BLOCK_ALL = "block_all"
 private const val KEY_BLOCKED_PACKAGES = "blocked_packages"
 private const val KEY_WHITELISTED_PACKAGES = "whitelisted_packages"
+private const val KEY_BLOCKED_WEBSITES = "blocked_websites"
 
 /**
  * Enforcement state cache shared between the JS layer (writer — computes the
@@ -31,6 +32,7 @@ object AppBlockPrefs {
     hardBlockWindowsJson: String = "[]",
     tempAllowsJson: String = "{}",
     pauseUntilMillis: String = "0",
+    blockedWebsites: List<String> = emptyList(),
   ) {
     prefs(context).edit()
       .putBoolean(KEY_ENABLED, enabled)
@@ -40,6 +42,7 @@ object AppBlockPrefs {
       .putString(KEY_HARD_WINDOWS, hardBlockWindowsJson)
       .putString(KEY_TEMP_ALLOWS, tempAllowsJson)
       .putLong(KEY_PAUSE_UNTIL, pauseUntilMillis.toLongOrNull() ?: 0L)
+      .putString(KEY_BLOCKED_WEBSITES, JSONArray(blockedWebsites).toString())
       .apply()
   }
 
@@ -74,6 +77,11 @@ object AppBlockPrefs {
 
   fun whitelistedPackages(context: Context): Set<String> =
     toSet(prefs(context).getString(KEY_WHITELISTED_PACKAGES, null))
+
+  /** Domains to block inside a recognized browser (see
+   *  AppBlockAccessibilityService.checkBlockedWebsite / AppBlockWebsiteRules). */
+  fun blockedWebsites(context: Context): Set<String> =
+    toSet(prefs(context).getString(KEY_BLOCKED_WEBSITES, null))
 
   private fun toSet(json: String?): Set<String> {
     if (json.isNullOrEmpty()) return emptySet()
