@@ -55,6 +55,32 @@ npm workspaces monorepo:
   i18next (pt/en/es/fr), Zustand, TanStack Query, react-native-maps.
 - `apps/api` — Node/TypeScript API ("Caminho B") over the existing Azure PostgreSQL, introspected via Prisma.
 
+### REGRA DURA: agentes em paralelo NUNCA rodam git destrutivo (2026-09-11)
+
+Varios agentes editam **a mesma copia de trabalho** ao mesmo tempo. Qualquer comando git
+que mexa na arvore destroi o trabalho nao commitado de TODOS os outros, sem aviso.
+
+Aconteceu em 2026-09-11: um agente rodou `git stash` para checar se um erro de typecheck
+era pre-existente, o `stash pop` falhou por conflito, e sumiram da arvore ~20 arquivos --
+entre eles a correcao CRITICA do credito duplicado de tarefa. Depois ele tentou
+`git stash drop`; **o classificador de permissao bloqueou**, e so por isso o trabalho
+foi recuperavel.
+
+Para subagentes, no prompt de cada um:
+- **PROIBIDO**: `git stash`, `git checkout -- <path>`, `git restore`, `git reset`,
+  `git clean`, `git commit`, `git push`.
+- **Permitido**: so leitura (`git status`, `git diff`, `git log`, `git show`).
+- Quem commita e a sessao principal, sozinha.
+
+Para verificar se um erro de typecheck e pre-existente **sem** mexer na arvore:
+`git stash` e a ferramenta errada. Use `git show HEAD:<arquivo>` para ler a versao
+commitada, ou rode o typecheck num worktree separado (`git worktree add`).
+
+Sintoma de que aconteceu: `git status` quase limpo, mas os arquivos **nao rastreados**
+continuam la -- `stash`/`checkout --` revertem o rastreado e ignoram o resto.
+Resgate: `git stash list`, exportar para patch (`git stash show -p --binary stash@{0} > resgate.patch`)
+ANTES de qualquer outra coisa, depois `git stash apply` (nunca `pop`: mantem o seguro).
+
 ### Autorizacao duravel: commit e push por conta propria (2026-09-09)
 
 O fundador autorizou **commitar e dar push conforme julgar necessario**, sem pedir a cada vez, e manter
