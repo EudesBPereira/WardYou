@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Modal, Pressable, TextInput, View, type KeyboardTypeOptions } from "react-native";
+import { Keyboard, Modal, Platform, Pressable, TextInput, View, type KeyboardTypeOptions } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
 import { colors } from "@/theme";
@@ -20,6 +20,9 @@ export interface InputModalProps {
   /** Allow confirming with an empty value (optional-note prompts). */
   allowEmpty?: boolean;
   keyboardType?: KeyboardTypeOptions;
+  /** Desligue em campos tecnicos (dominio, codigo): a correcao automatica do
+   *  teclado insere espaco depois do ponto e corrompe o valor. */
+  autoCorrect?: boolean;
   secureTextEntry?: boolean;
   maxLength?: number;
   onConfirm: (value: string) => void;
@@ -39,6 +42,7 @@ export function InputModal({
   error,
   allowEmpty = false,
   keyboardType,
+  autoCorrect = true,
   secureTextEntry,
   maxLength,
   onConfirm,
@@ -52,12 +56,42 @@ export function InputModal({
     if (visible) setValue(initialValue);
   }, [visible, initialValue]);
 
+  // Empurra a folha para cima na altura do teclado.
+  //
+  // Um Modal do Android abre em JANELA PROPRIA, que nao herda o
+  // `adjustResize` da activity -- por isso o teclado simplesmente cobria a
+  // folha e o usuario digitava as cegas (visto na tela "Sites bloqueados" em
+  // 2026-09-11). KeyboardAvoidingView tambem nao resolve dentro de Modal no
+  // Android; medir o teclado e reservar o espaco e o caminho que funciona nas
+  // duas plataformas.
+  const [alturaTeclado, setAlturaTeclado] = useState(0);
+  useEffect(() => {
+    if (!visible) return;
+    const aoMostrar = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillShow" : "keyboardDidShow",
+      (e) => setAlturaTeclado(e.endCoordinates.height),
+    );
+    const aoEsconder = Keyboard.addListener(
+      Platform.OS === "ios" ? "keyboardWillHide" : "keyboardDidHide",
+      () => setAlturaTeclado(0),
+    );
+    return () => {
+      aoMostrar.remove();
+      aoEsconder.remove();
+      setAlturaTeclado(0);
+    };
+  }, [visible]);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <Pressable className="flex-1 justify-end bg-overlay" onPress={loading ? undefined : onClose}>
         <Pressable
           className="rounded-t-3xl bg-surface px-5 pt-5"
-          style={{ paddingBottom: insets.bottom + 24 }}
+          style={{
+            // Com o teclado aberto o recuo da area segura ja esta coberto por
+            // ele -- somar os dois deixaria um vao morto.
+            paddingBottom: alturaTeclado > 0 ? alturaTeclado + 16 : insets.bottom + 24,
+          }}
           onPress={() => {}}
         >
           <View className="mb-4 h-1 w-10 self-center rounded-full bg-border" />
@@ -81,6 +115,7 @@ export function InputModal({
               value={value}
               onChangeText={setValue}
               autoCapitalize={autoCapitalize}
+              autoCorrect={autoCorrect}
               keyboardType={keyboardType}
               secureTextEntry={secureTextEntry}
               maxLength={maxLength}

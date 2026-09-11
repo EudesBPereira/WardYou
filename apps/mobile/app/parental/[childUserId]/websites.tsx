@@ -17,7 +17,11 @@ export default function WebsitesScreen() {
   const domains = policy?.blockedWebsites ?? [];
 
   function add(value: string) {
-    const d = value.trim();
+    // Tira TODO espaco, nao so das pontas: teclado com correcao automatica
+    // insere espaco depois do ponto ("g1. com. br"). O servidor ja recusa isso,
+    // mas e melhor consertar em silencio do que devolver erro por algo que o
+    // usuario nao digitou de proposito.
+    const d = value.replace(/\s+/g, "");
     if (!d) return;
     save.mutate([...domains, d]);
     setAddOpen(false);
@@ -85,6 +89,8 @@ export default function WebsitesScreen() {
         placeholder="exemplo.com"
         confirmLabel={t("parental.websites.add")}
         autoCapitalize="none"
+        autoCorrect={false}
+        keyboardType="url"
         loading={save.isPending}
         onConfirm={add}
         onClose={() => setAddOpen(false)}
