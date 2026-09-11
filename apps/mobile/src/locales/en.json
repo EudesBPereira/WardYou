@@ -817,6 +817,9 @@
     "prompt": "Unlock WardYou",
     "confirm": "Confirm to change the lock"
   },
+  "map": {
+    "recenter": "Recenter map"
+  },
   "protection": {
     "level": {
       "completa": "Full protection",
@@ -831,6 +834,16 @@
         "title": "Accessibility is off",
         "body": "Without it, app limits and blocks aren't enforced — they only show on screen.",
         "oemHint": "Tap, then go to: Downloaded apps → WardYou Protection"
+      },
+      "accessibilityDead": {
+        "title": "Protection has stopped on this device",
+        "body": "Accessibility is on in Settings, but the service isn't running — nothing is being blocked. Turn it off and on again to restart it.",
+        "oemHint": "Tap, then go to: Downloaded apps → WardYou Protection"
+      },
+      "accessibilityUnknown": {
+        "title": "Couldn't verify protection",
+        "body": "This doesn't mean it's down — only that the app couldn't check right now. It will try again on its own.",
+        "oemHint": ""
       },
       "usageAccess": {
         "title": "Usage access is off",

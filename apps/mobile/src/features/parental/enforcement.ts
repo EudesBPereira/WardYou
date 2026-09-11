@@ -190,6 +190,15 @@ export async function fullParentalSync(childUserId: string): Promise<void> {
   }
 }
 
+export type { AccessibilityStatus } from "@modules/app-block";
+
+/** Three-state health of the on-device enforcement service - including the
+ *  honest "unknown". Prefer this over the boolean below wherever the answer
+ *  reaches a human or the guardian. See AppBlockModule.kt. */
+export function getAccessibilityStatus() {
+  return AppBlock.getAccessibilityStatus();
+}
+
 export function isAccessibilityServiceEnabled(): boolean {
   return AppBlock.isAccessibilityServiceEnabled();
 }

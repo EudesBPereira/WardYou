@@ -21,7 +21,15 @@ import { getPushPermissionStatus } from "@/services/push/pushService";
 export type NivelProtecao = "completa" | "limitada" | "acao" | "offline";
 
 export type IdProblema =
+  /** O usuario nunca ligou (ou desligou) a acessibilidade nos Ajustes. */
   | "accessibility"
+  /** Ligada nos Ajustes, mas o servico NAO esta rodando - o caso do servico
+   *  que crashou: o interruptor do Android continua "ligado" e nada bloqueia. */
+  | "accessibilityDead"
+  /** NAO FOI POSSIVEL VERIFICAR. Nao e uma afirmacao de que a protecao caiu.
+   *  Existe para o app parar de gritar "desligada" quando o que houve foi uma
+   *  medicao que nao deu para fazer - ver getAccessibilityStatus(). */
+  | "accessibilityUnknown"
   | "usageAccess"
   | "locationPermission"
   | "locationServices"
@@ -75,8 +83,22 @@ export async function diagnosticar(modoCrianca: boolean): Promise<Diagnostico> {
   if (android) {
     // --- Enforcement (so faz sentido cobrar no aparelho da crianca)
     if (modoCrianca) {
-      if (!AppBlock.isAccessibilityServiceEnabled()) {
-        problemas.push({ id: "accessibility", severidade: "critica", resolver: AppBlock.openAccessibilitySettings });
+      // Tres estados, nao um booleano. "Nao consegui medir" vira um aviso
+      // leve (`degrada`), nunca o alarme vermelho de protecao ausente: um
+      // diagnostico que grita perigo onde nao ha ensina o usuario a ignorar o
+      // aviso, e ai ele nao vale nada no dia em que o perigo for real.
+      switch (AppBlock.getAccessibilityStatus()) {
+        case "not_granted":
+          problemas.push({ id: "accessibility", severidade: "critica", resolver: AppBlock.openAccessibilitySettings });
+          break;
+        case "granted_not_running":
+          problemas.push({ id: "accessibilityDead", severidade: "critica", resolver: AppBlock.openAccessibilitySettings });
+          break;
+        case "unknown":
+          problemas.push({ id: "accessibilityUnknown", severidade: "degrada" });
+          break;
+        case "running":
+          break;
       }
       if (!AppBlock.hasUsageAccess()) {
         problemas.push({ id: "usageAccess", severidade: "critica", resolver: AppBlock.openUsageAccessSettings });

@@ -490,7 +490,9 @@ export async function reportHeartbeat(
   userId: string,
   input: {
     hasUsageAccess: boolean;
-    hasAccessibility: boolean;
+    /** Absent = the device could not measure it. Keep the last known value and
+     *  raise no alert — see the route schema and childQueries.ts useHeartbeat. */
+    hasAccessibility?: boolean;
     adminDisabled?: boolean;
     appVersion?: string;
     batteryLevel?: number;
@@ -500,7 +502,7 @@ export async function reportHeartbeat(
   const data = {
     LastSeenAt: new Date(),
     HasUsageAccess: input.hasUsageAccess,
-    HasAccessibility: input.hasAccessibility,
+    HasAccessibility: input.hasAccessibility ?? existing?.HasAccessibility ?? false,
     AppVersion: input.appVersion ?? existing?.AppVersion ?? null,
     ...(input.batteryLevel !== undefined ? { BatteryLevel: input.batteryLevel } : {}),
   };
@@ -508,7 +510,7 @@ export async function reportHeartbeat(
   // heartbeat (child disabled it, or an OEM task killer did). The guardian
   // must know their shield is down — push + realtime, throttled so a flapping
   // service doesn't spam (in-memory; single container).
-  if (existing?.HasAccessibility === true && !input.hasAccessibility) {
+  if (input.hasAccessibility === false && existing?.HasAccessibility === true) {
     void alertProtectionDisabled(userId);
   }
   // Uninstall protection turned off — the step that PRECEDES removing WardYou

@@ -42,8 +42,30 @@ export interface InstalledApp {
   label: string;
 }
 
+/**
+ * Three-state (plus "unknown") health of the enforcement AccessibilityService.
+ *
+ * `unknown` is deliberately NOT folded into "off": see the `accessibilityStatus`
+ * note in AppBlockModule.kt. Announcing "protection is off" when the honest
+ * answer is "I couldn't check" trains people to dismiss the warning, and then
+ * it is worth nothing on the day protection really is down.
+ */
+export type AccessibilityStatus =
+  /** Granted by the user AND actually bound/running. */
+  | "running"
+  /** Granted, but the enforcer is not running (crashed service) - dangerous:
+   *  the OS toggle still reads "on" while nothing is being enforced. */
+  | "granted_not_running"
+  /** Never granted, or the user turned it off. */
+  | "not_granted"
+  /** Could not measure. Not a claim about protection either way. */
+  | "unknown";
+
 interface AppBlockNativeModule {
   isAccessibilityServiceEnabled(): boolean;
+  /** Added 2026-09-11; absent on an APK built before that - see
+   *  getAccessibilityStatus() for the fallback. */
+  accessibilityStatus?(): string;
   openAccessibilitySettings(): void;
   setEnforcementState(state: EnforcementState): void;
   hasUsageAccess(): boolean;
@@ -94,12 +116,40 @@ try {
   nativeModule = null;
 }
 
-export function isAccessibilityServiceEnabled(): boolean {
+const ACCESSIBILITY_STATUSES: AccessibilityStatus[] = [
+  "running",
+  "granted_not_running",
+  "not_granted",
+  "unknown",
+];
+
+export function getAccessibilityStatus(): AccessibilityStatus {
   try {
-    return nativeModule?.isAccessibilityServiceEnabled() ?? false;
+    // Native module missing entirely (an APK built before this module
+    // existed): there is no way to look, so say exactly that.
+    if (!nativeModule) return "unknown";
+    if (typeof nativeModule.accessibilityStatus === "function") {
+      const raw = nativeModule.accessibilityStatus();
+      return (ACCESSIBILITY_STATUSES as string[]).includes(raw)
+        ? (raw as AccessibilityStatus)
+        : "unknown";
+    }
+    // APK predates accessibilityStatus: the old boolean is all we have. Its
+    // `false` genuinely is ambiguous, but reporting every such device as
+    // "unknown" would silence a real "turn it on" prompt, so the old meaning
+    // is kept for old binaries only.
+    return nativeModule.isAccessibilityServiceEnabled() ? "running" : "not_granted";
   } catch {
-    return false;
+    return "unknown";
   }
+}
+
+/** Legacy boolean. `true` only for a service proven to be running - an
+ *  unverifiable measurement reads as `false` here, so prefer
+ *  getAccessibilityStatus() anywhere the answer is shown to a human or sent
+ *  to the guardian. */
+export function isAccessibilityServiceEnabled(): boolean {
+  return getAccessibilityStatus() === "running";
 }
 
 export function openAccessibilitySettings(): void {

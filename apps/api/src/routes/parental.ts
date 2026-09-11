@@ -126,7 +126,12 @@ export async function registerParentalRoutes(app: FastifyInstance) {
     const p = z
       .object({
         hasUsageAccess: z.boolean(),
-        hasAccessibility: z.boolean(),
+        // Optional since 2026-09-11: the child device omits it when it could
+        // not measure the AccessibilityService (see childQueries.ts
+        // useHeartbeat). Absent means "no news", NOT "off" — sending `false`
+        // for an unverifiable read fired a false "protection is down" push at
+        // the guardian. Older clients always send it, so this stays compatible.
+        hasAccessibility: z.boolean().optional(),
         /** Uninstall protection (device admin) was switched off since the last
          *  heartbeat — a tamper the guardian must hear about immediately. */
         adminDisabled: z.boolean().optional(),

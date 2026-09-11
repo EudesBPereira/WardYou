@@ -817,6 +817,9 @@
     "prompt": "Desbloquea WardYou",
     "confirm": "Confirma para cambiar el bloqueo"
   },
+  "map": {
+    "recenter": "Centrar en el mapa"
+  },
   "protection": {
     "level": {
       "completa": "Protección completa",
@@ -831,6 +834,16 @@
         "title": "Accesibilidad desactivada",
         "body": "Sin esto, los límites y bloqueos de apps no se aplican — solo se ven en pantalla.",
         "oemHint": "Toca y ve a: Downloaded apps → Protección WardYou"
+      },
+      "accessibilityDead": {
+        "title": "La protección se detuvo en este dispositivo",
+        "body": "La accesibilidad está activada en Ajustes, pero el servicio no se está ejecutando — no se bloquea nada. Desactívala y actívala de nuevo para reiniciarla.",
+        "oemHint": "Toca y ve a: Downloaded apps → Protección WardYou"
+      },
+      "accessibilityUnknown": {
+        "title": "No se pudo verificar la protección",
+        "body": "Esto no significa que se haya caído — solo que la app no pudo comprobarlo ahora. La verificación se repite sola.",
+        "oemHint": ""
       },
       "usageAccess": {
         "title": "Acceso de uso desactivado",

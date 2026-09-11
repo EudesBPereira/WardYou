@@ -817,6 +817,9 @@
     "prompt": "Déverrouillez WardYou",
     "confirm": "Confirmez pour modifier le verrouillage"
   },
+  "map": {
+    "recenter": "Recentrer la carte"
+  },
   "protection": {
     "level": {
       "completa": "Protection complète",
@@ -831,6 +834,16 @@
         "title": "Accessibilité désactivée",
         "body": "Sans elle, les limites et blocages d'applis ne s'appliquent pas — ils ne font que s'afficher.",
         "oemHint": "Touchez, puis allez dans : Downloaded apps → Protection WardYou"
+      },
+      "accessibilityDead": {
+        "title": "La protection s'est arrêtée sur cet appareil",
+        "body": "L'accessibilité est activée dans les Réglages, mais le service ne tourne pas — rien n'est bloqué. Désactivez-la puis réactivez-la pour la relancer.",
+        "oemHint": "Touchez, puis allez dans : Downloaded apps → Protection WardYou"
+      },
+      "accessibilityUnknown": {
+        "title": "Impossible de vérifier la protection",
+        "body": "Cela ne veut pas dire qu'elle est tombée — seulement que l'appli n'a pas pu vérifier maintenant. La vérification se répète d'elle-même.",
+        "oemHint": ""
       },
       "usageAccess": {
         "title": "Accès à l'utilisation désactivé",

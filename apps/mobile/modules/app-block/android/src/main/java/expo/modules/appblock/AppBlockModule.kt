@@ -52,6 +52,10 @@ class EnforcementStateRecord(
  * cache the AccessibilityService reads.
  */
 class AppBlockModule : Module() {
+  /** Last application Context we managed to obtain — see context(). */
+  @Volatile
+  private var cachedContext: Context? = null
+
   override fun definition() = ModuleDefinition {
     Name("AppBlock")
 
@@ -90,7 +94,28 @@ class AppBlockModule : Module() {
       JSONObject().put("result", result).put("at", AppBlockPrefs.lastOverlayResultAt(context)).toString()
     }
 
-    // `isServiceEnabled()` only reads Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES —
+    // Three-state diagnosis of the enforcement service, as a string:
+    //
+    //   "running"             granted by the user AND actually bound/alive.
+    //   "granted_not_running" granted, but the enforcer is NOT running — the
+    //                         crashed-service case (see the note below). This
+    //                         is the dangerous one: the OS settings toggle
+    //                         still reads "on" while nothing is enforced.
+    //   "not_granted"         the user never granted it (or turned it off).
+    //   "unknown"             COULD NOT MEASURE. Not the same as "off".
+    //
+    // The fourth value is the point of this function (added 2026-09-11 after a
+    // field report). Collapsing "I couldn't check" into "it's off" is the same
+    // sin as collapsing it into "it's on", just pointed the other way: the
+    // child's panel screamed "Acessibilidade desligada" and the guardian got a
+    // "your shield is down" push while the service was demonstrably bound and
+    // kicking Chrome to Home. A diagnosis that cries wolf is worth nothing the
+    // day the wolf shows up.
+    Function("accessibilityStatus") {
+      accessibilityStatus()
+    }
+
+    // `isServiceGranted()` only reads Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES —
     // the OS list of services the USER granted. It stays true even after the
     // service PROCESS has crashed: Android's AccessibilityManagerService then
     // marks it "crashed" internally (`dumpsys accessibility` shows it under
@@ -107,8 +132,13 @@ class AppBlockModule : Module() {
     // (`hasAccessibility`, see childQueries.ts useHeartbeat) and the
     // ChildHome/ProtectionStatusCard UI stop claiming protection is active
     // when the enforcer is actually dead.
+    //
+    // Legacy boolean, kept so an older JS bundle keeps working. Prefer
+    // `accessibilityStatus` above — this one still collapses "couldn't
+    // measure" into `false`, which is exactly what the three-state version
+    // exists to stop doing.
     Function("isAccessibilityServiceEnabled") {
-      isServiceEnabled() && AppBlockAccessibilityService.instance != null
+      accessibilityStatus() == A11Y_RUNNING
     }
 
     Function("openAccessibilitySettings") {
@@ -155,7 +185,7 @@ class AppBlockModule : Module() {
     // user-visible grant.
 
     Function("canScheduleExactAlarms") {
-      val context = appContext.reactContext ?: return@Function false
+      val context = context() ?: return@Function false
       AppBlockWatchdog.canScheduleExactAlarms(context)
     }
 
@@ -167,7 +197,7 @@ class AppBlockModule : Module() {
     // --- Keep-alive / OEM battery-killer hardening ---
 
     Function("isIgnoringBatteryOptimizations") {
-      val context = appContext.reactContext ?: return@Function false
+      val context = context() ?: return@Function false
       val pm = context.getSystemService(Context.POWER_SERVICE) as? android.os.PowerManager ?: return@Function false
       pm.isIgnoringBatteryOptimizations(context.packageName)
     }
@@ -200,7 +230,7 @@ class AppBlockModule : Module() {
     // the "long-press the icon → Desinstalar" hole on the child's device.
 
     Function("isDeviceAdminActive") {
-      val context = appContext.reactContext ?: return@Function false
+      val context = context() ?: return@Function false
       isAdminActive(context)
     }
 
@@ -239,7 +269,7 @@ class AppBlockModule : Module() {
     // Overlay permission — the fallback path for the blocked-app panel when an
     // OEM suppresses the accessibility overlay (see AppBlockOverlay).
     Function("canDrawOverlays") {
-      val context = appContext.reactContext ?: return@Function false
+      val context = context() ?: return@Function false
       if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) Settings.canDrawOverlays(context) else true
     }
 
@@ -481,7 +511,7 @@ class AppBlockModule : Module() {
   }
 
   private fun hasUsageAccess(): Boolean {
-    val context = appContext.reactContext ?: return false
+    val context = context() ?: return false
     val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager ?: return false
     val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
       appOps.unsafeCheckOpNoThrow(AppOpsManager.OPSTR_GET_USAGE_STATS, Process.myUid(), context.packageName)
@@ -524,9 +554,50 @@ class AppBlockModule : Module() {
     return arr.toString()
   }
 
-  private fun isServiceEnabled(): Boolean {
-    val context = appContext.reactContext ?: return false
-    val expectedComponent = "${context.packageName}/${AppBlockAccessibilityService::class.java.canonicalName}"
+  /**
+   * Three-state (plus "unknown") diagnosis — see the `accessibilityStatus`
+   * Function above for what each value means and why the fourth exists.
+   *
+   * Order of evidence, strongest first:
+   *  1. No Context at all → "unknown". NEVER "not_granted": `reactContext` is
+   *     a WeakReference and can legitimately be null, and answering "the
+   *     protection is off" to "I have no way to look" is a lie that costs the
+   *     user their trust in every future warning.
+   *  2. Not in Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES → "not_granted".
+   *     High confidence and actionable: the user has to turn it on.
+   *  3. Granted: ask the SYSTEM whether the service is actually bound
+   *     (AccessibilityManager.getEnabledAccessibilityServiceList reads
+   *     AccessibilityManagerService's `mBoundServices` — the very same list
+   *     `dumpsys accessibility` prints as "Bound services:"). This is the
+   *     authoritative liveness signal: it is false for a crashed service (the
+   *     bug commit a15bfe4 fixed) and true for a live one, and unlike our own
+   *     `instance` static it does not depend on a lifecycle callback having
+   *     fired in THIS process.
+   *  4. Our own `instance` is kept only as a positive corroborator (and as the
+   *     fallback when the system list can't be read) — never as the sole
+   *     reason to declare the enforcer dead. That inversion is what made a
+   *     working service report "Acessibilidade desligada" on 2026-09-11.
+   */
+  private fun accessibilityStatus(): String {
+    val context = context() ?: return A11Y_UNKNOWN
+    val liveInstance = AppBlockAccessibilityService.instance != null
+    if (!isServiceGranted(context)) {
+      // The one case where a live instance overrules the settings list: we are
+      // demonstrably running, so the read must be the stale/unreadable side.
+      return if (liveInstance) A11Y_RUNNING else A11Y_NOT_GRANTED
+    }
+    return when (isServiceBound(context)) {
+      true -> A11Y_RUNNING
+      false -> if (liveInstance) A11Y_RUNNING else A11Y_GRANTED_NOT_RUNNING
+      // System list unreadable: a null `instance` proves nothing here.
+      null -> if (liveInstance) A11Y_RUNNING else A11Y_UNKNOWN
+    }
+  }
+
+  /** Did the USER grant the service in Android's accessibility settings?
+   *  Stays true after the service process crashes — see isServiceBound(). */
+  private fun isServiceGranted(context: Context): Boolean {
+    val expected = android.content.ComponentName(context, AppBlockAccessibilityService::class.java)
     val enabledServices = Settings.Secure.getString(
       context.contentResolver,
       Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES,
@@ -534,8 +605,70 @@ class AppBlockModule : Module() {
     val splitter = TextUtils.SimpleStringSplitter(':')
     splitter.setString(enabledServices)
     while (splitter.hasNext()) {
-      if (splitter.next().equals(expectedComponent, ignoreCase = true)) return true
+      val entry = splitter.next().trim()
+      if (entry.isEmpty()) continue
+      // Compare as components, not as raw strings: OEM builds have been seen
+      // storing the short form ("pkg/.Class") and stray whitespace, either of
+      // which defeats a plain equals() and would read as "user turned it off".
+      val component = android.content.ComponentName.unflattenFromString(entry) ?: continue
+      if (component.packageName.equals(expected.packageName, ignoreCase = true) &&
+        component.className.equals(expected.className, ignoreCase = true)
+      ) {
+        return true
+      }
     }
     return false
+  }
+
+  /** Is the service actually BOUND and running, per the system? `null` when
+   *  the system list could not be read — which is not the same as `false`. */
+  private fun isServiceBound(context: Context): Boolean? {
+    return try {
+      val manager = context.getSystemService(Context.ACCESSIBILITY_SERVICE)
+        as? android.view.accessibility.AccessibilityManager ?: return null
+      val running = manager.getEnabledAccessibilityServiceList(
+        android.accessibilityservice.AccessibilityServiceInfo.FEEDBACK_ALL_MASK,
+      ) ?: return null
+      val expected = android.content.ComponentName(context, AppBlockAccessibilityService::class.java)
+      running.any { info ->
+        val serviceInfo = info.resolveInfo?.serviceInfo
+        if (serviceInfo != null &&
+          serviceInfo.packageName == expected.packageName &&
+          serviceInfo.name == expected.className
+        ) {
+          return@any true
+        }
+        val component = info.id?.let { android.content.ComponentName.unflattenFromString(it) }
+        component != null &&
+          component.packageName.equals(expected.packageName, ignoreCase = true) &&
+          component.className.equals(expected.className, ignoreCase = true)
+      }
+    } catch (e: Exception) {
+      null
+    }
+  }
+
+  /**
+   * Application Context for the read-only permission probes.
+   *
+   * `appContext.reactContext` is a WeakReference and is legitimately null
+   * outside an active React instance (teardown, reload, background). Every
+   * probe in this module used to spell that `?: return false` — turning "I
+   * could not measure" into a confident "this protection is OFF", which is
+   * how a healthy device ends up with a panel full of red. Caching the last
+   * good application Context makes the probes answer from a real measurement
+   * whenever one has ever been possible in this process.
+   */
+  private fun context(): Context? {
+    val live = appContext.reactContext?.applicationContext
+    if (live != null) cachedContext = live
+    return live ?: cachedContext
+  }
+
+  companion object {
+    const val A11Y_RUNNING = "running"
+    const val A11Y_GRANTED_NOT_RUNNING = "granted_not_running"
+    const val A11Y_NOT_GRANTED = "not_granted"
+    const val A11Y_UNKNOWN = "unknown"
   }
 }

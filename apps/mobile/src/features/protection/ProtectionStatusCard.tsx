@@ -121,5 +121,7 @@ export function ProtectionStatusCard({ modoCrianca }: { modoCrianca: boolean }) 
 
 /** Só estes têm texto de caminho por fabricante; os demais caem no genérico. */
 function temDicaOem(id: string): boolean {
-  return id === "accessibility" || id === "usageAccess" || id === "battery";
+  return (
+    id === "accessibility" || id === "accessibilityDead" || id === "usageAccess" || id === "battery"
+  );
 }

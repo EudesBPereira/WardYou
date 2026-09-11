@@ -6,7 +6,7 @@ import Constants from "expo-constants";
 import { useMocks } from "@/lib/env";
 import { apiClient } from "@/services/api/client";
 import { useSession } from "@/stores/session";
-import { isAccessibilityServiceEnabled, isUsageAccessEnabled } from "./enforcement";
+import { getAccessibilityStatus, isUsageAccessEnabled } from "./enforcement";
 import { consumeAdminDisabledFlag } from "@modules/app-block";
 import { getBatteryPercent } from "@/services/location/locationService";
 import type { TaskDto, CompletionDto } from "./queries";
@@ -87,9 +87,17 @@ export function useHeartbeat() {
       // Battery rides along with the heartbeat (every 60s) — far fresher than
       // the location report, and it's what the guardian's screen shows.
       const batteryLevel = await getBatteryPercent();
+      // `unknown` is OMITTED, not sent as `false`. A false `false` here is not
+      // a cosmetic bug: the server compares it against the last heartbeat and
+      // pushes "a proteção do seu filho caiu" to the guardian (see
+      // parentalService.reportHeartbeat → alertProtectionDisabled). Waking a
+      // parent over a measurement we could not make is how a real alert stops
+      // being believed. The server keeps the previous known value when the
+      // field is absent.
+      const accessibility = getAccessibilityStatus();
       return apiClient.post("/api/v1/parental/heartbeat", {
         hasUsageAccess: isUsageAccessEnabled(),
-        hasAccessibility: isAccessibilityServiceEnabled(),
+        ...(accessibility === "unknown" ? {} : { hasAccessibility: accessibility === "running" }),
         adminDisabled: consumeAdminDisabledFlag(),
         ...(batteryLevel != null ? { batteryLevel } : {}),
         // Was a hardcoded "rn-dev" placeholder — every heartbeat ever sent

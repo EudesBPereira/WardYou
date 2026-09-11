@@ -89,17 +89,55 @@ class AppBlockAccessibilityService : AccessibilityService() {
   /** Throttle for the "is the shield still up?" check in onAccessibilityEvent. */
   private var lastShieldCheckAt: Long = 0L
 
+  /**
+   * FIXED 2026-09-11 (field bug, Redmi Note 10 / MIUI / Android 12): `instance`
+   * used to be published ONLY from onServiceConnected(). That callback is not
+   * guaranteed for every live instance — after the package is replaced
+   * (reinstall / `-r` update) the system re-binds this service and starts
+   * delivering onAccessibilityEvent WITHOUT re-running onServiceConnected.
+   * The result was a service that was demonstrably bound and enforcing
+   * (`dumpsys accessibility` → "Bound services:{…}", "Crashed services:{}",
+   * Chrome getting kicked to Home) while AppBlockModule read `instance == null`
+   * and the child's panel announced "Acessibilidade desligada" — and the
+   * heartbeat told the guardian their shield was down. A false alarm about
+   * protection is the same failure as a false all-clear: it trains people to
+   * ignore the warning.
+   *
+   * onCreate() IS guaranteed for every instance the system constructs, so the
+   * liveness marker is published here, re-asserted on every event (see
+   * onAccessibilityEvent), and still cleared in onDestroy — a crashed/destroyed
+   * service still reads as dead, which is what commit a15bfe4 was after.
+   */
+  override fun onCreate() {
+    super.onCreate()
+    instance = this
+    bootstrapKeepAlive()
+  }
+
   override fun onServiceConnected() {
     super.onServiceConnected()
     instance = this
-    // The shield (and its watchdog) must NOT depend on the RN app being alive:
-    // the guardian closes WardYou, the OEM kills the process, and enforcement
-    // used to die with it. This service is OS-bound and survives/rebinds on its
-    // own, so IT is the right owner of the keep-alive — start both from here
-    // whenever a policy is active. Idempotent.
-    if (AppBlockPrefs.isEnabled(applicationContext)) {
-      AppBlockShieldService.start(applicationContext)
-      AppBlockWatchdog.schedule(applicationContext)
+    bootstrapKeepAlive()
+  }
+
+  /**
+   * The shield (and its watchdog) must NOT depend on the RN app being alive:
+   * the guardian closes WardYou, the OEM kills the process, and enforcement
+   * used to die with it. This service is OS-bound and survives/rebinds on its
+   * own, so IT is the right owner of the keep-alive — start both from here
+   * whenever a policy is active. Idempotent, and called from both lifecycle
+   * entry points for the same reason `instance` is: onServiceConnected alone
+   * is not guaranteed to run after a package replace.
+   */
+  private fun bootstrapKeepAlive() {
+    try {
+      if (AppBlockPrefs.isEnabled(applicationContext)) {
+        AppBlockShieldService.start(applicationContext)
+        AppBlockWatchdog.schedule(applicationContext)
+      }
+    } catch (e: Exception) {
+      // Never let keep-alive bookkeeping take down the service itself — the
+      // throttled self-heal in onAccessibilityEvent retries within a minute.
     }
   }
 
@@ -110,6 +148,13 @@ class AppBlockAccessibilityService : AccessibilityService() {
   }
 
   override fun onAccessibilityEvent(event: AccessibilityEvent?) {
+    // Receiving an event is the strongest possible proof this instance is
+    // alive and enforcing — stronger than any lifecycle callback. Re-assert
+    // the liveness marker so a missed onServiceConnected (package replace, see
+    // onCreate) can never make a working enforcer read as dead. Plain
+    // reference compare on a @Volatile field: no write in the common case.
+    if (instance !== this) instance = this
+
     val packageName = event?.packageName?.toString() ?: return
     if (packageName == applicationContext.packageName) return
     if (!AppBlockPrefs.isEnabled(applicationContext)) return

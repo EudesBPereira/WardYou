@@ -22,6 +22,19 @@ export interface InstalledApp {
   label: string;
 }
 
+export type AccessibilityStatus =
+  | "running"
+  | "granted_not_running"
+  | "not_granted"
+  | "unknown";
+
+/** There is no AccessibilityService on this platform, so there is nothing to
+ *  measure - "unknown" rather than a fake "off" that the protection panel
+ *  would then report as a problem the user cannot possibly fix. */
+export function getAccessibilityStatus(): AccessibilityStatus {
+  return "unknown";
+}
+
 export function isAccessibilityServiceEnabled(): boolean {
   return false;
 }
