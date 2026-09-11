@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, ActivityIndicator, Pressable, Modal } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { useTranslation } from "react-i18next";
+import i18n from "@/i18n";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenContainer, ScreenHeader, Card, Text, Toggle, ListItem, InputModal, Button } from "@/components/ui";
 import { colors } from "@/theme";
@@ -31,8 +32,12 @@ function tempActive(r: AppRuleDto): boolean {
   return !!r.allowedUntil && new Date(r.allowedUntil) > new Date();
 }
 
+// Achado de QA 2026-09-11: `[]` usa o idioma do SISTEMA, nao o do app — ver
+// formatDateTime em src/lib/formatTime.ts para o caso mais grave encontrado.
+// Funcao de nivel de modulo (fora do componente), entao usa o `i18n`
+// singleton importado direto em vez do hook `useTranslation()`.
 function fmtUntil(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  return new Date(iso).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit", hour12: false });
 }
 
 const TEMP_HOURS = [1, 2, 4, 8];

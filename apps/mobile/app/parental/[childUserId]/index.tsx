@@ -26,7 +26,7 @@ const STEP = 15;
 const TASK_REWARD_OPTIONS = [10, 15, 30, 60];
 
 export default function ChildDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { childUserId } = useLocalSearchParams<{ childUserId: string }>();
   const { data: policy, isLoading } = usePolicy(childUserId);
   const upsert = useUpsertPolicy(childUserId);
@@ -163,7 +163,7 @@ export default function ChildDetailScreen() {
                   {policy.isRemotelyPaused
                     ? policy.pausedUntil
                       ? t("parental.remote.pausedUntil", {
-                          time: new Date(policy.pausedUntil).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+                          time: new Date(policy.pausedUntil).toLocaleTimeString(i18n.language, { hour: "2-digit", minute: "2-digit", hour12: false }),
                         })
                       : t("parental.remote.paused")
                     : t("parental.remote.active")}

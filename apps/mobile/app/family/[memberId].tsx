@@ -28,7 +28,7 @@ import { RoleSelectModal } from "@/features/family/RoleSelectModal";
 import { PendingRequestsCard } from "@/features/parental/PendingRequestsCard";
 
 export default function FamilyMemberDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { memberId } = useLocalSearchParams<{ memberId: string }>();
   const { data: members = [], isLoading } = useFamilyMap();
   const { data: families = [] } = useMyFamilies();
@@ -98,20 +98,24 @@ export default function FamilyMemberDetailScreen() {
   // only shows one at all when NOT currently online — "current" already says
   // so), and the location card gets its own "visto {{time}}" caption sourced
   // from `locationCapturedAt`.
+  // Achado de QA 2026-09-11: `[]` usa o idioma do SISTEMA, nao o do app — ver
+  // formatDateTime em src/lib/formatTime.ts para o caso mais grave encontrado.
   const presenceLastSeen = member?.lastSeen
-    ? new Date(member.lastSeen).toLocaleString([], {
+    ? new Date(member.lastSeen).toLocaleString(i18n.language, {
         day: "2-digit",
         month: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       })
     : null;
   const locationSeenAt = member?.locationCapturedAt
-    ? new Date(member.locationCapturedAt).toLocaleString([], {
+    ? new Date(member.locationCapturedAt).toLocaleString(i18n.language, {
         day: "2-digit",
         month: "2-digit",
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       })
     : null;
 

@@ -31,6 +31,7 @@ import {
   isDeviceAdminActive,
 } from "@modules/app-block";
 import { WARDYOU_PACKAGE } from "@/features/parental/enforcementLogic";
+import { isTaskAvailable } from "@/features/parental/taskCompletion";
 import { storage } from "@/lib/storage";
 import { SHIELD_SETUP_DONE_KEY } from "../../../app/protection-setup";
 import { ProtectionStatusCard } from "@/features/protection/ProtectionStatusCard";
@@ -139,7 +140,16 @@ export function ChildHome() {
   // drives enforcement in syncEnforcement — this is display only).
   const displayRemaining = Math.min(remaining, Math.max(0, allowance - used));
 
-  const activeTasks = myTasks?.tasks ?? [];
+  // Achado de QA 2026-09-11: sem o filtro `isTaskAvailable`, este card contava
+  // uma tarefa ja aprovada e paga como "disponivel para ganhar" -- o card
+  // "Ganhe mais tempo" continuava anunciando os mesmos minutos depois de a
+  // tarefa (unica, nao recorrente) ja ter sido creditada, mesmo com
+  // app/(tabs)/tasks.tsx corretamente escondendo o botao "Concluí!" pra ela.
+  // Mesma regra usada la, extraida pra src/features/parental/taskCompletion.ts
+  // depois de aparecer duplicada (torto) nos dois lugares.
+  const allTasks = myTasks?.tasks ?? [];
+  const completions = myTasks?.completions ?? [];
+  const activeTasks = allTasks.filter((task) => isTaskAvailable(task, completions));
   const earnableMinutes = activeTasks.reduce((sum, task) => sum + task.rewardMinutes, 0);
 
   function askExtraTime(minutes: number) {

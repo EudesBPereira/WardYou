@@ -31,7 +31,7 @@ import {
 } from "@/features/trips/queries";
 
 export default function TripDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { tripId } = useLocalSearchParams<{ tripId: string }>();
   const { data: trip, isLoading } = useTrip(tripId);
   const isActive = trip?.isActive ?? false;
@@ -115,8 +115,20 @@ export default function TripDetailScreen() {
   }
 
   // Trips can span days, so show date + time for both ends of the window.
+  // Achado de QA 2026-09-11: esta funcao inline escapou da varredura anterior
+  // de toLocaleString([], ...) (que usa o idioma do SISTEMA, nao o do app) --
+  // "09/09, 7:29 PM" numa tela em portugues, ao lado de "Visto às 20:01" ja
+  // corrigido. Reusa o mesmo formatDateTime (src/lib/formatTime.ts) que
+  // corrige os outros lugares, com dia+mes (sem ano: e so o cabecalho de um
+  // trajeto ativo, nao um log de auditoria de longo prazo).
   const fmtDateTime = (iso: string) =>
-    new Date(iso).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
+    new Date(iso).toLocaleString(i18n.language, {
+      day: "2-digit",
+      month: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
   const timeRange = trip ? `${fmtDateTime(trip.startsAt)} – ${fmtDateTime(trip.endsAt)}` : "";
 
   return (

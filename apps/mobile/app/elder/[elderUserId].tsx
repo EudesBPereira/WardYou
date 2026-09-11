@@ -30,7 +30,7 @@ interface Form {
 const blankForm: Form = { index: null, name: "", dosage: "", times: [], daysOfWeek: ALL_DAYS, timeDraft: "" };
 
 export default function ElderDetailScreen() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { elderUserId } = useLocalSearchParams<{ elderUserId: string }>();
   const cid = elderUserId as string;
   const dayLabels = t("parental.weekdays").split(",");
@@ -44,11 +44,23 @@ export default function ElderDetailScreen() {
 
   const elderInfo = elders.find((e) => e.userId === elderUserId);
   const lastSeen = elderInfo?.lastSeenAt
-    ? new Date(elderInfo.lastSeenAt).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+    ? new Date(elderInfo.lastSeenAt).toLocaleString(i18n.language, {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
     : null;
 
   const lastCheckIn = checkIn?.lastCheckInAt
-    ? new Date(checkIn.lastCheckInAt).toLocaleString([], { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })
+    ? new Date(checkIn.lastCheckInAt).toLocaleString(i18n.language, {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+      })
     : null;
 
   // Today's expected doses vs confirmed ones ("tomei") — quick adherence view.
@@ -64,7 +76,11 @@ export default function ElderDetailScreen() {
     .sort((a, b) => a.label.localeCompare(b.label));
 
   // One entry per day, newest first (a day may have several check-ins).
-  const historyDays = [...new Set(history.map((h) => new Date(h).toLocaleDateString([], { day: "2-digit", month: "2-digit" })))];
+  // Achado de QA 2026-09-11: `[]` (locale do SO) em vez do idioma do app —
+  // ver formatDateTime em src/lib/formatTime.ts para o caso mais grave.
+  const historyDays = [
+    ...new Set(history.map((h) => new Date(h).toLocaleDateString(i18n.language, { day: "2-digit", month: "2-digit" }))),
+  ];
 
   const toInput = (m: MedicationDto): MedicationInput => ({ name: m.name, dosage: m.dosage ?? undefined, times: m.times, daysOfWeek: m.daysOfWeek });
 
