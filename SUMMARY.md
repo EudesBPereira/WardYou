@@ -15,6 +15,57 @@
 > **Todo o código acionável foi entregue** — o que resta é validação em aparelho (usuário) + ações externas
 > (Google OAuth público, LGPD, pagamentos, Play Store) — ver seções abaixo.
 
+## 🔴 RODADA DE VALIDAÇÃO TOTAL (2026-09-11) — 25 commits, 34 defeitos
+
+Bateria completa nos dois aparelhos reais (Redmi = criança, POCO = responsável), com arquiteto
+supervisor e dois testadores presos a um aparelho cada. Testes feitos **pela tela** via
+`uiautomator dump` (nunca screenshot — os aparelhos têm conteúdo pessoal do fundador).
+
+### O padrão que se repetiu — vale mais que a lista de bugs
+
+Em quase todo caso grave, **o servidor estava certo e a TELA mentia**: crédito duplicado de tarefa,
+botão de desbloquear inerte, site "bloqueado" que não bloqueava, contador de tarefas prometendo tempo
+já pago, painel acusando acessibilidade caída com ela funcionando. Num produto de segurança familiar
+isso é caro: o responsável decide com base no que a tela diz.
+
+Corolário: **três correções feitas HOJE introduziram os defeitos seguintes** (o app lock é o caso
+claro — de "preso para sempre" para "preso por um minuto"). Correção em caminho de autenticação
+precisa de teste em aparelho antes de ser considerada pronta, não só typecheck.
+
+### Já provado em aparelho (14)
+crédito duplicado fechado (tempo extra não subiu no reenvio) · tarefa paga mostra "Já concluída e
+recompensada", sem caminho clicável · app lock: 5/5 ciclos reabrindo em ~0.3s (antes travava até 1min)
+· prompt fantasma no aparelho da criança eliminado · enforcement resiste a kill (`F/S/FGS`, adj 100) ·
+acessibilidade volta sozinha após reinstalação · apelido resolve nomes duplicados em todas as telas ·
+botão de centralizar recupera o mapa arrastado · teclado não cobre mais o campo · datas em pt-BR ·
+layout sem corte atrás da barra de navegação · nomes de app na tela "Uso" · botões de liberar app
+legíveis · painel de proteção honesto.
+
+### ⚠️ SEM NENHUMA VALIDAÇÃO — o coração do produto
+**Bloqueio de app e de site.** Implementado hoje (o de sites **nunca existiu** antes — a tela salvava
+no banco e nada no aparelho lia), mas a acessibilidade está desligada no Redmi e só o dono do aparelho
+pode religar. **Não lançar sem testar isto.**
+
+### Não implementado, apesar de visível
+**Premium / pagamento** — o card em Ajustes abre "Este recurso estará disponível em breve". Único
+ponto assim no app. Decisão de negócio: esconder, virar lista de espera, ou integrar cobrança.
+
+### Decisões de produto em aberto (achadas nesta rodada)
+SOS não expira (fica ativo para sempre) · consentimento concedido em nome de outro membro não tem como
+ser revogado, nem no app nem na API · a criança pode desligar sozinha o compartilhamento da própria
+localização · o responsável não enxerga o saldo de tempo extra · localização só é reportada com o app
+aberto · limiar do antifurto (2.2G) segue sem calibração.
+
+### Lições operacionais
+- **Agentes em paralelo nunca rodam git destrutivo** — um `git stash` apagou ~20 arquivos de trabalho
+  não commitado de todos os outros. Ver CLAUDE.md.
+- **`Test-Path` não prova que o build rodou.** O `ship.ps1` publicou um APK ANTIGO após um build que
+  falhou, e ele foi instalado e anunciado como novo. Agora exige `LastWriteTimeUtc` mais novo.
+- **Conferir o artefato, não a mensagem de sucesso.** O que pegou o APK velho foi inspecionar o
+  `canRetrieveWindowContent` dentro do próprio APK, não a linha "Entregue nos dois canais".
+- Agentes raciocinam dentro do que enxergam: um deles concluiu que a biometria "se resolvia sozinha
+  sem explicação possível" — não sabia que havia uma pessoa com o telefone na mão.
+
 ## 🟢 AMBIENTE DE QA NO AR (2026-09-09) — Azure NEOBPO, 59/59 e2e passando
 
 **Produção não existe.** O ambiente `mvp-sf` (subscription pessoal, `wityu-api-96164`) é legado e está
