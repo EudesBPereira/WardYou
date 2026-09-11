@@ -83,7 +83,7 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [lock]);
 
-  const promptUnlock = async () => {
+  const promptUnlock = async (origem: "auto" | "usuario" = "auto") => {
     // `activeRef`, nao `active`: este metodo e chamado de dentro do listener de
     // AppState, que e montado UMA vez e captura o valor do primeiro render.
     //
@@ -94,7 +94,16 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     // retentativa abaixo pedia digital sem NADA por tras. Visto em campo em
     // 2026-09-11, no Redmi.
     if (!activeRef.current) return;
-    if (prompting) return;
+    // A guarda de "ja estou pedindo" vale SO para a tentativa automatica.
+    //
+    // Um toque explicito no botao nunca pode ser descartado: se a pessoa esta
+    // tocando, e exatamente porque a tentativa anterior nao funcionou. Quando
+    // o prompt do SO nao sobe, a promessa fica pendurada ate o teto de tempo,
+    // e aplicar a guarda aqui deixava o botao VIVO E INERTE por ate um minuto
+    // -- medido no aparelho em 2026-09-11: o mesmo toque, no mesmo ponto, nao
+    // fazia nada e passados 70s abria o prompt normalmente. Era esse o
+    // "nao abre a opcao de desbloquear" relatado pelo fundador.
+    if (origem === "auto" && prompting) return;
     setPrompting(true);
     try {
       const ok = await authenticateBiometric(t("appLock.prompt"));
@@ -118,7 +127,10 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
   // cedo demais.
   useEffect(() => {
     if (!(active && locked)) return;
-    const id = setTimeout(() => void promptUnlockRef.current(), 250);
+    // 600ms, nao 250: o BiometricPrompt do Android nao sobe enquanto a
+    // activity nao estiver resumed, e no POCO 250ms ainda era cedo demais --
+    // a primeira tentativa se perdia e so o toque manual resolvia.
+    const id = setTimeout(() => void promptUnlockRef.current("auto"), 600);
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, locked]);
@@ -151,7 +163,7 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
           <Button
             label={t("appLock.unlock")}
             icon="finger-print"
-            onPress={promptUnlock}
+            onPress={() => void promptUnlock("usuario")}
             fullWidth={false}
           />
         </View>
