@@ -200,14 +200,13 @@ export default function FamilyMemberDetailScreen() {
               }
             />
             <View className="h-px bg-border" />
+            {/* Endereco vai como subtitulo, nao como valor a direita: rotulo
+                curto + valor longo na mesma linha nao cabe em tela de telefone,
+                e um endereco completo nunca e curto. */}
             <ListItem
               icon="location"
               title={t("family.memberDetail.lastPlace")}
-              trailing={
-                <Text variant="caption" color="muted">
-                  {member.locationLabel}
-                </Text>
-              }
+              subtitle={member.locationLabel}
             />
             {/* Presence moved here from the old hero card: still worth showing,
                 just not worth a card of its own. */}

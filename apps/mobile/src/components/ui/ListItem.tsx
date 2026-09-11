@@ -71,7 +71,17 @@ export function ListItem({
         ) : null}
       </View>
 
-      {trailing}
+      {/* O trailing PRECISA poder encolher. Sem isto, um valor longo (um
+          endereco, por exemplo) toma a largura que quiser e espreme o titulo
+          ate ficar mais estreito que uma palavra -- ai o texto quebra letra a
+          letra. Visto em campo em 2026-09-11: "Ultimo lugar" virou
+          "Ult / imo / lugar". O teto de 55% garante que o rotulo sempre fique
+          legivel; conteudo curto (Badge, "42%") nao e afetado. */}
+      {trailing ? (
+        <View className="shrink items-end" style={{ maxWidth: "55%" }}>
+          {trailing}
+        </View>
+      ) : null}
       {chevron ? (
         <Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />
       ) : null}

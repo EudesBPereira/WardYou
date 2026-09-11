@@ -86,25 +86,35 @@ export function PendingRequestsCard({ childUserId, title, className }: PendingRe
                 </Text>
               </View>
             </View>
-            <View className="flex-row gap-2">
-              <Button
-                label={t("parental.requests.allow")}
-                size="sm"
-                className="flex-1"
-                loading={decideApp.isPending}
-                onPress={() => decideApp.mutate({ packageName: r.packageName, approve: true })}
-              />
-              <Button
-                label={t("parental.requests.allow1h")}
-                size="sm"
-                variant="secondary"
-                className="flex-1"
-                onPress={() => decideApp.mutate({ packageName: r.packageName, approve: true, hours: 1 })}
-              />
+            {/* Duas linhas DE PROPOSITO. Os tres botoes lado a lado nao cabem
+                na largura de um telefone: o "Recusar" (ghost, sem flex-1)
+                ficava com a largura natural do texto e espremia os outros dois
+                ate virarem quadrados azuis sem rotulo nenhum -- o responsavel
+                via a solicitacao e nao tinha como liberar. Visto em campo em
+                2026-09-11. As duas acoes de liberar dividem a primeira linha;
+                recusar, que e a menos frequente, fica embaixo. */}
+            <View className="gap-2">
+              <View className="flex-row gap-2">
+                <Button
+                  label={t("parental.requests.allow")}
+                  size="sm"
+                  className="flex-1"
+                  loading={decideApp.isPending}
+                  onPress={() => decideApp.mutate({ packageName: r.packageName, approve: true })}
+                />
+                <Button
+                  label={t("parental.requests.allow1h")}
+                  size="sm"
+                  variant="secondary"
+                  className="flex-1"
+                  onPress={() => decideApp.mutate({ packageName: r.packageName, approve: true, hours: 1 })}
+                />
+              </View>
               <Button
                 label={t("parental.requests.reject")}
                 size="sm"
                 variant="ghost"
+                fullWidth
                 onPress={() => decideApp.mutate({ packageName: r.packageName, approve: false })}
               />
             </View>
