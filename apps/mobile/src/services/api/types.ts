@@ -51,6 +51,11 @@ export interface FamilyMemberDto {
   familyId: string;
   userId?: string | null;
   displayName: string;
+  /** Raw nickname only — empty when the member has no custom nickname set
+   *  (i.e. `displayName` is just their real name). Used to edit/prefill, since
+   *  `displayName` alone can't tell "no nickname" apart from "nickname happens
+   *  to equal the real name". */
+  nickname?: string;
   avatarUrl?: string | null;
   role: FamilyRole;
   status: MemberStatus;

@@ -210,12 +210,17 @@ export async function getLocationHistory(userId: string, deviceId: string) {
 
 /** Devices of every member in the family, location/battery gated by family consent. */
 export async function getFamilyDevices(userId: string, familyId: string) {
-  const memberUserIds = (
-    await prisma.family_members.findMany({ where: { FamilyId: familyId }, select: { UserId: true } })
-  ).map((m) => m.UserId).filter((id): id is string => !!id);
+  const familyMembers = await prisma.family_members.findMany({
+    where: { FamilyId: familyId },
+    select: { UserId: true, DisplayName: true },
+  });
+  const memberUserIds = familyMembers.map((m) => m.UserId).filter((id): id is string => !!id);
   if (!memberUserIds.includes(userId)) {
     throw new AppError("FamilyNotFound", "A família informada não foi encontrada para o usuário autenticado.", 404);
   }
+  // Nickname (DisplayName) per member of THIS family, same precedence as
+  // mapMember/getFamilyMap — a device list is still a place a name gets shown.
+  const nicknameByUserId = new Map(familyMembers.map((m) => [m.UserId, m.DisplayName]));
   const devices = await prisma.devices.findMany({
     where: { UserId: { in: memberUserIds }, IsActive: true },
     include: { users: { select: { Id: true, FullName: true } } },
@@ -238,7 +243,7 @@ export async function getFamilyDevices(userId: string, familyId: string) {
     result.push({
       deviceId: d.Id,
       userId: d.UserId,
-      userName: d.users?.FullName ?? "Membro",
+      userName: nicknameByUserId.get(d.UserId)?.trim() || d.users?.FullName || "Membro",
       deviceName: d.DeviceName,
       platform: d.Platform,
       isOnline: isOnline(d.LastSeenAt),

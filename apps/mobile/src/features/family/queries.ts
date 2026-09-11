@@ -25,6 +25,8 @@ export interface FamilyMemberVM extends MockMember {
    *  unlike `role`, this isn't narrowed, so "member" stays "member". Used to
    *  show what a pending member declared they are at approval time. */
   declaredRole: string;
+  /** Raw nickname only, "" when none is set — see FamilyMemberDto.nickname. */
+  nickname: string;
 }
 
 function mapDto(dto: FamilyMemberDto): FamilyMemberVM {
@@ -35,6 +37,7 @@ function mapDto(dto: FamilyMemberDto): FamilyMemberVM {
     avatarUrl: dto.avatarUrl ?? null,
     membershipStatus: dto.membershipStatus,
     declaredRole: dto.role,
+    nickname: dto.nickname ?? "",
     name: dto.displayName,
     role: (dto.role === "guardian" || dto.role === "admin" || dto.role === "child" || dto.role === "elder"
       ? dto.role
@@ -51,7 +54,7 @@ async function fetchMembers(): Promise<FamilyMemberVM[]> {
     // Mock data with a small delay to exercise loading states. Disable via
     // EXPO_PUBLIC_USE_MOCKS=false to hit the real API.
     await new Promise((r) => setTimeout(r, 300));
-    return mockMembers.map((m) => ({ ...m, familyId: "mock", userId: null, avatarUrl: null, declaredRole: m.role, membershipStatus: "active" as MembershipStatus }));
+    return mockMembers.map((m) => ({ ...m, familyId: "mock", userId: null, avatarUrl: null, declaredRole: m.role, nickname: "", membershipStatus: "active" as MembershipStatus }));
   }
   const dtos = await apiClient.get<FamilyMemberDto[]>("/api/v1/families/members");
   return dtos.map(mapDto);
@@ -88,6 +91,7 @@ async function fetchFamilyMap(): Promise<FamilyMapMemberVM[]> {
       userId: null,
       avatarUrl: null,
       declaredRole: m.role,
+      nickname: "",
       membershipStatus: "active" as MembershipStatus,
       latitude: mockMemberCoords[i % mockMemberCoords.length].latitude,
       longitude: mockMemberCoords[i % mockMemberCoords.length].longitude,
@@ -151,6 +155,24 @@ export function useSetMemberAvatar() {
       memberId: string;
       avatarUrl: string | null;
     }) => apiClient.put(`/api/v1/families/${familyId}/members/${memberId}/avatar`, { avatarUrl }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["family"] }),
+  });
+}
+
+/** Guardian/admin sets (or clears) how a member's name shows up across the
+ *  app — the "apelido" feature. Empty string clears it back to the real name. */
+export function useSetMemberNickname() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      familyId,
+      memberId,
+      nickname,
+    }: {
+      familyId: string;
+      memberId: string;
+      nickname: string;
+    }) => apiClient.put(`/api/v1/families/${familyId}/members/${memberId}/nickname`, { nickname }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ["family"] }),
   });
 }

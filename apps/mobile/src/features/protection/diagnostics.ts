@@ -27,6 +27,7 @@ export type IdProblema =
   | "locationServices"
   | "battery"
   | "overlay"
+  | "exactAlarm"
   | "deviceAdmin"
   | "push"
   | "network";
@@ -101,6 +102,30 @@ export async function diagnosticar(modoCrianca: boolean): Promise<Diagnostico> {
     // without any other change.
     if (modoCrianca && !AppBlock.canDrawOverlays()) {
       problemas.push({ id: "overlay", severidade: "critica", resolver: AppBlock.requestOverlayPermission });
+    }
+    // `critica`, not `degrada` (mesmo criterio de julgamento do `overlay` acima:
+    // o que decide e o que acontece de fato no aparelho, nao a teoria). Sem
+    // "Alarmes e lembretes" (Android 13+; auto-concedida antes disso — ver
+    // `canScheduleExactAlarms`), o AppBlockWatchdog so tem o alarme inexato, e
+    // Android 12+ recusa o `startForegroundService()` que ele dispara para
+    // ressuscitar o escudo a partir de um BroadcastReceiver em segundo plano —
+    // a tentativa e descartada em silencio pelo sistema (confirmado via
+    // `dumpsys dropbox` no Redmi Note 10, 2026-09-11: `Background started FGS:
+    // Disallowed ... code:DENIED`). Isso nao derruba a protecao enquanto o
+    // processo esta de pe (por isso nao e como accessibility/usageAccess, que
+    // faltam desde o primeiro instante) — mas nos aparelhos onde esse alarme
+    // importa (o matador de tarefas agressivo da OEM matando o processo e
+    // rotina, nao excecao), a recuperacao automatica e exatamente o unico
+    // mecanismo que existe para trazer o escudo de volta sem a crianca reabrir
+    // o app sozinha. "Nao se recupera" nesses aparelhos e, na pratica, "nao
+    // protege" — a funcao inteira fica de fora ate alguem notar e reabrir.
+    // So faz sentido cobrar no aparelho da crianca: o watchdog so existe para
+    // ressuscitar o AppBlockShieldService/AccessibilityService de enforcement,
+    // que so rodam em modoCrianca (ver AppBlockWatchdog.schedule chamado a
+    // partir de AppBlockShieldService/AppBlockAccessibilityService/
+    // AppBlockModule.setEnforcementState — nunca fora desse fluxo).
+    if (modoCrianca && !AppBlock.canScheduleExactAlarms()) {
+      problemas.push({ id: "exactAlarm", severidade: "critica", resolver: AppBlock.requestScheduleExactAlarm });
     }
   }
 

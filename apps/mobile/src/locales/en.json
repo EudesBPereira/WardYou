@@ -181,6 +181,10 @@
       "presence": "Last seen",
       "changePhoto": "Change member photo",
       "manage": "Manage",
+      "nickname": "Nickname",
+      "nicknameEmpty": "Use their real name",
+      "nicknameTitle": "Set nickname",
+      "nicknameSubtitle": "How {{name}} shows up to you and the rest of the family. Leave blank to use their real name.",
       "parental": "Parental controls",
       "parentalBody": "Screen time, apps and tasks",
       "elder": "Elder care",
@@ -849,6 +853,11 @@
       "overlay": {
         "title": "Screen overlay is off",
         "body": "The blocked-app screen may not appear over whatever the child opens.",
+        "oemHint": ""
+      },
+      "exactAlarm": {
+        "title": "Alarms & reminders is off",
+        "body": "If the system shuts protection down on this device, it won't come back on its own — only by reopening the app.",
         "oemHint": ""
       },
       "deviceAdmin": {

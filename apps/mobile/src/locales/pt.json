@@ -181,6 +181,10 @@
       "presence": "Visto por último",
       "changePhoto": "Alterar foto do membro",
       "manage": "Gerenciar",
+      "nickname": "Apelido",
+      "nicknameEmpty": "Usar o nome real",
+      "nicknameTitle": "Definir apelido",
+      "nicknameSubtitle": "Como {{name}} aparece pra você e pro resto da família. Deixe em branco para usar o nome real.",
       "parental": "Controle parental",
       "parentalBody": "Limites de tempo, apps e tarefas",
       "elder": "Cuidado com idoso",
@@ -849,6 +853,11 @@
       "overlay": {
         "title": "Sobreposição desligada",
         "body": "A tela de app bloqueado pode não aparecer por cima do app que a criança abrir.",
+        "oemHint": ""
+      },
+      "exactAlarm": {
+        "title": "Alarmes e lembretes desligados",
+        "body": "Se o sistema encerrar a proteção neste aparelho, ela não volta sozinha — só reabrindo o app.",
         "oemHint": ""
       },
       "deviceAdmin": {

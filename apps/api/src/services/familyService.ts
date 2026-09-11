@@ -56,11 +56,22 @@ interface MemberRow {
 }
 
 export function mapMember(m: MemberRow) {
+  const realName = m.users?.FullName?.trim() || null;
+  const rawDisplayName = m.DisplayName?.trim() || "";
+  // `DisplayName` was, until the nickname feature, ALWAYS a verbatim copy of
+  // the real name written once at join/create time (see createFamily/
+  // joinFamily below) — so it can't be trusted on its own to mean "this member
+  // has a custom nickname". Treat it as a real nickname only when it actually
+  // differs from the account's current name; otherwise report no nickname
+  // (empty string) so the edit UI doesn't show a "custom" value nobody typed.
+  const nickname = rawDisplayName && rawDisplayName !== realName ? rawDisplayName : "";
   return {
     id: m.Id,
     familyId: m.FamilyId,
     userId: m.UserId,
-    displayName: m.DisplayName?.trim() || m.users?.FullName || "Membro",
+    displayName: rawDisplayName || realName || "Membro",
+    /** Raw nickname only (empty when none was explicitly set) — for editing. */
+    nickname,
     avatarUrl: m.users?.AvatarUrl ?? null,
     role: ROLE_NAMES[m.Role] ?? "member",
     // Presence (online/offline/alert) for the UI, plus the membership state so
@@ -461,6 +472,63 @@ export async function setMemberAvatar(
     metadata: { change: "memberAvatar", cleared: value === null },
   });
   return updated ? mapMember(updated) : null;
+}
+
+const MAX_NICKNAME_LENGTH = 60;
+
+/**
+ * Admin/guardian sets (or clears) how a member's name shows up across the app
+ * — the "apelido" feature. Reuses `family_members.DisplayName`, a column that
+ * already existed and was already read everywhere a member's name is shown
+ * (`mapMember`), but was only ever *written* once, at join/create time, as a
+ * copy of the account's real name — so today it's indistinguishable from
+ * `users.FullName` and can't be used to tell apart two members who share a
+ * name (the field report this fixes: two "Tatiane Silva" in one family,
+ * dangerous specifically in the Consent Center where an admin grants/revokes
+ * location sharing "on behalf of" a member).
+ *
+ * Editing is restricted to the family's admin/guardian, same as the avatar
+ * (`setMemberAvatar`) — this is the responsible person's label for how they
+ * (and everyone else in the family) tell members apart, not a personal
+ * profile field, so a child can't quietly rename themself on a parent's
+ * device. Clearing it (empty string) falls back to the real name, same as
+ * before this feature existed — nickname is opt-in, never required.
+ */
+export async function setMemberNickname(
+  actorUserId: string,
+  familyId: string,
+  memberId: string,
+  nickname: string | null,
+) {
+  const actor = await prisma.family_members.findFirst({
+    where: { FamilyId: familyId, UserId: actorUserId, Status: STATUS.active },
+  });
+  if (!actor || (actor.Role !== ROLE.admin && actor.Role !== ROLE.guardian)) {
+    throw new AppError("Forbidden", "Apenas responsáveis podem definir o apelido de um membro.", 403);
+  }
+  const member = await prisma.family_members.findFirst({ where: { Id: memberId, FamilyId: familyId } });
+  if (!member) throw new AppError("MemberNotFound", "Membro não encontrado.", 404);
+
+  const trimmed = nickname?.trim() ?? "";
+  if (trimmed.length > MAX_NICKNAME_LENGTH) {
+    throw new AppError("ValidationError", `Apelido muito longo (máx. ${MAX_NICKNAME_LENGTH} caracteres).`, 400);
+  }
+
+  const updated = await prisma.family_members.update({
+    where: { Id: member.Id },
+    data: { DisplayName: trimmed },
+    include: { users: { select: { FullName: true, AvatarUrl: true } } },
+  });
+  if (updated.UserId) emitToUser(updated.UserId, "ProfileUpdated", { familyId });
+  await writeAudit({
+    actorUserId,
+    action: "ParentalPolicyUpdated",
+    sourceType: "Family",
+    targetUserId: member.UserId,
+    familyId,
+    metadata: { change: "memberNickname", cleared: trimmed === "" },
+  });
+  return mapMember(updated);
 }
 
 /** Reject a pending join request — soft-disable the membership (admin only). */

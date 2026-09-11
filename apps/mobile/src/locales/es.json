@@ -181,6 +181,10 @@
       "presence": "Visto por última vez",
       "changePhoto": "Cambiar foto del miembro",
       "manage": "Gestionar",
+      "nickname": "Apodo",
+      "nicknameEmpty": "Usar el nombre real",
+      "nicknameTitle": "Definir apodo",
+      "nicknameSubtitle": "Cómo aparece {{name}} para ti y el resto de la familia. Déjalo en blanco para usar el nombre real.",
       "parental": "Control parental",
       "parentalBody": "Tiempo de pantalla, apps y tareas",
       "elder": "Cuidado de mayores",
@@ -849,6 +853,11 @@
       "overlay": {
         "title": "Superposición desactivada",
         "body": "La pantalla de app bloqueada puede no aparecer sobre lo que abra el niño.",
+        "oemHint": ""
+      },
+      "exactAlarm": {
+        "title": "Alarmas y recordatorios desactivados",
+        "body": "Si el sistema cierra la protección en este aparato, no vuelve sola — solo reabriendo la app.",
         "oemHint": ""
       },
       "deviceAdmin": {

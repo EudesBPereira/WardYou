@@ -68,7 +68,9 @@ export async function getElders(userId: string) {
     .map((e) => ({
       memberId: e.Id,
       userId: e.UserId,
-      fullName: e.users?.FullName ?? e.DisplayName,
+      // Nickname (DisplayName) first, same precedence as mapMember — see the
+      // matching comment in parentalService.getChildren.
+      fullName: e.DisplayName?.trim() || e.users?.FullName || "Membro",
       email: e.users?.Email ?? null,
       avatarUrl: e.users?.AvatarUrl ?? null,
       role: e.Role === ROLE.member ? "member" : "elder",

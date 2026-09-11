@@ -167,6 +167,24 @@ export async function registerFamilyRoutes(app: FastifyInstance) {
     },
   );
 
+  // PUT /:familyId/members/:memberId/nickname — guardian/admin sets (or clears,
+  // with an empty/omitted string) how this member's name shows up across the
+  // app. Optional: empty falls back to the real name, same as before.
+  app.put<{ Params: { familyId: string; memberId: string } }>(
+    "/:familyId/members/:memberId/nickname",
+    { preHandler: app.authenticate },
+    async (request, reply) => {
+      const body = z.object({ nickname: z.string().max(60).nullable() }).safeParse(request.body);
+      if (!body.success) return reply.code(400).send({ message: "Apelido inválido." });
+      return familyService.setMemberNickname(
+        request.user.sub,
+        request.params.familyId,
+        request.params.memberId,
+        body.data.nickname,
+      );
+    },
+  );
+
   // POST /:familyId/members/:memberId/reject — reject a pending member (admin).
   app.post<{ Params: { familyId: string; memberId: string } }>(
     "/:familyId/members/:memberId/reject",

@@ -181,6 +181,10 @@
       "presence": "Vu pour la dernière fois",
       "changePhoto": "Changer la photo du membre",
       "manage": "Gérer",
+      "nickname": "Surnom",
+      "nicknameEmpty": "Utiliser le vrai nom",
+      "nicknameTitle": "Définir un surnom",
+      "nicknameSubtitle": "Comment {{name}} apparaît pour vous et le reste de la famille. Laissez vide pour utiliser le vrai nom.",
       "parental": "Contrôle parental",
       "parentalBody": "Temps d'écran, applis et tâches",
       "elder": "Soin des aînés",
@@ -849,6 +853,11 @@
       "overlay": {
         "title": "Superposition désactivée",
         "body": "L'écran d'appli bloquée peut ne pas s'afficher par-dessus ce que l'enfant ouvre.",
+        "oemHint": ""
+      },
+      "exactAlarm": {
+        "title": "Alarmes et rappels désactivés",
+        "body": "Si le système arrête la protection sur cet appareil, elle ne revient pas toute seule — il faut rouvrir l'appli.",
         "oemHint": ""
       },
       "deviceAdmin": {

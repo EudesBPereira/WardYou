@@ -285,7 +285,10 @@ export async function getChildren(userId: string) {
       return {
         memberId: c.Id,
         userId: c.UserId,
-        fullName: c.users?.FullName ?? c.DisplayName,
+        // Nickname (DisplayName) first, same precedence as mapMember — this was
+        // previously flipped (FullName first), so a nickname set to disambiguate
+        // two same-named children never showed up here.
+        fullName: c.DisplayName?.trim() || c.users?.FullName || "Membro",
         email: c.users?.Email ?? null,
         avatarUrl: c.users?.AvatarUrl ?? null,
         role: c.Role === ROLE.member ? "member" : "child",

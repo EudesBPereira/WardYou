@@ -12,10 +12,17 @@ import {
   Badge,
   ListItem,
   MapPreview,
+  InputModal,
 } from "@/components/ui";
 import { colors } from "@/theme";
 import { useSession } from "@/stores/session";
-import { useFamilyMap, useMyFamilies, useSetMemberRole, useSetMemberAvatar } from "@/features/family/queries";
+import {
+  useFamilyMap,
+  useMyFamilies,
+  useSetMemberRole,
+  useSetMemberAvatar,
+  useSetMemberNickname,
+} from "@/features/family/queries";
 import { pickAvatarDataUri } from "@/features/profile/pickAvatar";
 import { RoleSelectModal } from "@/features/family/RoleSelectModal";
 import { PendingRequestsCard } from "@/features/parental/PendingRequestsCard";
@@ -27,7 +34,9 @@ export default function FamilyMemberDetailScreen() {
   const { data: families = [] } = useMyFamilies();
   const setRole = useSetMemberRole();
   const setAvatar = useSetMemberAvatar();
+  const setNickname = useSetMemberNickname();
   const [roleOpen, setRoleOpen] = useState(false);
+  const [nicknameOpen, setNicknameOpen] = useState(false);
   const myUserId = useSession((s) => s.session?.userId);
 
   const member = members.find((m) => m.id === memberId);
@@ -223,47 +232,75 @@ export default function FamilyMemberDetailScreen() {
           ) : null}
 
           {/* Manage shortcuts (admins/guardians) */}
-          {(canManage && member.userId && (member.role === "child" || member.role === "elder")) || isAdmin ? (
+          {canManage ? (
             <>
               <Text variant="h2" className="mt-6">
                 {t("family.memberDetail.manage")}
               </Text>
               <Card padded={false} className="mt-3 px-4">
-                {canManage && member.userId && member.role === "child" ? (
-                  <ListItem
-                    icon="shield-checkmark"
-                    iconTone="brand"
-                    title={t("family.memberDetail.parental")}
-                    subtitle={t("family.memberDetail.parentalBody")}
-                    onPress={() => router.navigate(`/parental/${member.userId}` as never)}
-                    trailing={<Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />}
-                  />
+                {/* Apelido: how this member's name shows up across the app —
+                    the fix for two members sharing a real name (e.g. two
+                    "Tatiane Silva"), most dangerous in the Consent Center
+                    where an admin grants/revokes location "on behalf of" a
+                    name. Optional: empty keeps the real name, as before. */}
+                <ListItem
+                  icon="pricetag"
+                  iconTone="neutral"
+                  title={t("family.memberDetail.nickname")}
+                  subtitle={member.nickname || t("family.memberDetail.nicknameEmpty")}
+                  onPress={() => setNicknameOpen(true)}
+                  trailing={
+                    setNickname.isPending ? (
+                      <ActivityIndicator color={colors.brand[500]} />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />
+                    )
+                  }
+                />
+                {member.userId && member.role === "child" ? (
+                  <>
+                    <View className="h-px bg-border" />
+                    <ListItem
+                      icon="shield-checkmark"
+                      iconTone="brand"
+                      title={t("family.memberDetail.parental")}
+                      subtitle={t("family.memberDetail.parentalBody")}
+                      onPress={() => router.navigate(`/parental/${member.userId}` as never)}
+                      trailing={<Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />}
+                    />
+                  </>
                 ) : null}
-                {canManage && member.userId && member.role === "elder" ? (
-                  <ListItem
-                    icon="medkit"
-                    iconTone="brand"
-                    title={t("family.memberDetail.elder")}
-                    subtitle={t("family.memberDetail.elderBody")}
-                    onPress={() => router.navigate(`/elder/${member.userId}` as never)}
-                    trailing={<Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />}
-                  />
+                {member.userId && member.role === "elder" ? (
+                  <>
+                    <View className="h-px bg-border" />
+                    <ListItem
+                      icon="medkit"
+                      iconTone="brand"
+                      title={t("family.memberDetail.elder")}
+                      subtitle={t("family.memberDetail.elderBody")}
+                      onPress={() => router.navigate(`/elder/${member.userId}` as never)}
+                      trailing={<Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />}
+                    />
+                  </>
                 ) : null}
                 {isAdmin ? (
-                  <ListItem
-                    icon="swap-horizontal"
-                    iconTone="neutral"
-                    title={t("family.memberDetail.changeRole")}
-                    subtitle={t("family.memberDetail.changeRoleBody")}
-                    onPress={() => setRoleOpen(true)}
-                    trailing={
-                      setRole.isPending ? (
-                        <ActivityIndicator color={colors.brand[500]} />
-                      ) : (
-                        <Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />
-                      )
-                    }
-                  />
+                  <>
+                    <View className="h-px bg-border" />
+                    <ListItem
+                      icon="swap-horizontal"
+                      iconTone="neutral"
+                      title={t("family.memberDetail.changeRole")}
+                      subtitle={t("family.memberDetail.changeRoleBody")}
+                      onPress={() => setRoleOpen(true)}
+                      trailing={
+                        setRole.isPending ? (
+                          <ActivityIndicator color={colors.brand[500]} />
+                        ) : (
+                          <Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />
+                        )
+                      }
+                    />
+                  </>
                 ) : null}
               </Card>
             </>
@@ -284,6 +321,27 @@ export default function FamilyMemberDetailScreen() {
           );
         }}
         onClose={() => setRoleOpen(false)}
+      />
+
+      <InputModal
+        visible={nicknameOpen}
+        title={t("family.memberDetail.nicknameTitle")}
+        subtitle={t("family.memberDetail.nicknameSubtitle", { name: member?.name ?? "" })}
+        placeholder={member?.name}
+        confirmLabel={t("common.save")}
+        initialValue={member?.nickname ?? ""}
+        autoCapitalize="words"
+        allowEmpty
+        maxLength={60}
+        loading={setNickname.isPending}
+        onConfirm={(value) => {
+          if (!member) return;
+          setNickname.mutate(
+            { familyId: member.familyId, memberId: member.id, nickname: value },
+            { onSuccess: () => setNicknameOpen(false) },
+          );
+        }}
+        onClose={() => setNicknameOpen(false)}
       />
     </ScreenContainer>
   );
