@@ -672,7 +672,7 @@
     "enableUsageBody": "Toque para o WardYou contar o tempo de tela e aplicar o limite diário.",
     "noPolicyTitle": "Tudo liberado por enquanto",
     "noPolicyBody": "Seus responsáveis ainda não configuraram limites de uso.",
-    "timeTitle": "Tempo de tela hoje",
+    "timeTitle": "Tempo restante hoje",
     "timeDetail": "{{used}} usados de {{total}}",
     "extraToday": "+{{min}}min extra hoje",
     "pendingRequest": "Pedido de {{min}} min enviado — aguardando resposta",

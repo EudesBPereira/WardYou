@@ -672,7 +672,7 @@
     "enableUsageBody": "Tap so WardYou can count screen time and apply the daily limit.",
     "noPolicyTitle": "All free for now",
     "noPolicyBody": "Your guardians haven't set usage limits yet.",
-    "timeTitle": "Screen time today",
+    "timeTitle": "Time left today",
     "timeDetail": "{{used}} used of {{total}}",
     "extraToday": "+{{min}}min extra today",
     "pendingRequest": "{{min}} min request sent — waiting for an answer",
