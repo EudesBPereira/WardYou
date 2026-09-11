@@ -34,10 +34,16 @@ if (-not $PularBuild) {
   Write-Host "==> 1/3 Build do APK"
   Push-Location (Join-Path $repo "apps\mobile\android")
   if (Test-Path "app\.cxx") { Remove-Item -Recurse -Force "app\.cxx" }
+  # NAO usar `2>&1` aqui. No PowerShell 5.1 isso envolve cada linha de stderr
+  # do executavel nativo num ErrorRecord; com ErrorActionPreference = Stop o
+  # script aborta num simples AVISO. Pego em 2026-09-11: o Expo so avisou sobre
+  # NODE_ENV e o build inteiro foi cancelado. O sucesso e conferido pelo APK no
+  # disco logo abaixo, que e mais confiavel que exit code de qualquer jeito.
+  $ErrorActionPreference = "Continue"
   & .\gradlew.bat :app:assembleRelease -PreactNativeArchitectures=arm64-v8a --no-daemon --max-workers=2 `
-    "-Djavax.net.ssl.trustStoreType=Windows-ROOT" "-Djdk.tls.client.protocols=TLSv1.2" 2>&1 |
+    "-Djavax.net.ssl.trustStoreType=Windows-ROOT" "-Djdk.tls.client.protocols=TLSv1.2" |
     Select-String "BUILD SUCCESSFUL|BUILD FAILED|error:" | Select-Object -Last 5
-  $ok = $?
+  $ErrorActionPreference = "Stop"
   Pop-Location
   if (-not (Test-Path $apk)) { throw "APK nao foi gerado." }
   Write-Host "    OK ($([math]::Round((Get-Item $apk).Length/1MB,2)) MB)"
