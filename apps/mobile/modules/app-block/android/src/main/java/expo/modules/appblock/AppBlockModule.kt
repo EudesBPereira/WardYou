@@ -78,8 +78,25 @@ class AppBlockModule : Module() {
       JSONObject().put("result", result).put("at", AppBlockPrefs.lastOverlayResultAt(context)).toString()
     }
 
+    // `isServiceEnabled()` only reads Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES —
+    // the OS list of services the USER granted. It stays true even after the
+    // service PROCESS has crashed: Android's AccessibilityManagerService then
+    // marks it "crashed" internally (`dumpsys accessibility` shows it under
+    // "Crashed services", bound nowhere) and does NOT retry binding it on its
+    // own — the settings list is untouched, so this would keep reporting
+    // "protected" while onAccessibilityEvent never fires again and app-block
+    // silently stops enforcing. Confirmed on-device (Redmi Note 10, Android 12,
+    // 2026-09-11): the service crashed at some point before this session: the
+    // only fix was `am force-stop` + re-adding it to the settings list — a
+    // user-visible re-grant, not something this process can trigger itself.
+    // `instance` (set in onServiceConnected, cleared in onDestroy) is the real
+    // liveness signal: non-null only while a bound instance is actually
+    // receiving events. Checking both means the child device's own heartbeat
+    // (`hasAccessibility`, see childQueries.ts useHeartbeat) and the
+    // ChildHome/ProtectionStatusCard UI stop claiming protection is active
+    // when the enforcer is actually dead.
     Function("isAccessibilityServiceEnabled") {
-      isServiceEnabled()
+      isServiceEnabled() && AppBlockAccessibilityService.instance != null
     }
 
     Function("openAccessibilitySettings") {

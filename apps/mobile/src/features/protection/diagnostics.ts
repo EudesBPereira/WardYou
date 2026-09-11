@@ -88,8 +88,19 @@ export async function diagnosticar(modoCrianca: boolean): Promise<Diagnostico> {
     if (!AppBlock.isIgnoringBatteryOptimizations()) {
       problemas.push({ id: "battery", severidade: "degrada", resolver: AppBlock.requestIgnoreBatteryOptimizations });
     }
+    // `critica`, not `degrada`: confirmed on-device (Redmi Note 10 / MIUI,
+    // Android 12, 2026-09-11) that without this permission the blocked-app
+    // panel is NOT a working degraded fallback — it's a non-interactive
+    // "ghost" (the a11y-overlay path failed on this OEM, and the
+    // full-screen-intent last resort renders without real touch focus), so
+    // taps pass straight through to whatever is underneath (the launcher,
+    // another app). The Home-kick still fires, but the child can tap through
+    // the "blocked" screen to keep using the device. Verified live: granting
+    // `SYSTEM_ALERT_WINDOW` via `adb shell appops set ... allow` turned the
+    // exact same panel fully interactive (buttons started responding)
+    // without any other change.
     if (modoCrianca && !AppBlock.canDrawOverlays()) {
-      problemas.push({ id: "overlay", severidade: "degrada", resolver: AppBlock.requestOverlayPermission });
+      problemas.push({ id: "overlay", severidade: "critica", resolver: AppBlock.requestOverlayPermission });
     }
   }
 
