@@ -21,8 +21,22 @@ const CONSENT_TYPE_NAMES: Record<number, ConsentTypeName> = Object.fromEntries(
   Object.entries(CONSENT_TYPE).map(([k, v]) => [v, k as ConsentTypeName]),
 ) as Record<number, ConsentTypeName>;
 
-const MANAGEMENT_ROLES = new Set<number>([ROLE.admin, ROLE.guardian]);
+// Exported: sos.ts reuses these to know who manages consent for a family
+// (guardians/admins) and who is a managed dependent (the floor — see
+// whoReceivesFamilySos below).
+export const MANAGEMENT_ROLES = new Set<number>([ROLE.admin, ROLE.guardian]);
+export const DEPENDENT_ROLES = new Set<number>([ROLE.child, ROLE.elder, ROLE.dependent]);
 const STATUS_DISABLED = 2;
+
+/**
+ * Consent types that default to ON (granted) in the absence of any row,
+ * instead of the usual default-OFF/absent-means-not-granted rule that every
+ * other type here follows. Today: SosReceive only — see whoReceivesFamilySos
+ * for the rationale (a life-safety alert must not be silent-by-default just
+ * because nobody has ever touched the toggle). Keep this list short and
+ * deliberate; default-on is the exception, not the pattern.
+ */
+const DEFAULT_ON_TYPES = new Set<number>([CONSENT_TYPE.SosReceive]);
 
 function resolveType(type: string): number {
   // Accept the enum name ("LocationSharing") or its numeric value.
@@ -127,7 +141,29 @@ export async function getMyConsents(userId: string) {
     where: { UserId: userId },
     orderBy: { GrantedAt: "desc" },
   });
-  return rows.map(mapConsent);
+  const mapped = rows.map(mapConsent);
+
+  // Surface default-on types the user has never touched as already-active,
+  // so the toggle in the app reflects reality (receiving) instead of lying
+  // "off" just because no row exists yet. A synthetic id ("default:…") marks
+  // it as implicit rather than a row the user actually granted.
+  const present = new Set(mapped.map((c) => c.type));
+  for (const domainType of DEFAULT_ON_TYPES) {
+    const typeName = CONSENT_TYPE_NAMES[domainType];
+    if (typeName && !present.has(typeName)) {
+      mapped.push({
+        id: `default:${typeName}`,
+        type: typeName,
+        version: "default",
+        allowedFromHour: null,
+        allowedToHour: null,
+        grantedAt: new Date(0).toISOString(),
+        revokedAt: null,
+        isActive: true,
+      });
+    }
+  }
+  return mapped;
 }
 
 export async function accept(userId: string, type: string, input: AcceptConsentInput, ip?: string) {
@@ -166,7 +202,28 @@ export async function revoke(userId: string, type: string) {
     orderBy: { GrantedAt: "desc" },
   });
   if (active.length === 0) {
-    throw new AppError("ConsentNotFound", "Nenhum consentimento ativo foi encontrado para este tipo.", 404);
+    if (!DEFAULT_ON_TYPES.has(domainType)) {
+      throw new AppError("ConsentNotFound", "Nenhum consentimento ativo foi encontrado para este tipo.", 404);
+    }
+    // Default-on type with no row yet: the user is turning off something that
+    // was only ever implicit. Persist an explicit opt-out row (IsActive:false)
+    // rather than 404ing — this is what lets whoReceivesFamilySos() tell
+    // "never touched" (still on) apart from "explicitly declined" (off).
+    const now = new Date();
+    const declined = await prisma.user_consents.create({
+      data: {
+        Id: randomUUID(),
+        UserId: userId,
+        Type: domainType,
+        Version: "default",
+        CreatedAt: now,
+        GrantedAt: now,
+        RevokedAt: now,
+        IsActive: false,
+      },
+    });
+    await writeAudit({ actorUserId: userId, action: "ConsentRevoked", sourceType: "Consent", targetUserId: userId, metadata: { type, fromImplicitDefault: true } });
+    return mapConsent(declined);
   }
   await prisma.user_consents.updateMany({
     where: { UserId: userId, Type: domainType, IsActive: true },
@@ -270,4 +327,50 @@ function isAllowedNow(from: number | null, to: number | null): boolean {
   if (from === null || to === null || from === to) return true;
   const hour = new Date().getUTCHours();
   return from < to ? hour >= from && hour < to : hour >= from || hour < to;
+}
+
+/**
+ * Which of these family members should actually receive a family SOS push
+ * (the "Receber SOS" / SosReceive preference), batched into one query.
+ *
+ * This is deliberately the *opposite* default from hasActiveUserConsent: SOS
+ * delivery is opt-out, not opt-in. A member who has never touched the toggle
+ * (no row at all) is assumed to want to know when a relative is in danger —
+ * only an explicit revoke (a real, inactive row — see revoke()'s
+ * DEFAULT_ON_TYPES branch) silences it for them. Getting this backwards would
+ * make a life-safety alert silent by default for every family that never
+ * opened the consent screen, which is worse than having no toggle at all.
+ *
+ * This does NOT apply the guardian floor (admins/guardians always receiving a
+ * dependent's SOS regardless of their own preference) — that's a family-role
+ * question the caller (sos.ts) layers on top, since it needs the triggerer's
+ * role too.
+ */
+export async function whoReceivesFamilySos(userIds: string[]): Promise<Set<string>> {
+  if (userIds.length === 0) return new Set();
+  const rows = await prisma.user_consents.findMany({
+    where: { UserId: { in: userIds }, Type: CONSENT_TYPE.SosReceive },
+    orderBy: { GrantedAt: "desc" },
+    select: { UserId: true, IsActive: true, GrantedAt: true },
+  });
+  return resolveSosOptIns(userIds, rows);
+}
+
+/**
+ * Pure decision behind whoReceivesFamilySos, split out for unit testing
+ * without a database: given every candidate's SosReceive rows (any order —
+ * this sorts by GrantedAt itself) decide who is currently opted in.
+ * Absence of any row defaults to "opted in" — see whoReceivesFamilySos above
+ * for why the default must be on for this specific consent type.
+ */
+export function resolveSosOptIns(
+  userIds: string[],
+  rows: { UserId: string; IsActive: boolean; GrantedAt: Date }[],
+): Set<string> {
+  const sorted = [...rows].sort((a, b) => b.GrantedAt.getTime() - a.GrantedAt.getTime());
+  const latestByUser = new Map<string, boolean>();
+  for (const r of sorted) {
+    if (!latestByUser.has(r.UserId)) latestByUser.set(r.UserId, r.IsActive);
+  }
+  return new Set(userIds.filter((id) => latestByUser.get(id) ?? true));
 }

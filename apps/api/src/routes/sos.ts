@@ -6,6 +6,7 @@ import { AppError } from "../lib/errors.js";
 import { emitToFamily, emitToUser, emitToUsers } from "../realtime.js";
 import { writeAudit } from "../services/auditService.js";
 import { pushToUsers } from "../services/pushService.js";
+import { MANAGEMENT_ROLES, DEPENDENT_ROLES, whoReceivesFamilySos } from "../services/consentService.js";
 
 const MEMBER_ACTIVE = 1; // FamilyMemberStatus.Active
 
@@ -64,25 +65,39 @@ export async function registerSosRoutes(app: FastifyInstance) {
       },
     });
 
-    await writeAudit({ actorUserId: userId, action: "SosTriggered", sourceType: "Sos", familyId: familyId ?? null, metadata: { sosId: sos.Id } });
+    let sosAuditMetadata: Record<string, unknown> = { sosId: sos.Id };
     if (familyId) {
-      emitToFamily(familyId, "SosTriggered", {
+      // High-priority OS push/realtime to family members — gated by their
+      // SosReceive preference, except for a non-silenceable floor: an
+      // admin/guardian always hears about an SOS triggered by a member in a
+      // managed dependent role (child/elder/dependent) in the same family,
+      // regardless of the admin/guardian's own toggle. Their own notification
+      // preference must not be able to blind them to a ward's emergency.
+      const [triggerer, members] = await Promise.all([
+        prisma.users.findFirst({ where: { Id: userId }, select: { FullName: true } }),
+        prisma.family_members.findMany({
+          where: { FamilyId: familyId, Status: MEMBER_ACTIVE, UserId: { not: null } },
+          select: { UserId: true, Role: true },
+        }),
+      ]);
+      const candidateIds = members.map((m) => m.UserId!).filter((id) => id && id !== userId);
+      const optedIn = await whoReceivesFamilySos(candidateIds);
+      const { recipientIds, suppressedIds, flooredIds } = resolveFamilySosRecipients(
+        userId,
+        members.map((m) => ({ userId: m.UserId!, role: m.Role })),
+        optedIn,
+      );
+      sosAuditMetadata = { ...sosAuditMetadata, recipientIds, suppressedIds, flooredIds };
+
+      // Realtime keeps including the triggerer (their other devices/sessions
+      // relied on the old family-room broadcast for this); push never did.
+      emitToUsers([userId, ...recipientIds], "SosTriggered", {
         id: sos.Id,
         userId,
         latitude: latitude ?? null,
         longitude: longitude ?? null,
         triggeredAt: sos.TriggeredAt.toISOString(),
       });
-      // High-priority OS push to every family member except the triggerer —
-      // an SOS must reach them even with the app closed.
-      const [triggerer, members] = await Promise.all([
-        prisma.users.findFirst({ where: { Id: userId }, select: { FullName: true } }),
-        prisma.family_members.findMany({
-          where: { FamilyId: familyId, Status: MEMBER_ACTIVE, UserId: { not: null } },
-          select: { UserId: true },
-        }),
-      ]);
-      const recipientIds = members.map((m) => m.UserId!).filter((id) => id && id !== userId);
       pushToUsers(recipientIds, {
         title: "🆘 SOS acionado",
         body: `${triggerer?.FullName ?? "Um familiar"} precisa de ajuda.`,
@@ -90,6 +105,7 @@ export async function registerSosRoutes(app: FastifyInstance) {
         highPriority: true,
       });
     }
+    await writeAudit({ actorUserId: userId, action: "SosTriggered", sourceType: "Sos", familyId: familyId ?? null, metadata: sosAuditMetadata });
 
     // Travel companions: an SOS must also reach the active trips' members who
     // opted into ReceiveSosAlerts — they may not share a family with the
@@ -236,4 +252,52 @@ async function loadSos(sosId: string) {
   const sos = await prisma.sos_events.findFirst({ where: { Id: sosId } });
   if (!sos) throw new AppError("SosNotFound", "Evento de SOS não encontrado.", 404);
   return sos;
+}
+
+export interface FamilySosMember {
+  userId: string;
+  role: number;
+}
+
+/**
+ * Decide who among a family's members should be notified of an SOS, given
+ * who's currently opted in to SosReceive (see consentService.whoReceivesFamilySos).
+ * Pulled out as a pure function so the safety-critical part — the guardian
+ * floor — has direct unit coverage without touching Prisma.
+ *
+ * Two rules, applied in order:
+ *  1. Opt-in wins: anyone in `optedInIds` receives it (this already defaults
+ *     to true for members who never touched the toggle).
+ *  2. Non-silenceable floor: if the triggerer holds a managed/dependent role
+ *     (child/elder/dependent) in this family, every admin/guardian receives
+ *     the alert regardless of their own SosReceive preference — a guardian's
+ *     own notification setting must never be able to hide a ward's emergency
+ *     from them.
+ * Everyone else (an opted-out adult peer, when the trigger isn't a dependent)
+ * is suppressed — that's a deliberate, informed choice this function respects.
+ */
+export function resolveFamilySosRecipients(
+  triggererId: string,
+  members: FamilySosMember[],
+  optedInIds: Set<string>,
+): { recipientIds: string[]; suppressedIds: string[]; flooredIds: string[] } {
+  const triggererRole = members.find((m) => m.userId === triggererId)?.role;
+  const isDependentTrigger = triggererRole !== undefined && DEPENDENT_ROLES.has(triggererRole);
+  const guardianIds = new Set(
+    members.filter((m) => m.userId !== triggererId && MANAGEMENT_ROLES.has(m.role)).map((m) => m.userId),
+  );
+  const candidateIds = members.map((m) => m.userId).filter((id) => id && id !== triggererId);
+
+  const suppressedIds: string[] = [];
+  const flooredIds: string[] = [];
+  const recipientIds = candidateIds.filter((id) => {
+    if (optedInIds.has(id)) return true;
+    if (isDependentTrigger && guardianIds.has(id)) {
+      flooredIds.push(id);
+      return true;
+    }
+    suppressedIds.push(id);
+    return false;
+  });
+  return { recipientIds, suppressedIds, flooredIds };
 }
