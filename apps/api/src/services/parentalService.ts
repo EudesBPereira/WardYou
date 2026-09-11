@@ -106,8 +106,8 @@ function dateOnlyToString(d: Date): string {
  * timezone" problem (built for the elder-care scheduler) — reuse it here so
  * the boundary matches a real family-local midnight instead of UTC's.
  */
-function todayLocal(): Date {
-  return new Date(`${localParts().date}T00:00:00Z`);
+function todayLocal(now: Date = new Date()): Date {
+  return new Date(`${localParts(now).date}T00:00:00Z`);
 }
 
 function ensure(id: string | undefined): string {
@@ -424,11 +424,32 @@ export async function applyRemoteAction(
   return mapPolicyFull(updated);
 }
 
-function normalizeDomain(raw: string): string {
-  let d = raw.trim().toLowerCase().replace("https://", "").replace("http://", "");
+// Bare hostname: labels of alnum/hyphen (not starting/ending in a hyphen),
+// at least two labels ("example.com", not just "example"). Deliberately
+// stricter than "accept anything" — a domain that can never match a real
+// hostname is a rule that silently never fires (bug de campo #8).
+const DOMAIN_RE = /^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)+$/;
+
+/**
+ * Normalizes a guardian-entered domain to a bare host ("example.com"), or
+ * `null` when it isn't a plausible hostname after cleanup. Strips ALL
+ * whitespace, not just leading/trailing: "qatestblock. com" (a stray space
+ * before ".com") used to `trim()` down to "qatestblock. com" unchanged — a
+ * domain that would never match anything on the device, saved without
+ * complaint. `upsertBlockedWebsites` below rejects the save outright when a
+ * domain still doesn't look like a hostname after this cleanup, so the
+ * guardian finds out immediately instead of trusting a rule that quietly
+ * never blocks anything.
+ */
+export function normalizeDomain(raw: string): string | null {
+  let d = raw
+    .replace(/\s+/g, "")
+    .toLowerCase()
+    .replace(/^https?:\/\//, "");
   const slash = d.indexOf("/");
   if (slash >= 0) d = d.slice(0, slash);
   if (d.startsWith("www.")) d = d.slice(4);
+  if (!d || !DOMAIN_RE.test(d)) return null;
   return d;
 }
 
@@ -436,7 +457,19 @@ function normalizeDomain(raw: string): string {
 export async function upsertBlockedWebsites(userId: string, childUserId: string, domains: string[]) {
   await requireTutorChild(userId, childUserId);
   const policy = await getOrCreatePolicy(childUserId, userId);
-  const clean = [...new Set((domains ?? []).map(normalizeDomain).filter((d) => d.length > 0))].slice(0, 200);
+  const entries = (domains ?? []).map((d) => d.trim()).filter((d) => d.length > 0);
+  const normalized: string[] = [];
+  for (const raw of entries) {
+    const clean = normalizeDomain(raw);
+    if (!clean) {
+      throw new AppError(
+        "ValidationError",
+        `"${raw}" não parece um domínio válido. Use apenas o site, sem espaços (ex.: exemplo.com).`,
+      );
+    }
+    normalized.push(clean);
+  }
+  const clean = [...new Set(normalized)].slice(0, 200);
   const updated = await prisma.child_device_policies.update({
     where: { Id: policy.Id },
     data: {
@@ -1654,6 +1687,62 @@ export async function getMyTasks(userId: string) {
   };
 }
 
+/**
+ * Guards against re-crediting a task that was already paid out (bug de campo
+ * #1: a non-recurring task kept reappearing as "Concluí!" after approval —
+ * each resubmit/approve round-trip minted another `RewardMinutes` extra-time
+ * grant, so a 15min task turned into +30min, +45min... with real screen time
+ * on the other end). `submitCompletion` already blocked a second submission
+ * while one was *pending*; it never blocked one after the first was
+ * *approved*, which is the case that actually pays out.
+ *
+ * - Non-recurring task: payable once, ever. An Approved completion blocks
+ *   forever (delete + recreate the task to reset it — same as any other
+ *   one-off chore). A Rejected completion does NOT block: the child should be
+ *   able to try again.
+ * - Recurring task: payable once per local calendar day (the same
+ *   family-local midnight `todayLocal()` uses for the daily screen-time
+ *   limit, not server UTC — see its own comment for why). Explicit per
+ *   `RecurringDays`-weekday gating is left to a later pass; the day-boundary
+ *   gate alone already closes the duplicate-credit hole and matches how
+ *   `getMyStatus` already buckets "approved today" extra time.
+ */
+/**
+ * Pure decision, exported for unit testing (parentalService.test.ts): given a
+ * task's recurrence and the `ReviewedAt` timestamps of its Approved
+ * completions, would submitting a new completion re-credit an already-paid
+ * task? `assertNotAlreadyCredited` below is the DB-backed wrapper that fetches
+ * the dates and throws.
+ */
+export function isTaskAlreadyCredited(
+  isRecurring: boolean,
+  approvedReviewedAtDates: Date[],
+  now: Date = new Date(),
+): boolean {
+  if (approvedReviewedAtDates.length === 0) return false;
+  if (!isRecurring) return true;
+  const today = todayLocal(now);
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60_000);
+  return approvedReviewedAtDates.some((d) => d >= today && d < tomorrow);
+}
+
+async function assertNotAlreadyCredited(taskId: string, childUserId: string, task: TaskRow): Promise<void> {
+  const approved = await prisma.task_completions.findMany({
+    where: { ChildTaskId: taskId, ChildUserId: childUserId, Status: COMPLETION_STATUS.Approved },
+    select: { ReviewedAt: true },
+  });
+  const dates = approved.map((a) => a.ReviewedAt).filter((d): d is Date => !!d);
+  if (isTaskAlreadyCredited(task.IsRecurring, dates)) {
+    throw new AppError(
+      "Conflict",
+      task.IsRecurring
+        ? "Esta tarefa recorrente já foi concluída hoje."
+        : "Esta tarefa não é recorrente e já foi concluída e aprovada.",
+      409,
+    );
+  }
+}
+
 export async function submitCompletion(userId: string, taskId: string, childNote?: string) {
   const task = await prisma.child_tasks.findFirst({ where: { Id: taskId, ChildUserId: userId, IsActive: true } });
   if (!task) throw new AppError("NotFound", "Tarefa não encontrada ou inativa.", 404);
@@ -1662,6 +1751,7 @@ export async function submitCompletion(userId: string, taskId: string, childNote
     select: { Id: true },
   });
   if (pending) throw new AppError("Conflict", "Já existe uma conclusão pendente para essa tarefa.", 409);
+  await assertNotAlreadyCredited(taskId, userId, task);
   const completion = await prisma.task_completions.create({
     data: {
       Id: randomUUID(),
