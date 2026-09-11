@@ -23,6 +23,10 @@ export interface EnforcementState {
 export interface UsageItem {
   packageName: string;
   minutes: number;
+  /** Friendly app name resolved natively (PackageManager label, same
+   *  resolver as `InstalledApp.label`), falling back to a humanized guess —
+   *  never the raw package. */
+  label: string;
 }
 
 export interface InstalledApp {

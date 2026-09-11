@@ -13,6 +13,7 @@ export interface EnforcementState {
 export interface UsageItem {
   packageName: string;
   minutes: number;
+  label: string;
 }
 
 export interface InstalledApp {

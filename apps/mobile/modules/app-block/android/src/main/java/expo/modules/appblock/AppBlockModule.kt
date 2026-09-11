@@ -407,24 +407,70 @@ class AppBlockModule : Module() {
     }
   }
 
+  // Single source of truth for "package -> friendly name", shared by the
+  // installed-apps list AND the usage-stats report below. Two independent
+  // resolvers (one per collector) is exactly how "com.miui.home" ends up on
+  // the guardian's screen instead of "Launcher" — this app had that bug for
+  // usage (see getUsageTodayJson) while the installed-apps path already
+  // worked. Never returns the raw package: last-resort is a humanized guess.
+  private fun resolveLabel(pm: android.content.pm.PackageManager, pkg: String): String {
+    val label = try {
+      val appInfo = pm.getApplicationInfo(pkg, 0)
+      pm.getApplicationLabel(appInfo)?.toString()
+    } catch (e: Exception) {
+      null
+    }
+    return if (!label.isNullOrBlank()) label else humanizePackageName(pkg)
+  }
+
+  // Last-resort fallback when PackageManager has no label for the package
+  // (uninstalled since, restricted profile, OEM quirk). "com.google.foo_bar"
+  // -> "Foo bar" — never as good as the real label, but never the raw
+  // dotted package id either.
+  private fun humanizePackageName(pkg: String): String {
+    val last = pkg.substringAfterLast('.').ifBlank { pkg }
+    val spaced = last.replace('_', ' ').replace('-', ' ').trim()
+    if (spaced.isEmpty()) return pkg
+    return spaced.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }
+  }
+
   private fun getInstalledAppsJson(): String {
     val context = appContext.reactContext ?: return "[]"
     val pm = context.packageManager
+    val seen = HashSet<String>()
+    val arr = JSONArray()
+
     val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
     val activities = try {
       pm.queryIntentActivities(intent, 0)
     } catch (e: Exception) {
-      return "[]"
+      emptyList()
     }
-    val seen = HashSet<String>()
-    val arr = JSONArray()
     for (ri in activities) {
       val pkg = ri.activityInfo?.packageName ?: continue
       if (pkg == context.packageName) continue
       if (!seen.add(pkg)) continue
-      val label = try { ri.loadLabel(pm).toString() } catch (e: Exception) { pkg }
-      arr.put(JSONObject().put("packageName", pkg).put("label", label))
+      arr.put(JSONObject().put("packageName", pkg).put("label", resolveLabel(pm, pkg)))
     }
+
+    // Keyboards (IMEs) commonly have NO launcher activity of their own — Gboard's
+    // settings open via Settings > Idiomas, not a home-screen icon — so the
+    // LAUNCHER query above silently drops them: the child can rack up real
+    // screen time on Gboard and the guardian never gets a rule row to allow/
+    // limit it, or gets one later with no resolved name. InputMethodManager
+    // exposes installed/enabled IMEs directly, no launcher intent needed.
+    try {
+      val imm = context.getSystemService(Context.INPUT_METHOD_SERVICE)
+        as? android.view.inputmethod.InputMethodManager
+      for (imi in imm?.enabledInputMethodList ?: emptyList()) {
+        val pkg = imi.packageName
+        if (pkg == context.packageName || !seen.add(pkg)) continue
+        arr.put(JSONObject().put("packageName", pkg).put("label", resolveLabel(pm, pkg)))
+      }
+    } catch (e: Exception) {
+      // best-effort — worst case the IME stays missing from the list, same as before
+    }
+
     return arr.toString()
   }
 
@@ -456,11 +502,17 @@ class AppBlockModule : Module() {
         totals[s.packageName] = (totals[s.packageName] ?: 0L) + s.totalTimeInForeground
       }
     }
+    val pm = context.packageManager
     val arr = JSONArray()
     for ((pkg, ms) in totals) {
       val minutes = (ms / 60000L).toInt()
       if (minutes > 0) {
-        arr.put(JSONObject().put("packageName", pkg).put("minutes", minutes))
+        // Resolve the friendly name HERE, same as getInstalledAppsJson (see
+        // resolveLabel) — this used to be the one collector that skipped it,
+        // so the server stored the raw package as AppDisplayName forever
+        // (saveUsageSummary only falls back to the package when the client
+        // sends nothing at all).
+        arr.put(JSONObject().put("packageName", pkg).put("minutes", minutes).put("label", resolveLabel(pm, pkg)))
       }
     }
     return arr.toString()

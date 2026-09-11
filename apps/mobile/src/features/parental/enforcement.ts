@@ -62,7 +62,15 @@ export async function reportUsage(childUserId: string): Promise<void> {
     if (!deviceId) return; // no registered device yet → nothing to attribute usage to
     const items = AppBlock.getUsageToday()
       .filter((i) => i.packageName !== WARDYOU_PACKAGE && i.minutes > 0)
-      .map((i) => ({ appPackageName: i.packageName, usedMinutes: i.minutes }));
+      .map((i) => ({
+        appPackageName: i.packageName,
+        usedMinutes: i.minutes,
+        // Native now resolves this the same way the installed-apps collector
+        // does (see AppBlockModule.resolveLabel) — without it the server
+        // falls back to the raw package name and bakes it into
+        // app_usage_summaries.AppDisplayName forever (see saveUsageSummary).
+        appDisplayName: i.label || i.packageName,
+      }));
     if (items.length === 0) return;
     await apiClient.post("/api/v1/parental/usage-summary", {
       childUserId,
