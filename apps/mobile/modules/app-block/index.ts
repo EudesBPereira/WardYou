@@ -118,3 +118,7 @@ export function openAutostartSettings(): void {
 export function openAppSettings(): void {
   // no-op
 }
+
+export function openLocationSettings(): void {
+  // no-op
+}

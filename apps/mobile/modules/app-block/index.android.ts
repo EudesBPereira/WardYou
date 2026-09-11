@@ -39,6 +39,7 @@ interface AppBlockNativeModule {
   isAggressiveOem(): boolean;
   openAutostartSettings(): void;
   openAppSettings(): void;
+  openLocationSettings(): void;
   drainPendingRequestsJson(): string;
   lastOverlayResultJson(): string;
   canDrawOverlays(): boolean;
@@ -202,6 +203,14 @@ export function openAutostartSettings(): void {
 
 /** The app's own system settings page (MIUI: "Outras permissões" → pop-up em
  *  segundo plano; bateria por app). */
+export function openLocationSettings(): void {
+  try {
+    nativeModule?.openLocationSettings();
+  } catch {
+    /* best-effort */
+  }
+}
+
 export function openAppSettings(): void {
   try {
     nativeModule?.openAppSettings();

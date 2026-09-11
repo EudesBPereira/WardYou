@@ -21,9 +21,7 @@ import {
   reportUsage,
   reportInstalledApps,
   isAccessibilityServiceEnabled,
-  openAccessibilitySettings,
   isUsageAccessEnabled,
-  openUsageAccessSettings,
 } from "@/features/parental/enforcement";
 import {
   isIgnoringBatteryOptimizations,
@@ -35,6 +33,7 @@ import {
 import { WARDYOU_PACKAGE } from "@/features/parental/enforcementLogic";
 import { storage } from "@/lib/storage";
 import { SHIELD_SETUP_DONE_KEY } from "../../../app/protection-setup";
+import { ProtectionStatusCard } from "@/features/protection/ProtectionStatusCard";
 
 const EXTRA_TIME_OPTIONS = [15, 30, 60];
 const HEARTBEAT_INTERVAL_MS = 60_000;
@@ -173,68 +172,21 @@ export function ChildHome() {
         </Card>
       ) : null}
 
-      {/* Real on-device enforcement needs the Accessibility permission — without
-          it, blocked apps/sleep windows are only cosmetic in this UI. Prompt the
-          child whenever it's off (a child device should always have it on), not
-          only when limits are already active. */}
-      {Platform.OS === "android" && !accessibilityEnabled ? (
-        <Card onPress={openAccessibilitySettings} className="mt-2 flex-row items-center gap-3 border border-brand-500/30">
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-50">
-            <Ionicons name="shield-half" size={24} color={colors.brand[500]} />
-          </View>
-          <View className="flex-1">
-            <Text variant="title">{t("childHome.enableAccessibilityTitle")}</Text>
-            <Text variant="caption" color="muted">
-              {t("childHome.enableAccessibilityBody")}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />
-        </Card>
-      ) : null}
+      {/* Painel unico de estado da protecao.
+          Substitui a fila de cards que apareciam UM DE CADA VEZ (acessibilidade
+          -> depois uso -> depois blindagem). Aquele desenho escondia o tamanho
+          da tarefa: resolvia-se um, parecia ter acabado, e no dia seguinte
+          aparecia outro. Agora tudo que falta e listado junto, com contagem, e
+          inclui sinais que ninguem verificava — GPS desligado no sistema,
+          permissao de localizacao negada e push bloqueado. */}
+      <ProtectionStatusCard modoCrianca />
 
-      {/* Usage access — needed to count real screen time so the daily limit
-          actually kicks in. Only nag when accessibility is already handled. */}
-      {Platform.OS === "android" && accessibilityEnabled && !usageAccessEnabled ? (
-        <Card onPress={openUsageAccessSettings} className="mt-2 flex-row items-center gap-3 border border-brand-500/30">
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-brand-50">
-            <Ionicons name="stats-chart" size={24} color={colors.brand[500]} />
-          </View>
-          <View className="flex-1">
-            <Text variant="title">{t("childHome.enableUsageTitle")}</Text>
-            <Text variant="caption" color="muted">
-              {t("childHome.enableUsageBody")}
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors["ink-subtle"]} />
-        </Card>
-      ) : null}
-
-      {/* Protection active — deliberately NOT pressable: once both permissions
-          are on, this is a status, not a door back into the OS settings where
-          the child could hunt for the off switch. (Tamper is caught by the
-          heartbeat alert anyway — but don't hand over the shortcut.) */}
-      {Platform.OS === "android" && accessibilityEnabled && usageAccessEnabled ? (
-        <Card className="mt-2 flex-row items-center gap-3 border border-safe-500/30">
-          <View className="h-12 w-12 items-center justify-center rounded-2xl bg-safe-50">
-            <Ionicons name="shield-checkmark" size={24} color={colors.safe[500]} />
-          </View>
-          <View className="flex-1">
-            <Text variant="title">{t("childHome.protectionActiveTitle")}</Text>
-            <Text variant="caption" color="muted">
-              {t("childHome.protectionActiveBody")}
-            </Text>
-          </View>
-          <Ionicons name="checkmark-circle" size={22} color={colors.safe[500]} />
-        </Card>
-      ) : null}
-
-      {/* Shield hardening — OEM task killers (MIUI etc.) silently disable the
-          protection in background; nag until battery is exempt and the one-time
-          walkthrough was completed. Shown only after both permissions are on. */}
-      {Platform.OS === "android" &&
-      accessibilityEnabled &&
-      usageAccessEnabled &&
-      (!adminOn || !batteryExempt || !overlayOn || !shieldSetupDone) ? (
+      {/* Blindagem contra OEM. Condicao reduzida a `!shieldSetupDone` porque o
+          ProtectionStatusCard acima ja cobre admin, bateria e sobreposicao —
+          manter os tres aqui faria dois paineis dizerem a mesma coisa. O que
+          sobra e exclusivo desta tela: o autostart da MIUI e afins, que o
+          Android NAO permite consultar, entao so um "ja fiz" manual resolve. */}
+      {Platform.OS === "android" && accessibilityEnabled && usageAccessEnabled && !shieldSetupDone ? (
         <Card
           onPress={() => router.push("/protection-setup")}
           className="mt-2 flex-row items-center gap-3 border border-brand-500/30"

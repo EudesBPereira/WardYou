@@ -257,6 +257,21 @@ class AppBlockModule : Module() {
       }
     }
 
+    // Ajustes de LOCALIZACAO do sistema. Diferente da permissao do app: o
+    // usuario pode ter concedido a permissao e ter o GPS desligado no aparelho,
+    // e ai nada funciona sem que nada avise.
+    Function("openLocationSettings") {
+      val context = appContext.reactContext ?: return@Function Unit
+      try {
+        val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS).apply {
+          addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        context.startActivity(intent)
+      } catch (e: Exception) {
+        // ignore
+      }
+    }
+
     // App details page — where MIUI keeps "Exibir janelas pop-up em segundo
     // plano" (needed for the blocked screen) and battery saver per-app modes.
     Function("openAppSettings") {

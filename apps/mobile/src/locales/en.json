@@ -791,5 +791,62 @@
     "unlock": "Unlock",
     "prompt": "Unlock WardYou",
     "confirm": "Confirm to change the lock"
+  },
+  "protection": {
+    "level": {
+      "completa": "Full protection",
+      "limitada": "Limited protection",
+      "acao": "Action needed",
+      "offline": "Device offline"
+    },
+    "allGood": "Everything your family needs is active on this device.",
+    "pending": "{{n}} item(s) to fix — {{criticos}} stop protection from working.",
+    "issue": {
+      "accessibility": {
+        "title": "Accessibility is off",
+        "body": "Without it, app limits and blocks aren't enforced — they only show on screen.",
+        "oemHint": "Tap, then go to: Downloaded apps → WardYou Protection"
+      },
+      "usageAccess": {
+        "title": "Usage access is off",
+        "body": "Without it, screen time isn't counted and the daily limit is never reached.",
+        "oemHint": "Tap, then find WardYou in the app list"
+      },
+      "locationPermission": {
+        "title": "Location permission denied",
+        "body": "Your family can't see where you are, and SOS goes out without a location.",
+        "oemHint": ""
+      },
+      "locationServices": {
+        "title": "Device location is off",
+        "body": "GPS is turned off system-wide. Even with permission granted, nothing location-related works.",
+        "oemHint": ""
+      },
+      "battery": {
+        "title": "Battery is restricting the app",
+        "body": "The system may kill background protection to save battery.",
+        "oemHint": "Choose “Unrestricted” on the screen that opens"
+      },
+      "overlay": {
+        "title": "Screen overlay is off",
+        "body": "The blocked-app screen may not appear over whatever the child opens.",
+        "oemHint": ""
+      },
+      "deviceAdmin": {
+        "title": "Uninstall protection is off",
+        "body": "The app can be uninstalled without the guardians knowing.",
+        "oemHint": ""
+      },
+      "push": {
+        "title": "Notifications are blocked",
+        "body": "SOS, zone alerts and unlock requests won't reach this device.",
+        "oemHint": ""
+      },
+      "network": {
+        "title": "No connection",
+        "body": "The device is offline. Protection resumes on its own once the internet is back.",
+        "oemHint": ""
+      }
+    }
   }
 }

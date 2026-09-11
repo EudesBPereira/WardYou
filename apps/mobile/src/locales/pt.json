@@ -791,5 +791,62 @@
     "unlock": "Desbloquear",
     "prompt": "Desbloqueie o WardYou",
     "confirm": "Confirme para alterar o bloqueio"
+  },
+  "protection": {
+    "level": {
+      "completa": "Proteção completa",
+      "limitada": "Proteção limitada",
+      "acao": "Ação necessária",
+      "offline": "Aparelho offline"
+    },
+    "allGood": "Tudo que a família precisa está ativo neste aparelho.",
+    "pending": "{{n}} item(ns) para resolver — {{criticos}} impedem a proteção de funcionar.",
+    "issue": {
+      "accessibility": {
+        "title": "Acessibilidade desligada",
+        "body": "Sem isso os limites e bloqueios de app não são aplicados — só aparecem na tela.",
+        "oemHint": "Toque e vá em: Downloaded apps → Proteção WardYou"
+      },
+      "usageAccess": {
+        "title": "Acesso de uso desligado",
+        "body": "Sem isso o tempo de tela não é contado e o limite diário nunca é atingido.",
+        "oemHint": "Toque e procure WardYou na lista de apps"
+      },
+      "locationPermission": {
+        "title": "Permissão de localização negada",
+        "body": "Sua família não consegue ver onde você está, e o SOS vai sem localização.",
+        "oemHint": ""
+      },
+      "locationServices": {
+        "title": "Localização do aparelho desligada",
+        "body": "O GPS está desligado no sistema. Mesmo com a permissão concedida, nada de localização funciona.",
+        "oemHint": ""
+      },
+      "battery": {
+        "title": "Bateria restringindo o app",
+        "body": "O sistema pode encerrar a proteção em segundo plano para economizar bateria.",
+        "oemHint": "Escolha “Sem restrições” na tela que abrir"
+      },
+      "overlay": {
+        "title": "Sobreposição desligada",
+        "body": "A tela de app bloqueado pode não aparecer por cima do app que a criança abrir.",
+        "oemHint": ""
+      },
+      "deviceAdmin": {
+        "title": "Proteção contra desinstalação desligada",
+        "body": "O app pode ser desinstalado sem que os responsáveis saibam.",
+        "oemHint": ""
+      },
+      "push": {
+        "title": "Notificações bloqueadas",
+        "body": "SOS, alertas de zona e pedidos de liberação não vão chegar neste aparelho.",
+        "oemHint": ""
+      },
+      "network": {
+        "title": "Sem conexão",
+        "body": "O aparelho está offline. A proteção volta sozinha quando a internet voltar.",
+        "oemHint": ""
+      }
+    }
   }
 }

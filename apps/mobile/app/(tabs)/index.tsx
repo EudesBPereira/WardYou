@@ -19,6 +19,7 @@ import { getCurrentPosition } from "@/services/location/locationService";
 import { useMyProfile } from "@/features/profile/queries";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { ChildHome } from "@/features/home/ChildHome";
+import { ProtectionStatusCard } from "@/features/protection/ProtectionStatusCard";
 import { ElderHome } from "@/features/home/ElderHome";
 import { ProfileButton } from "@/components/ProfileButton";
 
@@ -132,6 +133,11 @@ function AdultHome({ canApprove, hasFamily }: { canApprove: boolean; hasFamily: 
         </View>
         <ProfileButton />
       </View>
+
+      {/* Estado da protecao tambem no aparelho do responsavel: GPS desligado,
+          permissao negada ou push bloqueado AQUI quebram o produto do mesmo
+          jeito — o pai deixa de ver a familia e de receber alerta de SOS. */}
+      <ProtectionStatusCard modoCrianca={false} />
 
       {/* Pending join requests — only admins/guardians can act on them. The
           approval lives in the Família tab, so nudge them there. */}

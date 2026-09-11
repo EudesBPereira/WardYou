@@ -791,5 +791,62 @@
     "unlock": "Desbloquear",
     "prompt": "Desbloquea WardYou",
     "confirm": "Confirma para cambiar el bloqueo"
+  },
+  "protection": {
+    "level": {
+      "completa": "Protección completa",
+      "limitada": "Protección limitada",
+      "acao": "Acción necesaria",
+      "offline": "Dispositivo sin conexión"
+    },
+    "allGood": "Todo lo que tu familia necesita está activo en este dispositivo.",
+    "pending": "{{n}} elemento(s) por resolver — {{criticos}} impiden que la protección funcione.",
+    "issue": {
+      "accessibility": {
+        "title": "Accesibilidad desactivada",
+        "body": "Sin esto, los límites y bloqueos de apps no se aplican — solo se ven en pantalla.",
+        "oemHint": "Toca y ve a: Downloaded apps → Protección WardYou"
+      },
+      "usageAccess": {
+        "title": "Acceso de uso desactivado",
+        "body": "Sin esto, el tiempo de pantalla no se cuenta y el límite diario nunca se alcanza.",
+        "oemHint": "Toca y busca WardYou en la lista de apps"
+      },
+      "locationPermission": {
+        "title": "Permiso de ubicación denegado",
+        "body": "Tu familia no puede ver dónde estás, y el SOS se envía sin ubicación.",
+        "oemHint": ""
+      },
+      "locationServices": {
+        "title": "Ubicación del dispositivo desactivada",
+        "body": "El GPS está apagado en el sistema. Aunque el permiso esté concedido, nada de ubicación funciona.",
+        "oemHint": ""
+      },
+      "battery": {
+        "title": "La batería está restringiendo la app",
+        "body": "El sistema puede cerrar la protección en segundo plano para ahorrar batería.",
+        "oemHint": "Elige “Sin restricciones” en la pantalla que se abra"
+      },
+      "overlay": {
+        "title": "Superposición desactivada",
+        "body": "La pantalla de app bloqueada puede no aparecer sobre lo que abra el niño.",
+        "oemHint": ""
+      },
+      "deviceAdmin": {
+        "title": "Protección contra desinstalación desactivada",
+        "body": "La app puede desinstalarse sin que los responsables lo sepan.",
+        "oemHint": ""
+      },
+      "push": {
+        "title": "Notificaciones bloqueadas",
+        "body": "SOS, alertas de zona y solicitudes de desbloqueo no llegarán a este dispositivo.",
+        "oemHint": ""
+      },
+      "network": {
+        "title": "Sin conexión",
+        "body": "El dispositivo está sin conexión. La protección vuelve sola cuando regrese internet.",
+        "oemHint": ""
+      }
+    }
   }
 }

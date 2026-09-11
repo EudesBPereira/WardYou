@@ -791,5 +791,62 @@
     "unlock": "Déverrouiller",
     "prompt": "Déverrouillez WardYou",
     "confirm": "Confirmez pour modifier le verrouillage"
+  },
+  "protection": {
+    "level": {
+      "completa": "Protection complète",
+      "limitada": "Protection limitée",
+      "acao": "Action requise",
+      "offline": "Appareil hors ligne"
+    },
+    "allGood": "Tout ce dont votre famille a besoin est actif sur cet appareil.",
+    "pending": "{{n}} élément(s) à régler — {{criticos}} empêchent la protection de fonctionner.",
+    "issue": {
+      "accessibility": {
+        "title": "Accessibilité désactivée",
+        "body": "Sans elle, les limites et blocages d'applis ne s'appliquent pas — ils ne font que s'afficher.",
+        "oemHint": "Touchez, puis allez dans : Downloaded apps → Protection WardYou"
+      },
+      "usageAccess": {
+        "title": "Accès à l'utilisation désactivé",
+        "body": "Sans lui, le temps d'écran n'est pas compté et la limite quotidienne n'est jamais atteinte.",
+        "oemHint": "Touchez et cherchez WardYou dans la liste des applis"
+      },
+      "locationPermission": {
+        "title": "Autorisation de localisation refusée",
+        "body": "Votre famille ne peut pas voir où vous êtes, et le SOS part sans localisation.",
+        "oemHint": ""
+      },
+      "locationServices": {
+        "title": "Localisation de l'appareil désactivée",
+        "body": "Le GPS est éteint au niveau du système. Même avec l'autorisation accordée, rien ne fonctionne.",
+        "oemHint": ""
+      },
+      "battery": {
+        "title": "La batterie restreint l'appli",
+        "body": "Le système peut arrêter la protection en arrière-plan pour économiser la batterie.",
+        "oemHint": "Choisissez « Sans restriction » sur l'écran qui s'ouvre"
+      },
+      "overlay": {
+        "title": "Superposition désactivée",
+        "body": "L'écran d'appli bloquée peut ne pas s'afficher par-dessus ce que l'enfant ouvre.",
+        "oemHint": ""
+      },
+      "deviceAdmin": {
+        "title": "Protection contre la désinstallation désactivée",
+        "body": "L'appli peut être désinstallée à l'insu des responsables.",
+        "oemHint": ""
+      },
+      "push": {
+        "title": "Notifications bloquées",
+        "body": "SOS, alertes de zone et demandes de déblocage n'arriveront pas sur cet appareil.",
+        "oemHint": ""
+      },
+      "network": {
+        "title": "Pas de connexion",
+        "body": "L'appareil est hors ligne. La protection reprend d'elle-même au retour d'internet.",
+        "oemHint": ""
+      }
+    }
   }
 }
