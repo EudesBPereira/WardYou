@@ -6,6 +6,7 @@ import { ScreenContainer, ScreenHeader, Card, Text, Button, ListItem } from "@/c
 import { colors } from "@/theme";
 import { suppressNextRelock } from "@/stores/appLock";
 import { humanizePascalCase } from "@/lib/humanize";
+import { formatDateTime } from "@/lib/formatTime";
 import {
   usePrivacySummary,
   useMyActions,
@@ -134,7 +135,10 @@ export default function PrivacyScreen() {
                       {t(`audit.action.${a.action}`, { defaultValue: humanizePascalCase(a.action) })}
                     </Text>
                     <Text variant="caption" color="subtle">
-                      {new Date(a.createdAt).toLocaleString()}
+                      {/* Achado de QA 2026-09-11: toLocaleString() sem locale
+                          seguia o idioma do SISTEMA, nao o do app -- data em
+                          formato americano numa tela em portugues. */}
+                      {formatDateTime(a.createdAt)}
                     </Text>
                   </View>
                 </View>

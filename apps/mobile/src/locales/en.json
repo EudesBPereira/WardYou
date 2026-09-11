@@ -791,6 +791,8 @@
     "photoError": "Couldn't update the photo. Please try again.",
     "logout": "Log out",
     "roles": {
+      "admin": "Admin",
+      "dependent": "Dependent",
       "child": "Child",
       "elder": "Elder",
       "guardian": "Guardian",

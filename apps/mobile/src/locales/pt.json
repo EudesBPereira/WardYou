@@ -791,6 +791,8 @@
     "photoError": "Não foi possível atualizar a foto. Tente novamente.",
     "logout": "Sair",
     "roles": {
+      "admin": "Administrador",
+      "dependent": "Dependente",
       "child": "Criança",
       "elder": "Idoso",
       "guardian": "Responsável",

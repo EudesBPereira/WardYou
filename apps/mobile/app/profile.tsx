@@ -148,7 +148,11 @@ export default function ProfileScreen() {
               <View className="flex-1">
                 <Text variant="title">{f.familyName}</Text>
                 <Text variant="caption" color="muted">
-                  {f.role}
+                  {/* Achado de QA 2026-09-11: aparecia o valor cru do enum
+                      ("child", em ingles, minusculo) direto na tela — o mesmo
+                      namespace ja usado pelo badge de appProfile no topo desta
+                      tela cobre os 6 papeis de FamilyRole (profile.roles.*). */}
+                  {t(`profile.roles.${f.role}`)}
                 </Text>
               </View>
               <Badge

@@ -136,12 +136,34 @@ export function usePendingExtraTime() {
   });
 }
 
+/**
+ * FIXED 2026-09-11 (achado de QA, aparelho POCO, conta Tatiane Silva): so
+ * invalidava `["parental", "extra-time", "pending"]` -- a chave de
+ * `usePendingExtraTime` (lista entre-filhos de app/parental/index.tsx), MAS
+ * NAO a de `useChildRequests` (`["parental", "requests", childUserId]`), que
+ * e a que `PendingRequestsCard` realmente le (unico consumidor de Aprovar/
+ * Recusar dentro da tela de um filho especifico). Resultado: aprovar/recusar
+ * ali SEMPRE funcionava no servidor (confirmado nos logs do QA -- primeiro
+ * toque em "Aprovar" voltou 200, os dois seguintes 409 "ja respondido",
+ * exatamente o esperado), mas a tela nunca sabia e continuava mostrando o
+ * pedido como pendente ate o staleTime global de 30s (app/_layout.tsx)
+ * expirar sozinho -- lido em campo como "o botao Aprovar nao funciona".
+ * Usa o `childUserId` que a propria resposta do servidor devolve
+ * (mapExtraTime inclui `childUserId`) em vez de exigi-lo como parametro --
+ * este hook e chamado tanto de dentro de um filho (childUserId fixo) quanto
+ * da lista entre-filhos (nenhum childUserId fixo em escopo).
+ */
 export function useDecideExtraTime() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ requestId, approve }: { requestId: string; approve: boolean }) =>
-      apiClient.put(`/api/v1/parental/extra-time/${requestId}/${approve ? "approve" : "reject"}`),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["parental", "extra-time", "pending"] }),
+      apiClient.put<ExtraTimeDto>(`/api/v1/parental/extra-time/${requestId}/${approve ? "approve" : "reject"}`),
+    onSuccess: (updated) => {
+      qc.invalidateQueries({ queryKey: ["parental", "extra-time", "pending"] });
+      if (updated?.childUserId) {
+        qc.invalidateQueries({ queryKey: ["parental", "requests", updated.childUserId] });
+      }
+    },
   });
 }
 

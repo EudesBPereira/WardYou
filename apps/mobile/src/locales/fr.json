@@ -791,6 +791,8 @@
     "photoError": "Impossible de mettre à jour la photo. Réessayez.",
     "logout": "Se déconnecter",
     "roles": {
+      "admin": "Admin",
+      "dependent": "Personne à charge",
       "child": "Enfant",
       "elder": "Aîné",
       "guardian": "Tuteur",

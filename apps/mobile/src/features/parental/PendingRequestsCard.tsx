@@ -1,4 +1,4 @@
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Alert } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Card, Text, Button, Badge } from "@/components/ui";
@@ -57,14 +57,30 @@ export function PendingRequestsCard({ childUserId, title, className }: PendingRe
                 size="sm"
                 className="flex-1"
                 loading={decideExtra.isPending}
-                onPress={() => decideExtra.mutate({ requestId: r.id, approve: true })}
+                onPress={() =>
+                  decideExtra.mutate(
+                    { requestId: r.id, approve: true },
+                    // Achado de QA 2026-09-11: um toque repetido no MESMO
+                    // pedido ja respondido volta 409 do servidor e, sem isto,
+                    // desaparecia em silencio -- lido em campo como "o botao
+                    // nao funciona" quando o primeiro toque ja tinha
+                    // funcionado. Um alerta simples fecha essa lacuna sem
+                    // fingir que a causa exata sempre e essa.
+                    { onError: () => Alert.alert(t("parental.requests.title"), t("common.genericError")) },
+                  )
+                }
               />
               <Button
                 label={t("parental.requests.reject")}
                 size="sm"
                 variant="secondary"
                 className="flex-1"
-                onPress={() => decideExtra.mutate({ requestId: r.id, approve: false })}
+                onPress={() =>
+                  decideExtra.mutate(
+                    { requestId: r.id, approve: false },
+                    { onError: () => Alert.alert(t("parental.requests.title"), t("common.genericError")) },
+                  )
+                }
               />
             </View>
           </View>

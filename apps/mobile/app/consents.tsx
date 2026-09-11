@@ -69,20 +69,42 @@ function FamilyPermissions() {
                 <View className="mt-1 flex-row gap-2">
                   {PERMS.map((type) => {
                     const granted = has(m.userId as string, type);
+                    // Achado de QA 2026-09-11: isto e uma acao de CONCEDER, nunca
+                    // um toggle -- nao existe (nem no cliente, nem na API) um jeito
+                    // de revogar um consentimento concedido em nome de outro membro
+                    // por aqui, so o proprio titular pode revogar o que concedeu a
+                    // si mesmo (ver o toggle pessoal no topo desta tela). Antes,
+                    // depois de conceder, isto virava um Pressable DESABILITADO —
+                    // continuava com toda a cara de botao tocavel, so que morto. Lido
+                    // em campo (2x, 2 membros, 2 tipos) como "travou". A causa nao e
+                    // um bug de estado — e a AFORDANCIA errada: nada aqui deveria
+                    // parecer tocavel depois de concedido. Concedido agora renderiza
+                    // como selo estatico (sem Pressable, sem onPress), nao como botao
+                    // morto. Revogar-em-nome-de-outro-membro e decisao de produto em
+                    // aberto (ver mensagem pro fundador) — nao inventado aqui.
+                    if (granted) {
+                      return (
+                        <View
+                          key={type}
+                          className="flex-row items-center gap-1 rounded-full bg-safe-50 px-3 py-1.5"
+                        >
+                          <Ionicons name="checkmark-circle" size={14} color={colors.safe[600]} />
+                          <Text variant="caption" className="text-safe-600">
+                            {t(`consent.types.${type}.title`)}
+                          </Text>
+                        </View>
+                      );
+                    }
                     return (
                       <Pressable
                         key={type}
                         accessibilityRole="button"
-                        disabled={granted || grant.isPending}
+                        disabled={grant.isPending}
                         onPress={() => grant.mutate({ userId: m.userId as string, type })}
-                        className={`flex-row items-center gap-1 rounded-full px-3 py-1.5 ${granted ? "bg-safe-50" : "bg-surface-alt active:opacity-70"}`}
+                        className="flex-row items-center gap-1 rounded-full bg-surface-alt px-3 py-1.5 active:opacity-70"
                       >
-                        <Ionicons
-                          name={granted ? "checkmark-circle" : "add-circle-outline"}
-                          size={14}
-                          color={granted ? colors.safe[600] : colors["ink-subtle"]}
-                        />
-                        <Text variant="caption" className={granted ? "text-safe-600" : "text-ink-subtle"}>
+                        <Ionicons name="add-circle-outline" size={14} color={colors["ink-subtle"]} />
+                        <Text variant="caption" className="text-ink-subtle">
                           {t(`consent.types.${type}.title`)}
                         </Text>
                       </Pressable>

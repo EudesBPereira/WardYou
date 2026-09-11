@@ -1,6 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMocks } from "@/lib/env";
 import { apiClient } from "@/services/api/client";
+import { formatDateTime } from "@/lib/formatTime";
+import i18n from "@/i18n";
 import type {
   CreateTripRequest,
   TripDto,
@@ -18,15 +20,19 @@ function mapDto(dto: TripDto): MockTrip {
     type: dto.type,
     status: dto.isActive ? "active" : "closed",
     memberCount: dto.memberCount,
+    // Achado de QA 2026-09-11: `toLocaleString([], ...)` usa o idioma do
+    // SISTEMA, nao o do app -- ver formatDateTime em src/lib/formatTime.ts
+    // para o caso mais grave (closedLabel abaixo, sem opcoes nenhuma).
     endsLabel: dto.isActive
-      ? new Date(dto.endsAt).toLocaleString([], {
+      ? new Date(dto.endsAt).toLocaleString(i18n.language, {
           day: "2-digit",
           month: "2-digit",
           hour: "2-digit",
           minute: "2-digit",
+          hour12: false,
         })
       : undefined,
-    closedLabel: dto.closedAt ? new Date(dto.closedAt).toLocaleString() : undefined,
+    closedLabel: dto.closedAt ? formatDateTime(dto.closedAt) : undefined,
   };
 }
 
