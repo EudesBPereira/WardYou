@@ -55,6 +55,20 @@ export async function hasDeviceAuth(): Promise<boolean> {
 }
 
 /**
+ * Teto para a promessa do prompt do SO. O proprio prompt do Android expira
+ * sozinho em ~30s e resolve; este limite so existe para o caso em que ele
+ * NAO resolve nunca.
+ *
+ * Isso acontece de verdade: o `BiometricPrompt` do Android nao sobe se a
+ * activity ainda nao estiver resumed, e quando ele nao sobe a promessa do
+ * expo-local-authentication fica pendente para sempre. Visto em campo no
+ * aparelho do responsavel (POCO, 2026-09-11): a tela "WardYou bloqueado"
+ * ficou com o spinner girando sem que NENHUM BiometricPrompt aparecesse no
+ * logcat -- quem chamou ficou esperando uma resposta que jamais viria.
+ */
+const PROMPT_TIMEOUT_MS = 60_000;
+
+/**
  * Prompt for the user's biometric (or device credential fallback). Resolves
  * true only on a confirmed success. `promptMessage` is shown by the OS sheet.
  */
@@ -62,13 +76,19 @@ export async function authenticateBiometric(promptMessage: string): Promise<bool
   if (Platform.OS === "web") return false;
   try {
     const LA = require("expo-local-authentication");
-    const res = await LA.authenticateAsync({
-      promptMessage,
-      // Fall back to the device PIN/pattern if biometrics fail repeatedly, so
-      // the owner is never permanently locked out of their own app.
-      disableDeviceFallback: false,
-      cancelLabel: undefined,
-    });
+    const res = await Promise.race([
+      LA.authenticateAsync({
+        promptMessage,
+        // Fall back to the device PIN/pattern if biometrics fail repeatedly, so
+        // the owner is never permanently locked out of their own app.
+        disableDeviceFallback: false,
+        cancelLabel: undefined,
+      }),
+      new Promise<null>((resolve) => setTimeout(() => resolve(null), PROMPT_TIMEOUT_MS)),
+    ]);
+    // `null` = estourou o teto acima. Tratado como "nao autenticou", nunca
+    // como sucesso: no pior caso o usuario tenta de novo; liberar por timeout
+    // transformaria uma falha do SO em furo de seguranca.
     return !!res?.success;
   } catch {
     return false;

@@ -6,6 +6,7 @@ import { Text, Button } from "@/components/ui";
 import { colors } from "@/theme";
 import { useSession } from "@/stores/session";
 import { useAppLock, consumeRelockSuppression } from "@/stores/appLock";
+import { useMyProfile } from "@/features/profile/queries";
 import { authenticateBiometric, hasDeviceAuth } from "@/services/auth/biometrics";
 
 /**
@@ -32,7 +33,27 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     hasDeviceAuth().then(setPodeAutenticar);
   }, []);
 
-  const active = authed && hydrated && enabled && podeAutenticar === true;
+  // O app da CRIANCA nunca se autotranca.
+  //
+  // Decisao do fundador em 2026-09-11, depois de ver na pratica: a crianca abria
+  // o proprio app e batia numa tela pedindo digital. O app dela existe para ela
+  // ver tarefas, progresso e tempo restante -- trancar isso atras de biometria
+  // transforma o app num app que a dona nao consegue usar.
+  //
+  // Nao abre buraco de seguranca: o que precisava de protecao no aparelho da
+  // crianca nunca foi a ABERTURA do app, e sim as acoes sensiveis (desligar
+  // protecao, mexer em limites), que passam por `confirmSensitive` uma a uma.
+  // O bloqueio de tela inteira aqui sempre foi para o aparelho do responsavel,
+  // onde o risco e a crianca pegar o telefone do pai.
+  //
+  // Enquanto o perfil ainda nao carregou, NAO arma: um falso bloqueio na cara
+  // da crianca e pior que a fracao de segundo em que o aparelho do responsavel
+  // fica destravado no arranque -- ali a defesa real continua sendo o
+  // `confirmSensitive` de cada acao.
+  const { data: profile } = useMyProfile();
+  const perfilCrianca = profile?.appProfile === "child";
+
+  const active = authed && hydrated && enabled && podeAutenticar === true && !perfilCrianca && !!profile;
 
   // Re-lock on every background → foreground transition (like WhatsApp).
   useEffect(() => {
@@ -44,7 +65,12 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
         // see suppressNextRelock() in stores/appLock.ts. Consume it and skip
         // this one re-lock instead of demanding biometrics again.
         if (consumeRelockSuppression()) return;
-        lock();
+        // Se JA estava trancado, `lock()` nao muda estado nenhum e o efeito de
+        // auto-prompt abaixo nao dispara -- era assim que se voltava ao app e
+        // encontrava a tela de bloqueio parada, sem prompt nenhum. Pedir de
+        // novo aqui e o que torna "sair e voltar" um caminho de recuperacao.
+        if (useAppLock.getState().locked) void promptUnlockRef.current();
+        else lock();
       }
     });
     return () => sub.remove();
@@ -53,14 +79,30 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
   const promptUnlock = async () => {
     if (prompting) return;
     setPrompting(true);
-    const ok = await authenticateBiometric(t("appLock.prompt"));
-    setPrompting(false);
-    if (ok) unlock();
+    try {
+      const ok = await authenticateBiometric(t("appLock.prompt"));
+      if (ok) unlock();
+    } finally {
+      // `finally`: se authenticateBiometric lancar, `prompting` ficaria true
+      // para sempre e a tela de bloqueio viraria uma prisao -- ver o
+      // comentario do botao, abaixo.
+      setPrompting(false);
+    }
   };
+  const promptUnlockRef = useRef(promptUnlock);
+  promptUnlockRef.current = promptUnlock;
 
-  // Auto-prompt the moment the lock becomes active/visible.
+  // Auto-prompt assim que o bloqueio fica visivel.
+  //
+  // O atraso nao e estetico: o BiometricPrompt do Android NAO sobe se a
+  // activity ainda nao estiver resumed, e quando ele nao sobe a promessa nunca
+  // resolve. O AppState "active" do React Native chega antes disso em alguns
+  // aparelhos (visto no POCO em 2026-09-11), entao pedir no mesmo tick e pedir
+  // cedo demais.
   useEffect(() => {
-    if (active && locked) promptUnlock();
+    if (!(active && locked)) return;
+    const id = setTimeout(() => void promptUnlockRef.current(), 250);
+    return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, locked]);
 
@@ -80,10 +122,18 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
               {t("appLock.body")}
             </Text>
           </View>
+          {/* Sem `loading={prompting}` DE PROPOSITO. O Button desabilita quando
+              loading e true (isDisabled = disabled || loading), e este e o
+              UNICO caminho de volta para dentro do app: se o prompt do SO nao
+              subir, um botao desabilitado tranca o dono para fora ate ele
+              forcar a parada do app. Foi exatamente o que aconteceu no POCO em
+              2026-09-11 -- "WardYou bloqueado" com spinner eterno e nenhum
+              BiometricPrompt no logcat. O feedback visual aqui e o proprio
+              prompt do sistema; a guarda `prompting` dentro de promptUnlock ja
+              evita prompt duplicado. */}
           <Button
             label={t("appLock.unlock")}
             icon="finger-print"
-            loading={prompting}
             onPress={promptUnlock}
             fullWidth={false}
           />
