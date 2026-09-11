@@ -32,6 +32,32 @@ interface AppLockState {
  * re-tranca quando o app volta do background, entao nao cobre a janela em que o
  * responsavel esta com o app aberto e passa o telefone.
  */
+// Native share sheets (`Share.share`, invite links, data export) put the app
+// in the background exactly like switching away from it, so AppLockGate's
+// background→foreground re-lock fires every time — turning every invite share
+// into a fingerprint prompt (bug de campo #C). A share sheet isn't "leaving the
+// app" the way a home-button press is: the user asked for it, it's system UI
+// layered on top, and they're back in seconds. WhatsApp/Signal don't re-lock
+// after their own share/camera intents either. `suppressNextRelock()` marks
+// the *next* background→foreground cycle as expected so AppLockGate consumes
+// it silently instead of locking; it auto-expires so a share sheet that never
+// returns (or a genuine backgrounding right after) doesn't leave the app
+// permanently unlockable.
+const SUPPRESS_WINDOW_MS = 5 * 60_000;
+let suppressUntil = 0;
+
+/** Call right before opening a native share sheet / export flow. */
+export function suppressNextRelock(): void {
+  suppressUntil = Date.now() + SUPPRESS_WINDOW_MS;
+}
+
+/** Consumes (clears) the suppression and reports whether it was active. */
+export function consumeRelockSuppression(): boolean {
+  const active = Date.now() < suppressUntil;
+  suppressUntil = 0;
+  return active;
+}
+
 export const useAppLock = create<AppLockState>((set) => ({
   enabled: true,
   hydrated: false,

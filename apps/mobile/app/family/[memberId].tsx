@@ -77,7 +77,27 @@ export default function FamilyMemberDetailScreen() {
     ]);
   }
 
-  const lastSeen = member?.locationCapturedAt
+  // Bug de campo #4: this screen used to show "Online agora · 09/11, 2:23 PM"
+  // as one string — `status` comes from the heartbeat (`family_members.
+  // LastSeenAt`, bumped every time the app pings in) while the timestamp came
+  // from `locationCapturedAt` (the last GPS fix, only reported when the
+  // child's app is opened — see `useReportLocationOnOpen` — with no periodic
+  // background reporting outside an active trip). Gluing them together read
+  // as "this position is current", when the position can be hours old while
+  // the device is genuinely online. Keep them as two separate, separately
+  // labeled facts instead: presence uses the heartbeat's own timestamp (and
+  // only shows one at all when NOT currently online — "current" already says
+  // so), and the location card gets its own "visto {{time}}" caption sourced
+  // from `locationCapturedAt`.
+  const presenceLastSeen = member?.lastSeen
+    ? new Date(member.lastSeen).toLocaleString([], {
+        day: "2-digit",
+        month: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      })
+    : null;
+  const locationSeenAt = member?.locationCapturedAt
     ? new Date(member.locationCapturedAt).toLocaleString([], {
         day: "2-digit",
         month: "2-digit",
@@ -121,9 +141,14 @@ export default function FamilyMemberDetailScreen() {
       ) : (
         <>
           {/* Last known location */}
-          <Text variant="h2" className="mt-6">
-            {t("family.memberDetail.locationTitle")}
-          </Text>
+          <View className="mt-6 flex-row items-baseline justify-between">
+            <Text variant="h2">{t("family.memberDetail.locationTitle")}</Text>
+            {locationSeenAt ? (
+              <Text variant="caption" color="muted">
+                {t("family.memberDetail.lastSeen", { time: locationSeenAt })}
+              </Text>
+            ) : null}
+          </View>
           <Card padded={false} className="mt-3 overflow-hidden">
             {member.latitude != null && member.longitude != null ? (
               <MapPreview
@@ -184,7 +209,7 @@ export default function FamilyMemberDetailScreen() {
               trailing={
                 <Text variant="caption" color="muted">
                   {t(`family.memberDetail.status.${member.status}`)}
-                  {lastSeen ? ` · ${lastSeen}` : ""}
+                  {member.status !== "online" && presenceLastSeen ? ` · ${presenceLastSeen}` : ""}
                 </Text>
               }
             />

@@ -17,6 +17,8 @@ import {
 } from "@/components/ui";
 import type { MapMarker } from "@/components/ui";
 import { colors } from "@/theme";
+import { suppressNextRelock } from "@/stores/appLock";
+import { formatSeenAt } from "@/lib/formatTime";
 import {
   useTrip,
   useTripMap,
@@ -65,6 +67,7 @@ export default function TripDetailScreen() {
     if (!tripId) return;
     try {
       const data = await invite.mutateAsync(tripId);
+      suppressNextRelock();
       await Share.share({
         message: t("trips.detail.shareMessage", { code: data.inviteCode, link: data.inviteLink }),
       }).catch(() => {
@@ -185,9 +188,7 @@ export default function TripDetailScreen() {
           <Card padded={false} className="mt-3 px-4">
             {(map?.members ?? []).map((m, i) => {
               const seen = m.capturedAt
-                ? t("trips.detail.lastSeen", {
-                    time: new Date(m.capturedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-                  })
+                ? t("trips.detail.lastSeen", { time: formatSeenAt(m.capturedAt) })
                 : m.canViewLocation
                   ? t("trips.detail.noFix")
                   : t("trips.detail.locationHidden");

@@ -105,7 +105,8 @@
   "home": {
     "subtitle": "Todos seguros, em um só lugar.",
     "statusTitle": "Todos seguros",
-    "statusSubtitle": "{{count}} membros compartilhando localização",
+    "statusSubtitle_one": "{{count}} membro compartilhando localização",
+    "statusSubtitle_other": "{{count}} membros compartilhando localização",
     "membersTitle": "Sua família",
     "seeAll": "Ver todos",
     "pending": {
@@ -429,6 +430,7 @@
     "taskReward": "Recompensa: {{n}} min",
     "minutes": "{{n}} min",
     "inactive": "Inativa",
+    "taskPendingApproval": "Aguardando aprovação",
     "weekdays": "S,T,Q,Q,S,S,D",
     "requests": {
       "title": "Aguardando você",
@@ -536,7 +538,8 @@
     "taskCreate": {
       "title": "Nova tarefa",
       "subtitle": "A criança ganha tempo extra ao concluir.",
-      "placeholder": "Título da tarefa"
+      "placeholder": "Título da tarefa",
+      "rewardLabel": "Recompensa"
     },
     "addChild": {
       "title": "Como adicionar uma criança",
@@ -660,7 +663,20 @@
       "DeviceRemoved": "Dispositivo removido",
       "FamilyCreated": "Família criada",
       "UserDataExportRequested": "Exportação de dados",
-      "AccountDeletionRequested": "Exclusão de conta solicitada"
+      "AccountDeletionRequested": "Exclusão de conta solicitada",
+      "UserLoggedOut": "Sessão encerrada",
+      "FamilyInviteCreated": "Convite de família criado",
+      "FamilyInviteAccepted": "Convite de família aceito",
+      "ExtraTimeRequested": "Tempo extra solicitado",
+      "PasswordResetRequested": "Redefinição de senha solicitada",
+      "PasswordReset": "Senha redefinida",
+      "ElderCheckIn": "Check-in do idoso registrado",
+      "ElderMedicationTaken": "Medicação do idoso registrada",
+      "ParentalTemporaryAllow": "Liberação temporária concedida",
+      "ParentalTemporaryAllowCleared": "Liberação temporária encerrada",
+      "ParentalAppAccessRequested": "Acesso a aplicativo solicitado",
+      "ParentalAppAccessResolved": "Pedido de acesso a aplicativo resolvido",
+      "ParentalProtectionDisabled": "Proteção parental desativada"
     }
   },
   "childHome": {

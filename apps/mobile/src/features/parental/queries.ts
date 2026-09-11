@@ -54,6 +54,7 @@ export interface TaskDto {
 
 export interface CompletionDto {
   id: string;
+  childTaskId: string;
   childUserId: string;
   title: string;
   rewardMinutes: number;

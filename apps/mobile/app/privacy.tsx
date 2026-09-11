@@ -4,6 +4,8 @@ import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { ScreenContainer, ScreenHeader, Card, Text, Button, ListItem } from "@/components/ui";
 import { colors } from "@/theme";
+import { suppressNextRelock } from "@/stores/appLock";
+import { humanizePascalCase } from "@/lib/humanize";
 import {
   usePrivacySummary,
   useMyActions,
@@ -34,6 +36,7 @@ export default function PrivacyScreen() {
         URL.revokeObjectURL(url);
         Alert.alert(t("privacy.export"), t("privacy.exportReady"));
       } else {
+        suppressNextRelock();
         await Share.share({ message: json });
       }
     } catch {
@@ -127,7 +130,9 @@ export default function PrivacyScreen() {
                 <View key={a.id}>
                   {i > 0 ? <View className="h-px bg-border" /> : null}
                   <View className="py-3">
-                    <Text variant="body">{t(`audit.action.${a.action}`, { defaultValue: a.action })}</Text>
+                    <Text variant="body">
+                      {t(`audit.action.${a.action}`, { defaultValue: humanizePascalCase(a.action) })}
+                    </Text>
                     <Text variant="caption" color="subtle">
                       {new Date(a.createdAt).toLocaleString()}
                     </Text>

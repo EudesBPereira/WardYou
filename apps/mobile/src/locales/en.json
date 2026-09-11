@@ -105,7 +105,8 @@
   "home": {
     "subtitle": "Everyone safe, in one place.",
     "statusTitle": "Everyone's safe",
-    "statusSubtitle": "{{count}} members sharing location",
+    "statusSubtitle_one": "{{count}} member sharing location",
+    "statusSubtitle_other": "{{count}} members sharing location",
     "membersTitle": "Your family",
     "seeAll": "See all",
     "pending": {
@@ -429,6 +430,7 @@
     "taskReward": "Reward: {{n}} min",
     "minutes": "{{n}} min",
     "inactive": "Inactive",
+    "taskPendingApproval": "Awaiting approval",
     "weekdays": "M,T,W,T,F,S,S",
     "requests": {
       "title": "Waiting for you",
@@ -536,7 +538,8 @@
     "taskCreate": {
       "title": "New task",
       "subtitle": "The child earns extra time on completion.",
-      "placeholder": "Task title"
+      "placeholder": "Task title",
+      "rewardLabel": "Reward"
     },
     "addChild": {
       "title": "How to add a child",
@@ -660,7 +663,20 @@
       "DeviceRemoved": "Device removed",
       "FamilyCreated": "Family created",
       "UserDataExportRequested": "Data export",
-      "AccountDeletionRequested": "Account deletion requested"
+      "AccountDeletionRequested": "Account deletion requested",
+      "UserLoggedOut": "Signed out",
+      "FamilyInviteCreated": "Family invite created",
+      "FamilyInviteAccepted": "Family invite accepted",
+      "ExtraTimeRequested": "Extra time requested",
+      "PasswordResetRequested": "Password reset requested",
+      "PasswordReset": "Password reset",
+      "ElderCheckIn": "Elder check-in recorded",
+      "ElderMedicationTaken": "Elder medication recorded",
+      "ParentalTemporaryAllow": "Temporary allow granted",
+      "ParentalTemporaryAllowCleared": "Temporary allow ended",
+      "ParentalAppAccessRequested": "App access requested",
+      "ParentalAppAccessResolved": "App access request resolved",
+      "ParentalProtectionDisabled": "Parental protection disabled"
     }
   },
   "childHome": {

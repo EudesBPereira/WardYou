@@ -105,7 +105,8 @@
   "home": {
     "subtitle": "Tous en sécurité, au même endroit.",
     "statusTitle": "Tout le monde est en sécurité",
-    "statusSubtitle": "{{count}} membres partagent leur position",
+    "statusSubtitle_one": "{{count}} membre partage sa position",
+    "statusSubtitle_other": "{{count}} membres partagent leur position",
     "membersTitle": "Votre famille",
     "seeAll": "Tout voir",
     "pending": {
@@ -429,6 +430,7 @@
     "taskReward": "Récompense : {{n}} min",
     "minutes": "{{n}} min",
     "inactive": "Inactive",
+    "taskPendingApproval": "En attente d'approbation",
     "weekdays": "L,M,M,J,V,S,D",
     "requests": {
       "title": "En attente de toi",
@@ -536,7 +538,8 @@
     "taskCreate": {
       "title": "Nouvelle tâche",
       "subtitle": "L'enfant gagne du temps supplémentaire en la terminant.",
-      "placeholder": "Titre de la tâche"
+      "placeholder": "Titre de la tâche",
+      "rewardLabel": "Récompense"
     },
     "addChild": {
       "title": "Comment ajouter un enfant",
@@ -660,7 +663,20 @@
       "DeviceRemoved": "Appareil supprimé",
       "FamilyCreated": "Famille créée",
       "UserDataExportRequested": "Export de données",
-      "AccountDeletionRequested": "Suppression de compte demandée"
+      "AccountDeletionRequested": "Suppression de compte demandée",
+      "UserLoggedOut": "Déconnexion",
+      "FamilyInviteCreated": "Invitation familiale créée",
+      "FamilyInviteAccepted": "Invitation familiale acceptée",
+      "ExtraTimeRequested": "Temps supplémentaire demandé",
+      "PasswordResetRequested": "Réinitialisation du mot de passe demandée",
+      "PasswordReset": "Mot de passe réinitialisé",
+      "ElderCheckIn": "Pointage de la personne âgée enregistré",
+      "ElderMedicationTaken": "Prise de médicament enregistrée",
+      "ParentalTemporaryAllow": "Autorisation temporaire accordée",
+      "ParentalTemporaryAllowCleared": "Autorisation temporaire terminée",
+      "ParentalAppAccessRequested": "Accès à l'application demandé",
+      "ParentalAppAccessResolved": "Demande d'accès à l'application résolue",
+      "ParentalProtectionDisabled": "Protection parentale désactivée"
     }
   },
   "childHome": {

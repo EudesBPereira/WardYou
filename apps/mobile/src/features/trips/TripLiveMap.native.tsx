@@ -10,6 +10,7 @@ import { getInitials } from "@/components/ui/Avatar";
 import { colors } from "@/theme";
 import type { TripMapMemberDto } from "@/services/api/types";
 import type { TripLiveMapProps } from "./TripLiveMap";
+import { formatSeenAt } from "@/lib/formatTime";
 
 // São Paulo — neutral start before anyone has a fix (same as the MAUI page).
 const FALLBACK_REGION = {
@@ -20,9 +21,10 @@ const FALLBACK_REGION = {
 };
 const FIT_PADDING = { top: 120, right: 60, bottom: 240, left: 60 };
 
-function fmtTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
+// Bug de campo #5: a bare time-of-day read as an impossible future timestamp
+// for a stale, previous-day fix. formatSeenAt adds the date when it isn't
+// today.
+const fmtTime = formatSeenAt;
 
 /**
  * Fullscreen live trip map — RN port of the MAUI TravelMapPage: avatar pins,

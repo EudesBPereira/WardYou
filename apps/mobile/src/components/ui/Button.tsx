@@ -67,6 +67,15 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
+      // Explicit, always-on label: while `loading` is true the visible
+      // <Text> below is swapped for a bare ActivityIndicator, so a screen
+      // reader has nothing left in the accessible subtree to compose a label
+      // from and falls back to announcing `accessibilityState.busy` itself
+      // ("busy") instead of what the button does — reported in the field on
+      // the Pausar/Retomar remote-control button, but it affects every
+      // Button in the app whenever `loading` is true. Setting the label
+      // directly keeps it stable ("Pausar"/"Retomar"/etc.) in both states.
+      accessibilityLabel={props.accessibilityLabel ?? label}
       accessibilityState={{ disabled: !!isDisabled, busy: loading }}
       disabled={isDisabled}
       className={cn(

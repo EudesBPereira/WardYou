@@ -14,6 +14,7 @@ import {
   InputModal,
 } from "@/components/ui";
 import { colors } from "@/theme";
+import { suppressNextRelock } from "@/stores/appLock";
 import {
   useFamilyMembers,
   useMyFamilies,
@@ -152,6 +153,7 @@ export default function FamilyScreen() {
     }
     try {
       const data = await invite.mutateAsync(families[0].id);
+      suppressNextRelock();
       await Share.share({
         message: t("family.invite.shareMessage", { code: data.inviteCode, link: data.inviteLink }),
       }).catch(() => {

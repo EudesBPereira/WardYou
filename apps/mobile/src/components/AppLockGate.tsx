@@ -5,7 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Text, Button } from "@/components/ui";
 import { colors } from "@/theme";
 import { useSession } from "@/stores/session";
-import { useAppLock } from "@/stores/appLock";
+import { useAppLock, consumeRelockSuppression } from "@/stores/appLock";
 import { authenticateBiometric, hasDeviceAuth } from "@/services/auth/biometrics";
 
 /**
@@ -40,6 +40,10 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
       const prev = appState.current;
       appState.current = next;
       if (next === "active" && prev.match(/inactive|background/) && useAppLock.getState().enabled) {
+        // A native share sheet / export flow just backgrounded us on purpose —
+        // see suppressNextRelock() in stores/appLock.ts. Consume it and skip
+        // this one re-lock instead of demanding biometrics again.
+        if (consumeRelockSuppression()) return;
         lock();
       }
     });

@@ -65,6 +65,18 @@ export function usePushRegistration() {
           ?.notification?.request?.content?.data;
         handleNotificationData(data);
       });
+      // Cold start: the app was fully closed and got launched by tapping the
+      // notification. addNotificationResponseReceivedListener only fires for
+      // taps handled while JS is already running (foreground/background) —
+      // a terminated-app launch is delivered here instead and would
+      // otherwise be silently dropped, always landing on the generic Home.
+      Notifications.getLastNotificationResponseAsync()
+        .then((response: unknown) => {
+          const data = (response as { notification?: { request?: { content?: { data?: Record<string, unknown> } } } })
+            ?.notification?.request?.content?.data;
+          if (data) handleNotificationData(data);
+        })
+        .catch(() => {});
     } catch {
       /* expo-notifications unavailable */
     }

@@ -14,6 +14,26 @@ import { useConsents, useSetConsent, useFamilyConsents, useGrantFamilyConsent, C
 import { useMyFamilies, useFamilyMembers } from "@/features/family/queries";
 import { confirmSensitive } from "@/services/auth/confirmSensitive";
 
+/**
+ * Bug de campo (dúvida A): two active members with the same full name (e.g.
+ * two children both named "Tatiane Silva") were indistinguishable in this
+ * exact screen — the one place where an admin grants/revokes LOCATION access
+ * "on behalf of" a specific person. Acting on the wrong one is a real
+ * consequence here, not just a cosmetic annoyance. Until there's a proper
+ * per-member nickname (a product decision, not this fix), append a short,
+ * stable id suffix ONLY to names that actually collide, so the common case
+ * (no duplicates) stays untouched.
+ */
+function disambiguateNames<T extends { id: string; name: string }>(items: T[]): Map<string, string> {
+  const counts = new Map<string, number>();
+  for (const it of items) counts.set(it.name, (counts.get(it.name) ?? 0) + 1);
+  const labels = new Map<string, string>();
+  for (const it of items) {
+    labels.set(it.id, (counts.get(it.name) ?? 0) > 1 ? `${it.name} (#${it.id.slice(0, 4)})` : it.name);
+  }
+  return labels;
+}
+
 function FamilyPermissions() {
   const { t } = useTranslation();
   const { data: families = [] } = useMyFamilies();
@@ -25,6 +45,7 @@ function FamilyPermissions() {
   if (!managed) return null;
   const others = members.filter((m) => m.familyId === managed.id && m.userId && m.membershipStatus === "active");
   if (others.length === 0) return null;
+  const displayNames = disambiguateNames(others);
 
   const has = (userId: string, type: ConsentTypeName) =>
     famConsents.some((c) => c.userId === userId && c.type === type && c.isActive);
@@ -44,7 +65,7 @@ function FamilyPermissions() {
             <View className="flex-row items-center gap-3 py-3">
               <Avatar name={m.name} uri={m.avatarUrl} />
               <View className="flex-1">
-                <Text variant="title">{m.name}</Text>
+                <Text variant="title">{displayNames.get(m.id) ?? m.name}</Text>
                 <View className="mt-1 flex-row gap-2">
                   {PERMS.map((type) => {
                     const granted = has(m.userId as string, type);

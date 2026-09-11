@@ -105,7 +105,8 @@
   "home": {
     "subtitle": "Todos a salvo, en un solo lugar.",
     "statusTitle": "Todos a salvo",
-    "statusSubtitle": "{{count}} miembros compartiendo ubicación",
+    "statusSubtitle_one": "{{count}} miembro compartiendo ubicación",
+    "statusSubtitle_other": "{{count}} miembros compartiendo ubicación",
     "membersTitle": "Tu familia",
     "seeAll": "Ver todos",
     "pending": {
@@ -429,6 +430,7 @@
     "taskReward": "Recompensa: {{n}} min",
     "minutes": "{{n}} min",
     "inactive": "Inactiva",
+    "taskPendingApproval": "Esperando aprobación",
     "weekdays": "L,M,X,J,V,S,D",
     "requests": {
       "title": "Esperando por ti",
@@ -536,7 +538,8 @@
     "taskCreate": {
       "title": "Nueva tarea",
       "subtitle": "El niño gana tiempo extra al completarla.",
-      "placeholder": "Título de la tarea"
+      "placeholder": "Título de la tarea",
+      "rewardLabel": "Recompensa"
     },
     "addChild": {
       "title": "Cómo agregar un niño",
@@ -660,7 +663,20 @@
       "DeviceRemoved": "Dispositivo eliminado",
       "FamilyCreated": "Familia creada",
       "UserDataExportRequested": "Exportación de datos",
-      "AccountDeletionRequested": "Eliminación de cuenta solicitada"
+      "AccountDeletionRequested": "Eliminación de cuenta solicitada",
+      "UserLoggedOut": "Sesión cerrada",
+      "FamilyInviteCreated": "Invitación familiar creada",
+      "FamilyInviteAccepted": "Invitación familiar aceptada",
+      "ExtraTimeRequested": "Tiempo extra solicitado",
+      "PasswordResetRequested": "Restablecimiento de contraseña solicitado",
+      "PasswordReset": "Contraseña restablecida",
+      "ElderCheckIn": "Registro de bienestar del adulto mayor",
+      "ElderMedicationTaken": "Medicación del adulto mayor registrada",
+      "ParentalTemporaryAllow": "Permiso temporal concedido",
+      "ParentalTemporaryAllowCleared": "Permiso temporal finalizado",
+      "ParentalAppAccessRequested": "Acceso a la app solicitado",
+      "ParentalAppAccessResolved": "Solicitud de acceso a la app resuelta",
+      "ParentalProtectionDisabled": "Protección parental desactivada"
     }
   },
   "childHome": {
