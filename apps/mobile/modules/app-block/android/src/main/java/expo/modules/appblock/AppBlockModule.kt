@@ -28,6 +28,13 @@ class EnforcementStateRecord(
   @Field var hardBlockWindowsJson: String = "[]",
   /** `{"com.pkg": <epochMs>}` temporary allows + deadlines, expired natively. */
   @Field var tempAllowsJson: String = "{}",
+  /** Epoch ms deadline of a timed remote pause, as a string ("0" = none —
+   *  encoded as a string like the other JSON fields to sidestep any bridge
+   *  precision concerns with a 13-digit epoch through a numeric Field).
+   *  Evaluated natively (see AppBlockTimeRules.isPauseActive) so a closed
+   *  child phone doesn't stay hard-blocked past the guardian's intended
+   *  pause duration — see enforcementLogic.ts `pauseDeadlineMillis`. */
+  @Field var pauseUntilMillis: String = "0",
 ) : Record, Serializable
 
 /**
@@ -117,6 +124,7 @@ class AppBlockModule : Module() {
         state.whitelistedPackages,
         state.hardBlockWindowsJson,
         state.tempAllowsJson,
+        state.pauseUntilMillis,
       )
       // The shield FGS tracks enforcement: alive while a policy is enabled,
       // gone the moment the guardian disables it. Keeps the process (and with

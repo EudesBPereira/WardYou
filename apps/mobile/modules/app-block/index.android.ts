@@ -12,6 +12,12 @@ export interface EnforcementState {
   /** `{"com.pkg": epochMs}` temporary allows — expired natively, so a grant
    *  can't become permanent just because the app was never reopened. */
   tempAllowsJson?: string;
+  /** Epoch ms deadline of a TIMED remote pause ("pausar por 30min"), as a
+   *  string ("0" / absent = no deadline to self-expire — either not paused,
+   *  or an indefinite pause that only lifts on an explicit Resume). Checked
+   *  against the device clock on every accessibility event so a closed
+   *  child phone doesn't stay paused past the guardian's intended duration. */
+  pauseUntilMillis?: string;
 }
 
 export interface UsageItem {

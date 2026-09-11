@@ -2,6 +2,7 @@
 // day, extra-time requests, tasks to earn screen time, heartbeat). The parent
 // management hooks live in queries.ts.
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import Constants from "expo-constants";
 import { useMocks } from "@/lib/env";
 import { apiClient } from "@/services/api/client";
 import { useSession } from "@/stores/session";
@@ -91,7 +92,14 @@ export function useHeartbeat() {
         hasAccessibility: isAccessibilityServiceEnabled(),
         adminDisabled: consumeAdminDisabledFlag(),
         ...(batteryLevel != null ? { batteryLevel } : {}),
-        appVersion: "rn-dev",
+        // Was a hardcoded "rn-dev" placeholder — every heartbeat ever sent
+        // reported that literal string as the child device's app version,
+        // regardless of what build was actually running. Harmless today (no
+        // guardian UI reads AppVersion yet), but it's exactly the
+        // "asserts a fact it never checked" pattern this audit is looking
+        // for, and it'll actively mislead support/guardian tooling the
+        // moment someone surfaces this field.
+        appVersion: Constants.expoConfig?.version ?? "unknown",
       });
     },
   });

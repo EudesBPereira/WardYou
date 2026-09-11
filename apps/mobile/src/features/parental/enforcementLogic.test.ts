@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { isWithinWindow, computeEnforcementState, WARDYOU_PACKAGE } from "./enforcementLogic.ts";
+import { isWithinWindow, computeEnforcementState, pauseDeadlineMillis, WARDYOU_PACKAGE } from "./enforcementLogic.ts";
 import type { PolicyDto, AppRuleDto, SleepDto, BlockDto } from "./queries.ts";
 
 // --- isWithinWindow ----------------------------------------------------
@@ -246,6 +246,83 @@ test("temporary allow pierces a hard block (pause + liberar por 1h)", () => {
   );
   assert.ok(result.whitelistedPackages.includes("com.whatsapp")); // guardian's explicit exception
   assert.ok(!result.whitelistedPackages.includes("com.allowed.app")); // paused like everything else
+});
+
+// --- pauseDeadlineMillis (timed-pause native self-expiry input) ---------
+//
+// Regression coverage for a real gap found 2026-09-11: a remote pause with a
+// duration ("pausar por 30min") only auto-lifted server-side, lazily, the
+// next time something queried the policy — which never happens on a closed
+// child phone. Sleep windows and temporary allows already ship an absolute
+// deadline to the native AccessibilityService so it can self-expire them
+// against the device clock with the app closed; a timed pause had no
+// equivalent. This is the pure half of the fix: enforcement.ts forwards this
+// value to AppBlock.setEnforcementState as `pauseUntilMillis`.
+
+test("pauseDeadlineMillis: no policy → null", () => {
+  assert.equal(pauseDeadlineMillis(null), null);
+});
+
+test("pauseDeadlineMillis: not paused → null even with a stale pausedUntil", () => {
+  const policy: PolicyDto = { ...disabledPolicy, isEnabled: true, isRemotelyPaused: false, pausedUntil: new Date(now.getTime() + 60_000).toISOString() };
+  assert.equal(pauseDeadlineMillis(policy), null);
+});
+
+test("pauseDeadlineMillis: indefinite pause (no pausedUntil) → null — nothing to self-expire", () => {
+  const policy: PolicyDto = { ...disabledPolicy, isEnabled: true, isRemotelyPaused: true, pausedUntil: null };
+  assert.equal(pauseDeadlineMillis(policy), null);
+});
+
+test("pauseDeadlineMillis: timed pause → the deadline as epoch ms", () => {
+  const until = new Date(now.getTime() + 30 * 60_000);
+  const policy: PolicyDto = { ...disabledPolicy, isEnabled: true, isRemotelyPaused: true, pausedUntil: until.toISOString() };
+  assert.equal(pauseDeadlineMillis(policy), until.getTime());
+});
+
+// --- whitelist collapse: only for hard-block causes native can't self-check ---
+//
+// Regression coverage for the other half of the 2026-09-11 timed-pause fix:
+// `whitelistedPackages` is shipped verbatim to the native AccessibilityService
+// (enforcement.ts) and is the ONLY thing standing between "hard-blocked" and
+// "normally allowed" once native's own time check (isHardBlockActive /
+// isPauseActive) says a window/deadline has passed. Collapsing it for a cause
+// native can independently re-check (sleep window, schedule block-all window,
+// a TIMED pause) bakes in a stale snapshot that never un-collapses on a
+// closed app. Collapsing it for a cause native CANNOT re-check (an
+// INDEFINITE pause, or the daily limit being exhausted — no deadline exists
+// for either) is still correct and necessary.
+
+test("timed pause (has a deadline) does NOT collapse the whitelist — native's own clock check gates it", () => {
+  const until = new Date(now.getTime() + 30 * 60_000).toISOString();
+  const policy: PolicyDto = { ...disabledPolicy, isEnabled: true, isRemotelyPaused: true, pausedUntil: until };
+  const rules = [appRule({ appPackageName: "com.allowed.app", isWhitelisted: true })];
+  const result = computeEnforcementState(
+    { policy, appRules: rules, sleepSchedule: null, blockSchedules: [], remainingMinutes: 60, firewall: true },
+    now,
+  );
+  assert.equal(result.blockAll, true); // firewall mode: still true, native gates per-package
+  assert.ok(result.whitelistedPackages.includes("com.allowed.app"));
+});
+
+test("indefinite pause (no deadline) still collapses the whitelist — nothing for native to self-check", () => {
+  const policy: PolicyDto = { ...disabledPolicy, isEnabled: true, isRemotelyPaused: true, pausedUntil: null };
+  const rules = [appRule({ appPackageName: "com.allowed.app", isWhitelisted: true })];
+  const result = computeEnforcementState(
+    { policy, appRules: rules, sleepSchedule: null, blockSchedules: [], remainingMinutes: 60, firewall: true },
+    now,
+  );
+  assert.ok(!result.whitelistedPackages.includes("com.allowed.app"));
+});
+
+test("daily limit exhausted still collapses the whitelist even during an unrelated timed pause", () => {
+  const until = new Date(now.getTime() + 30 * 60_000).toISOString();
+  const policy: PolicyDto = { ...disabledPolicy, isEnabled: true, isRemotelyPaused: true, pausedUntil: until };
+  const rules = [appRule({ appPackageName: "com.allowed.app", isWhitelisted: true })];
+  const result = computeEnforcementState(
+    { policy, appRules: rules, sleepSchedule: null, blockSchedules: [], remainingMinutes: 0, firewall: true },
+    now,
+  );
+  assert.ok(!result.whitelistedPackages.includes("com.allowed.app"));
 });
 
 test("daily limit exhausted also collapses the whitelist (except temp allows)", () => {

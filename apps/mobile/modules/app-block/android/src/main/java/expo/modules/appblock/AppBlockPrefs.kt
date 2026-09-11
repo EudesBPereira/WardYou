@@ -30,6 +30,7 @@ object AppBlockPrefs {
     whitelistedPackages: List<String>,
     hardBlockWindowsJson: String = "[]",
     tempAllowsJson: String = "{}",
+    pauseUntilMillis: String = "0",
   ) {
     prefs(context).edit()
       .putBoolean(KEY_ENABLED, enabled)
@@ -38,6 +39,7 @@ object AppBlockPrefs {
       .putString(KEY_WHITELISTED_PACKAGES, JSONArray(whitelistedPackages).toString())
       .putString(KEY_HARD_WINDOWS, hardBlockWindowsJson)
       .putString(KEY_TEMP_ALLOWS, tempAllowsJson)
+      .putLong(KEY_PAUSE_UNTIL, pauseUntilMillis.toLongOrNull() ?: 0L)
       .apply()
   }
 
@@ -47,6 +49,7 @@ object AppBlockPrefs {
   // would never expire — a real hole while the app is killed).
   private const val KEY_HARD_WINDOWS = "hard_block_windows"
   private const val KEY_TEMP_ALLOWS = "temp_allows"
+  private const val KEY_PAUSE_UNTIL = "pause_until_millis"
 
   /** `[{"s":1320,"e":420,"d":127}]` — start/end in minutes since midnight,
    *  `d` = days bitmask (bit0=Mon). Any active window ⇒ hard block. */
@@ -56,6 +59,11 @@ object AppBlockPrefs {
   /** `{"com.pkg": <epochMs>}` — temporary allows and their deadlines. */
   fun tempAllows(context: Context): String =
     prefs(context).getString(KEY_TEMP_ALLOWS, null) ?: "{}"
+
+  /** Epoch ms deadline of a timed remote pause, or 0 when there is none (not
+   *  paused, or an indefinite pause with no duration). See AppBlockTimeRules
+   *  .isPauseActive for how this self-expires against the device clock. */
+  fun pauseUntilMillis(context: Context): Long = prefs(context).getLong(KEY_PAUSE_UNTIL, 0L)
 
   fun isEnabled(context: Context): Boolean = prefs(context).getBoolean(KEY_ENABLED, false)
 

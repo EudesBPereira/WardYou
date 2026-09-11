@@ -5,6 +5,7 @@ import { ROLE, STATUS } from "./familyService.js";
 import { emitToUser, emitToUsers } from "../realtime.js";
 import { pushToUser, pushToUsers } from "./pushService.js";
 import { writeAudit, AUDIT_ACTION } from "./auditService.js";
+import { localParts } from "../lib/localTime.js";
 
 /** Short display name for a user (for push copy). */
 async function displayName(userId: string): Promise<string> {
@@ -85,6 +86,28 @@ function stringToTime(hhmm: string): Date {
 }
 function dateOnlyToString(d: Date): string {
   return d.toISOString().slice(0, 10);
+}
+
+/**
+ * "Today" for the child's daily screen-time limit — as a UTC-midnight Date so
+ * it round-trips through `dateOnlyToString`/Prisma's `UsageDate` column the
+ * same way `usageDate` strings from the device do (see `usageDate` in
+ * enforcement.ts's `localDateString`, always the DEVICE's own local calendar
+ * date). This must NOT be `new Date().toISOString().slice(0, 10)` (server UTC
+ * date): for any timezone west of UTC (America/Sao_Paulo, the launch market,
+ * is UTC-3) there is a several-hour window every evening where the server's
+ * UTC calendar day has already rolled over while the child's device — and
+ * everything it has reported so far — is still on the previous local day.
+ * During that window `getMyStatus`/`getUsageOverview` would query the NEW
+ * (empty) day's bucket, read `usedMinutesToday` as 0, and hand back a full
+ * fresh allowance hours before the child's actual local midnight — a silent,
+ * daily, no-device-tampering-required daily-limit bypass. `localParts()`
+ * (lib/localTime.ts) already exists for exactly this "schema has no per-user
+ * timezone" problem (built for the elder-care scheduler) — reuse it here so
+ * the boundary matches a real family-local midnight instead of UTC's.
+ */
+function todayLocal(): Date {
+  return new Date(`${localParts().date}T00:00:00Z`);
 }
 
 function ensure(id: string | undefined): string {
@@ -565,7 +588,7 @@ export async function getMyStatus(userId: string) {
     }
   }
 
-  const today = new Date(`${dateOnlyToString(new Date())}T00:00:00Z`);
+  const today = todayLocal();
   const now = new Date();
 
   const [usage, extra, pending, sleep, blockedApps] = await Promise.all([
@@ -1208,7 +1231,7 @@ export async function saveUsageSummary(userId: string, input: UsageSummaryInput)
 
 export async function getUsageSummary(userId: string, childUserId: string, date?: string) {
   if (userId !== childUserId) await requireTutorChild(userId, childUserId);
-  const target = date ? new Date(`${date}T00:00:00Z`) : new Date(`${dateOnlyToString(new Date())}T00:00:00Z`);
+  const target = date ? new Date(`${date}T00:00:00Z`) : todayLocal();
   const items = await prisma.app_usage_summaries.findMany({
     where: { ChildUserId: childUserId, UsageDate: target },
     orderBy: [{ UsedMinutes: "desc" }, { AppDisplayName: "asc" }],
@@ -1230,7 +1253,7 @@ export async function getUsageSummary(userId: string, childUserId: string, date?
 export async function getUsageOverview(userId: string, childUserId: string, days: number) {
   if (userId !== childUserId) await requireTutorChild(userId, childUserId);
   const windowDays = Math.min(Math.max(days, 1), 31);
-  const today = new Date(`${dateOnlyToString(new Date())}T00:00:00Z`);
+  const today = todayLocal();
   const first = new Date(today.getTime() - (windowDays - 1) * 24 * 60 * 60_000);
 
   const rows = await prisma.app_usage_summaries.findMany({

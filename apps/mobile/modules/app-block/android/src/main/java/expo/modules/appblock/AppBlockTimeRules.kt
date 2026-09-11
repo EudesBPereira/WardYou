@@ -51,6 +51,20 @@ object AppBlockTimeRules {
     }
   }
 
+  /**
+   * True while a TIMED remote pause ("pausar por 30min") hasn't reached its
+   * deadline yet. A pause with no duration (indefinite — `pauseUntilMillis`
+   * stays 0) is intentionally NOT covered here: it only lifts on an explicit
+   * Resume, same as before. Mirrors isHardBlockActive's role for sleep/
+   * schedule windows: without this, `AppBlockPrefs.isBlockAll` (the static
+   * flag from the last JS sync) would keep hard-blocking forever once its
+   * deadline passed, on a child phone that never reopens the app.
+   */
+  fun isPauseActive(context: Context, nowMillis: Long = System.currentTimeMillis()): Boolean {
+    val until = AppBlockPrefs.pauseUntilMillis(context)
+    return until > 0L && nowMillis < until
+  }
+
   /** Packages whose temporary allow is STILL valid at `nowMillis`. */
   fun activeTempAllows(context: Context, nowMillis: Long = System.currentTimeMillis()): Set<String> {
     return try {

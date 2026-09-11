@@ -7,6 +7,7 @@ export interface EnforcementState {
   whitelistedPackages: string[];
   hardBlockWindowsJson?: string;
   tempAllowsJson?: string;
+  pauseUntilMillis?: string;
 }
 
 export interface UsageItem {

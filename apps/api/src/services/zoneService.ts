@@ -3,6 +3,7 @@ import { prisma } from "../db.js";
 import { AppError } from "../lib/errors.js";
 import { ROLE } from "./familyService.js";
 import { emitToFamily } from "../realtime.js";
+import { hasActiveUserConsent, hasActiveFamilyConsent } from "./consentService.js";
 
 const MANAGEMENT_ROLES = new Set<number>([ROLE.admin, ROLE.guardian]);
 const STATUS_DISABLED = 2;
@@ -204,14 +205,28 @@ export async function evaluateLocation(userId: string, latitude: number, longitu
       data: { IsInside: isInside, UpdatedAt: now },
     });
     if ((isInside && zone.NotifyOnEntry) || (!isInside && zone.NotifyOnExit)) {
+      // `transitions` goes back only to the reporting device itself (the
+      // subject of the location report) — always fine, self needs no consent
+      // to see their own movement. The `emitToFamily` broadcast below is the
+      // one that reaches every OTHER member's socket, and entering/leaving a
+      // named place ("Escola", "Casa") is location data same as a lat/lng —
+      // it must respect the same LocationSharing gate as GET /families/map
+      // and getFamilyDevices (consentService.hasActiveUserConsent /
+      // hasActiveFamilyConsent). Before this check the event went out to the
+      // whole family room unconditionally, regardless of consent.
       transitions.push({ zoneId: zone.Id, zoneName: zone.Name, entered: isInside });
-      emitToFamily(zone.FamilyId, "ZoneTransition", {
-        zoneId: zone.Id,
-        zoneName: zone.Name,
-        familyId: zone.FamilyId,
-        userId,
-        entered: isInside,
-      });
+      const canShareWithFamily =
+        (await hasActiveUserConsent(userId, "LocationSharing")) ||
+        (await hasActiveFamilyConsent(zone.FamilyId, userId, "LocationSharing"));
+      if (canShareWithFamily) {
+        emitToFamily(zone.FamilyId, "ZoneTransition", {
+          zoneId: zone.Id,
+          zoneName: zone.Name,
+          familyId: zone.FamilyId,
+          userId,
+          entered: isInside,
+        });
+      }
     }
   }
   return transitions;

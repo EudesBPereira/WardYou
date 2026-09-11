@@ -80,8 +80,16 @@ class AppBlockAccessibilityService : AccessibilityService() {
 
     // Time rules re-evaluated natively on every event (device clock), so they
     // hold with the RN app closed — the cached JS decision alone would freeze:
-    // a sleep window would never start and a temp allow would never expire.
-    val hardBlockNow = AppBlockTimeRules.isHardBlockActive(applicationContext)
+    // a sleep window would never start, a temp allow would never expire, and
+    // (since 2026-09-11) a TIMED remote pause would never lift. This is now
+    // load-bearing, not just a self-heal nicety: enforcementLogic.ts stops
+    // collapsing `whitelistedPackages` to a stale snapshot for hard-block
+    // causes that are natively self-checkable (sleep window, schedule
+    // block-all window, timed pause), relying on THIS check to gate them
+    // instead — so it must cover every one of those causes, or a normally
+    // whitelisted app would be let straight through during an active one.
+    val hardBlockNow = AppBlockTimeRules.isHardBlockActive(applicationContext) ||
+      AppBlockTimeRules.isPauseActive(applicationContext)
     val tempAllowed = AppBlockTimeRules.activeTempAllows(applicationContext)
     val expiredTemp = AppBlockTimeRules.expiredTempAllows(applicationContext)
 

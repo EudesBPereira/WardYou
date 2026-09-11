@@ -3,9 +3,9 @@ import { apiClient } from "@/services/api/client";
 import { storage } from "@/lib/storage";
 import * as AppBlock from "@modules/app-block";
 import type { PolicyDto, AppRuleDto, SleepDto, BlockDto } from "./queries";
-import { computeEnforcementState, WARDYOU_PACKAGE } from "./enforcementLogic";
+import { computeEnforcementState, pauseDeadlineMillis, WARDYOU_PACKAGE } from "./enforcementLogic";
 
-export { isWithinWindow, computeEnforcementState, WARDYOU_PACKAGE } from "./enforcementLogic";
+export { isWithinWindow, computeEnforcementState, pauseDeadlineMillis, WARDYOU_PACKAGE } from "./enforcementLogic";
 export type { EnforcementDecision, EnforcementInput } from "./enforcementLogic";
 
 /** "HH:MM" → minutes since midnight (the shape the native side evaluates). */
@@ -118,10 +118,19 @@ export async function syncEnforcement(childUserId: string, remainingMinutes: num
     // temporary allow would never expire. Ship the time-dependent inputs too,
     // so the native AccessibilityService re-evaluates them against the device
     // clock on every app switch and stays a complete enforcer on its own.
+    // Same reasoning as the windows/allows above, for the one hard-block cause
+    // that had no native self-expiry: a timed remote pause ("pausar por
+    // 30min"). Without this, the native side keeps enforcing whatever
+    // `blockAll` was true/false at THIS sync forever — a closed child phone
+    // would stay paused well past the guardian's intended duration, since
+    // nothing else re-evaluates it (the server only lazily clears
+    // `IsRemotelyPaused` the next time something queries the policy).
+    const pauseUntil = pauseDeadlineMillis(policy);
     AppBlock.setEnforcementState({
       ...state,
       hardBlockWindowsJson: JSON.stringify(hardBlockWindows(sleepSchedule, blockSchedules)),
       tempAllowsJson: JSON.stringify(tempAllowDeadlines(appRules)),
+      pauseUntilMillis: pauseUntil != null ? String(pauseUntil) : "0",
     });
   } catch {
     // Best-effort — the AccessibilityService just keeps enforcing whatever it
