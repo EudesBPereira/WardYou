@@ -11,10 +11,33 @@
   <!-- "Shield" keep-alive foreground service: keeps the process at foreground
        priority while enforcement is on, so OEM task killers (MIUI etc.) don't
        kill the app and silently disable the AccessibilityService. specialUse
-       is the honest FGS type for parental-control protection (Android 14+). -->
+       is the honest FGS type for parental-control protection (Android 14+).
+       MUST run in the app's DEFAULT process — see the fix note on the
+       <service> below; this permission block is unchanged either way. -->
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
   <uses-permission android:name="android.permission.FOREGROUND_SERVICE_SPECIAL_USE" />
   <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+  <!-- Lets the watchdog's AlarmManager tick use setExactAndAllowWhileIdle() as a
+       genuinely exempt exact alarm instead of falling back to an inexact one.
+       This matters specifically for AppBlockShieldService.start()'s
+       startForegroundService() call made from AppBlockBootReceiver: Android 12+
+       refuses to start a foreground service from a plain background broadcast
+       receiver UNLESS the triggering event is on the documented exemption list
+       (developer.android.com "Restrictions on starting a foreground service
+       from the background") — "your app invokes an exact alarm" is on that
+       list, a bare AlarmManager.set() is not. Confirmed on-device (Redmi Note
+       10, Android 12, 2026-09-11) via dumpsys dropbox: without this permission
+       declared, setExactAndAllowWhileIdle() throws SecurityException, the code
+       falls back to the inexact am.set(), and the resulting tick's
+       startForegroundService() is DENIED ("Background started FGS: Disallowed
+       ... code:DENIED"), so the watchdog can never resurrect the shield after
+       a process kill. On API 31-32 this permission is auto-granted at install
+       (no user-visible prompt) just by declaring it; on API 33+ it additionally
+       needs Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM — see
+       AppBlockModule.canScheduleExactAlarms()/requestScheduleExactAlarm(),
+       exposed for the JS layer to prompt for (a visible ask — founder call on
+       whether/when to surface it, not wired into any flow by this change). -->
+  <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
   <!-- Battery-optimization exemption request (Settings dialog) — parental
        protection must survive Doze/OEM battery savers on the child's device. -->
   <uses-permission android:name="android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS" />
@@ -40,13 +63,27 @@
         android:name="android.accessibilityservice"
         android:resource="@xml/app_block_accessibility_service_config" />
     </service>
-    <!-- Runs in its OWN process: clearing all recents ("fechar todos") kills the
-         app's task process, which used to take the shield down with it. A
-         separate process + stopWithTask="false" keeps the protection alive. -->
+    <!-- FIXED 2026-09-11 (field bug, Redmi Note 10/Android 12): this used to
+         declare android:process=":shield" on the theory that a separate
+         process would survive a recents swipe even if the app's main process
+         died. That protected the WRONG process: AppBlockAccessibilityService
+         (below) has never declared a process, so it has always run in the
+         app's DEFAULT process — the one actually enforcing. Keeping only
+         ":shield" alive after "fechar todos" left the enforcement-hosting
+         process with no foreground-priority protection at all; confirmed via
+         `logcat -b events` showing BOTH `com.wardyou.app` and
+         `com.wardyou.app:shield` killed one second apart by MIUI's
+         "SwipeUpClean". Standard fix (same pattern music-player FGS's use):
+         no android:process here, so this FGS's stopWithTask="false" now keeps
+         the app's DEFAULT process alive — the one hosting the
+         AccessibilityService, the Expo/RN bridge, and AppBlockModule's
+         `instance` static that the JS bridge reads. Do not re-add a separate
+         process without also moving BIND_ACCESSIBILITY_SERVICE and reworking
+         AppBlockModule's cross-process access (instance/EventBus are same-
+         process assumptions throughout this module). -->
     <service
       android:name=".AppBlockShieldService"
       android:exported="false"
-      android:process=":shield"
       android:stopWithTask="false"
       android:foregroundServiceType="specialUse">
       <property

@@ -68,6 +68,14 @@ export function isAggressiveOem(): boolean {
   return false;
 }
 
+export function canScheduleExactAlarms(): boolean {
+  return true;
+}
+
+export function requestScheduleExactAlarm(): void {
+  // no-op
+}
+
 export interface PendingBlockRequest {
   type: "access" | "extra";
   packageName?: string;

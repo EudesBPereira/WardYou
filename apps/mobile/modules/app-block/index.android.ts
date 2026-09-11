@@ -40,6 +40,8 @@ interface AppBlockNativeModule {
   getInstalledAppsJson(): string;
   canLockScreen(): boolean;
   lockScreen(): boolean;
+  canScheduleExactAlarms(): boolean;
+  requestScheduleExactAlarm(): void;
   isIgnoringBatteryOptimizations(): boolean;
   requestIgnoreBatteryOptimizations(): void;
   isAggressiveOem(): boolean;
@@ -167,6 +169,34 @@ export function lockScreen(): boolean {
     return nativeModule?.lockScreen() ?? false;
   } catch {
     return false;
+  }
+}
+
+/** Whether the watchdog's alarm can use the exact-alarm path. This is NOT a
+ *  timing nicety: Android 12+ refuses a background `startForegroundService()`
+ *  from a broadcast receiver unless the tick came from an exact alarm, so
+ *  without this the watchdog fires but its attempt to resurrect the shield is
+ *  discarded by the OS — protection stays dead after an OEM task-killer wipes
+ *  the process. Measured rather than assumed, because the degradation is
+ *  otherwise completely silent. Always true below Android 12 and on
+ *  non-Android platforms (no such restriction to begin with). */
+export function canScheduleExactAlarms(): boolean {
+  try {
+    // Absent native module = stale APK. Report `true` so this never invents a
+    // problem the user cannot act on; the real gaps already surface elsewhere.
+    return nativeModule?.canScheduleExactAlarms() ?? true;
+  } catch {
+    return true;
+  }
+}
+
+/** Opens the system "Alarms & reminders" screen for WardYou (Android 13+ only;
+ *  auto-granted before that). */
+export function requestScheduleExactAlarm(): void {
+  try {
+    nativeModule?.requestScheduleExactAlarm();
+  } catch {
+    /* best-effort */
   }
 }
 

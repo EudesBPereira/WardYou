@@ -138,6 +138,26 @@ class AppBlockModule : Module() {
       }
     }
 
+    // --- Keep-alive / exact-alarm permission (watchdog resurrection) ---
+    // Without this, AppBlockWatchdog's AlarmManager tick degrades to an
+    // inexact alarm and its startForegroundService() call gets silently
+    // denied by Android 12+'s background-FGS-start restriction — confirmed
+    // on-device (Redmi Note 10, Android 12, 2026-09-11), see AppBlockWatchdog
+    // for the full chain. Auto-granted on API 31-32 by the manifest
+    // declaration alone (canScheduleExactAlarms() below is then always true,
+    // requestScheduleExactAlarm() a no-op); API 33+ needs this explicit,
+    // user-visible grant.
+
+    Function("canScheduleExactAlarms") {
+      val context = appContext.reactContext ?: return@Function false
+      AppBlockWatchdog.canScheduleExactAlarms(context)
+    }
+
+    Function("requestScheduleExactAlarm") {
+      val context = appContext.reactContext ?: return@Function Unit
+      AppBlockWatchdog.requestScheduleExactAlarm(context)
+    }
+
     // --- Keep-alive / OEM battery-killer hardening ---
 
     Function("isIgnoringBatteryOptimizations") {
