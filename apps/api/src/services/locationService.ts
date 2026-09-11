@@ -4,9 +4,16 @@ import { AppError } from "../lib/errors.js";
 import { STATUS, mapMember } from "./familyService.js";
 import { hasActiveUserConsent, hasActiveFamilyConsent } from "./consentService.js";
 import { evaluateLocation } from "./zoneService.js";
+import { emitToFamily } from "../realtime.js";
 
 // LocationSourceType.Family (legacy domain enum) — a routine presence ping.
 const LOCATION_SOURCE_FAMILY = 1;
+
+/** Throttle do aviso de posicao nova por usuario. O aparelho reporta a cada
+ *  ~30s (e a cada 10s em viagem ao vivo); avisar toda vez inundaria o socket
+ *  de quem esta com o mapa aberto sem ganho perceptivel. */
+const LOCATION_NOTIFY_EVERY_MS = 15_000;
+const ultimoAviso = new Map<string, number>();
 
 export interface RecordLocationInput {
   latitude: number;
@@ -86,6 +93,40 @@ export async function recordLocation(userId: string, input: RecordLocationInput)
     zoneTransitions = await evaluateLocation(userId, input.latitude, input.longitude);
   } catch {
     /* geofence evaluation is best-effort */
+  }
+
+  // Avisa a familia que ha posicao nova.
+  //
+  // Sem isto o mapa do responsavel exibia o rotulo "Ao vivo" e NAO atualizava:
+  // so transicao de zona e SOS invalidavam `["family","map"]`, entao um ping de
+  // rotina (alguem simplesmente andando) nao chegava a quem ja estava com a
+  // tela aberta. Confirmado no QA em 2026-09-11: crianca com consentimento
+  // ativo e location_events entrando a cada ~30s aparecia como "Localizacao
+  // oculta" no aparelho do pai, porque nada refazia a consulta apos a montagem.
+  //
+  // Passa pelo MESMO gate de consentimento do `getFamilyMap` e do
+  // `ZoneTransition`: quem nao consentiu compartilhar localizacao nao tem a
+  // propria movimentacao anunciada para a familia.
+  try {
+    const agora = Date.now();
+    const anterior = ultimoAviso.get(userId) ?? 0;
+    if (agora - anterior >= LOCATION_NOTIFY_EVERY_MS) {
+      const familias = await prisma.family_members.findMany({
+        where: { UserId: userId, Status: { not: STATUS.disabled } },
+        select: { FamilyId: true },
+      });
+      for (const f of familias) {
+        const podeCompartilhar =
+          (await hasActiveUserConsent(userId, "LocationSharing")) ||
+          (await hasActiveFamilyConsent(f.FamilyId, userId, "LocationSharing"));
+        if (podeCompartilhar) {
+          emitToFamily(f.FamilyId, "LocationUpdated", { familyId: f.FamilyId, userId });
+        }
+      }
+      ultimoAviso.set(userId, agora);
+    }
+  } catch {
+    /* melhor esforco: avisar nunca pode derrubar o registro da posicao */
   }
 
   return {

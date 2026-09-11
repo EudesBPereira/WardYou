@@ -543,7 +543,10 @@
       "body": "1) Instale o WardYou no celular da criança.\n2) Ela cria a conta e entra na sua família com o código do convite.\n3) Você aprova o pedido escolhendo o papel \"Criança\".\n\nPronto: o modo protegido é ativado no aparelho dela e você gerencia tudo por aqui.",
       "invite": "Gerar convite"
     },
-    "confirmDisable": "Autentique para desligar a proteção"
+    "confirmDisable": "Autentique para desligar a proteção",
+    "protectionOn": "Proteção ativa",
+    "protectionPartial": "Proteção incompleta — falta acesso de uso",
+    "protectionOff": "SEM proteção — acessibilidade desligada"
   },
   "elder": {
     "med": {

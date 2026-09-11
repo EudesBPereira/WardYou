@@ -543,7 +543,10 @@
       "body": "1) Instala WardYou en el teléfono del niño.\n2) Crea una cuenta y se une a tu familia con el código.\n3) Apruebas la solicitud eligiendo el rol \"Niño\".\n\nListo: se activa el modo protegido en su dispositivo y gestionas todo aquí.",
       "invite": "Generar invitación"
     },
-    "confirmDisable": "Autentícate para desactivar la protección"
+    "confirmDisable": "Autentícate para desactivar la protección",
+    "protectionOn": "Protección activa",
+    "protectionPartial": "Incompleta — falta acceso de uso",
+    "protectionOff": "SIN protección — accesibilidad desactivada"
   },
   "elder": {
     "med": {

@@ -11,6 +11,13 @@ export interface ChildDto {
   role: "child" | "member";
   isConnected: boolean;
   lastSeenAt: string | null;
+  /** Estado REAL da protecao no aparelho da crianca, vindo do heartbeat.
+   *  A API ja mandava estes dois desde sempre (parentalService: hasUsageAccess
+   *  / hasAccessibility) e o cliente os DESCARTAVA: a lista do responsavel
+   *  mostrava apenas "Conectado", entao o pai nao tinha como saber que o
+   *  enforcement estava desligado no telefone do filho. */
+  hasUsageAccess: boolean;
+  hasAccessibility: boolean;
 }
 
 export interface PolicyDto {

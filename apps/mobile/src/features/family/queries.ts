@@ -100,7 +100,16 @@ async function fetchFamilyMap(): Promise<FamilyMapMemberVM[]> {
 }
 
 export function useFamilyMap() {
-  return useQuery({ queryKey: ["family", "map"], queryFn: fetchFamilyMap });
+  // The map is labeled "Ao vivo" (TripLiveMap badge) but a routine location
+  // ping (recordLocation) — unlike a zone entry/exit or SOS — emits no
+  // realtime event, so nothing invalidates ["family","map"] for the OTHER
+  // viewers when a member just moves around. Confirmed on QA 2026-09-11: a
+  // child with an active LocationSharing consent posting fresh location_events
+  // every ~30s still showed as hidden/stale on the guardian's map because nothing
+  // ever re-fetched it after the initial mount. Cheap fix until a proper
+  // "LocationUpdated" realtime event exists: poll while the screen is mounted
+  // (paused in background — refetchIntervalInBackground defaults to false).
+  return useQuery({ queryKey: ["family", "map"], queryFn: fetchFamilyMap, refetchInterval: 20_000 });
 }
 
 /** Report the device's current position to the backend (presence + map).

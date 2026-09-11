@@ -160,7 +160,7 @@ export default function ParentalScreen() {
                     />
                   }
                   title={c.fullName}
-                  subtitle={c.isConnected ? t("parental.connected") : t("parental.disconnected")}
+                  subtitle={estadoProtecao(c, t)}
                   showChevron
                   onPress={() => router.navigate(`/parental/${c.userId}` as never)}
                 />
@@ -172,4 +172,22 @@ export default function ParentalScreen() {
       )}
     </ScreenContainer>
   );
+}
+
+/**
+ * Subtitulo da linha do filho: estado REAL da protecao, nao so presenca.
+ *
+ * Antes mostrava apenas "Conectado"/"Desconectado". Um aparelho podia estar
+ * online com a acessibilidade desligada — ou seja, ZERO enforcement — e o
+ * responsavel lia "Conectado" e ficava tranquilo. Os dois campos ja vinham da
+ * API desde sempre; o cliente e que os descartava.
+ */
+function estadoProtecao(
+  c: { isConnected: boolean; hasAccessibility: boolean; hasUsageAccess: boolean },
+  t: (k: string) => string,
+): string {
+  if (!c.isConnected) return t("parental.disconnected");
+  if (!c.hasAccessibility) return t("parental.protectionOff");
+  if (!c.hasUsageAccess) return t("parental.protectionPartial");
+  return t("parental.protectionOn");
 }

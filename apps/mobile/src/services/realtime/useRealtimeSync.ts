@@ -53,6 +53,10 @@ export function useRealtimeSync() {
         if (userId) void fullParentalSync(userId);
       },
       ZoneTransition: () => invalidate([["zones"], ["family", "map"]]),
+      // Posicao nova de um membro. O servidor ja aplica throttle (15s) e o gate
+      // de consentimento, entao aqui basta refazer o mapa. Sem este evento o
+      // mapa exibia "Ao vivo" e so atualizava na montagem da tela.
+      LocationUpdated: () => invalidate([["family", "map"]]),
       TravelLocationUpdated: (payload) => {
         const tripId = (payload as { travelGroupId?: string } | null)?.travelGroupId;
         invalidate(tripId ? [["trips", tripId, "map"]] : [["trips"]]);

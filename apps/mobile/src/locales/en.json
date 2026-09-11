@@ -543,7 +543,10 @@
       "body": "1) Install WardYou on the child's phone.\n2) They create an account and join your family with the invite code.\n3) You approve the request choosing the \"Child\" role.\n\nDone: protected mode turns on for their device and you manage everything here.",
       "invite": "Create invite"
     },
-    "confirmDisable": "Authenticate to turn protection off"
+    "confirmDisable": "Authenticate to turn protection off",
+    "protectionOn": "Protection active",
+    "protectionPartial": "Incomplete — usage access missing",
+    "protectionOff": "NOT protected — accessibility is off"
   },
   "elder": {
     "med": {
