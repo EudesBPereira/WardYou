@@ -54,6 +54,10 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
   const perfilCrianca = profile?.appProfile === "child";
 
   const active = authed && hydrated && enabled && podeAutenticar === true && !perfilCrianca && !!profile;
+  // Espelho em ref para o listener de AppState (montado uma vez) enxergar o
+  // valor atual em vez do capturado no primeiro render.
+  const activeRef = useRef(active);
+  activeRef.current = active;
 
   // Re-lock on every background → foreground transition (like WhatsApp).
   useEffect(() => {
@@ -69,6 +73,9 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
         // auto-prompt abaixo nao dispara -- era assim que se voltava ao app e
         // encontrava a tela de bloqueio parada, sem prompt nenhum. Pedir de
         // novo aqui e o que torna "sair e voltar" um caminho de recuperacao.
+        // `promptUnlock` ja se protege sozinho quando o portao esta inativo;
+        // `lock()` continua valendo em qualquer caso, pois so marca o estado --
+        // quem decide mostrar algo e `active` no render.
         if (useAppLock.getState().locked) void promptUnlockRef.current();
         else lock();
       }
@@ -77,6 +84,16 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
   }, [lock]);
 
   const promptUnlock = async () => {
+    // `activeRef`, nao `active`: este metodo e chamado de dentro do listener de
+    // AppState, que e montado UMA vez e captura o valor do primeiro render.
+    //
+    // Sem esta guarda o app da CRIANCA -- onde o portao esta desligado de
+    // proposito e nenhuma tela de bloqueio existe -- disparava o prompt de
+    // biometria do sistema a cada volta ao primeiro plano: `locked` nasce true
+    // no store e nunca e limpo quando o portao esta inativo, entao o ramo de
+    // retentativa abaixo pedia digital sem NADA por tras. Visto em campo em
+    // 2026-09-11, no Redmi.
+    if (!activeRef.current) return;
     if (prompting) return;
     setPrompting(true);
     try {
