@@ -765,6 +765,7 @@
     },
     "done": "¡Listo!",
     "waitingReview": "Esperando la aprobación de tus responsables",
+    "alreadyCredited": "Ya completada y recompensada",
     "approved": "+{{min}} min aprobados 🎉",
     "rejected": "No fue aprobada esta vez",
     "recent": "Enviadas recientemente",

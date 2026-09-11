@@ -765,6 +765,7 @@
     },
     "done": "Done!",
     "waitingReview": "Waiting for your guardians' approval",
+    "alreadyCredited": "Already completed and rewarded",
     "approved": "+{{min}} min approved 🎉",
     "rejected": "Not approved this time",
     "recent": "Recently submitted",

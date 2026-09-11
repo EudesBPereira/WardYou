@@ -94,3 +94,29 @@ export async function authenticateBiometric(promptMessage: string): Promise<bool
     return false;
   }
 }
+
+/**
+ * Cancela uma chamada authenticateAsync() pendurada.
+ *
+ * Achado de QA 2026-09-11 (POCO, resume "morno" via monkey/intent do
+ * launcher, processo ja vivo): o BiometricPrompt as vezes falha em subir
+ * silenciosamente -- a mesma race ja documentada acima (activity ainda nao
+ * resumed) -- e a promessa de authenticateAsync fica pendurada ate
+ * PROMPT_TIMEOUT_MS (60s) sem NENHUMA UI visivel. Reproduzido ao vivo: a tela
+ * "WardYou bloqueado" ficou presa, 5 toques em "Desbloquear" ao longo de ~2min
+ * sem nenhum efeito (nem log de tentativa de autenticacao no logcat), e a
+ * UNICA recuperacao foi `force-stop` -- que um usuario real nao sabe fazer.
+ * `cancelAuthenticate()` deixa um NOVO toque desistir da tentativa pendurada
+ * na hora, em vez de o usuario ficar refem de um teto de 60s as cegas — ver o
+ * uso em AppLockGate.promptUnlock(). Best-effort: nao ha nada melhor a fazer
+ * se a API nao existir ou falhar.
+ */
+export function cancelBiometricPrompt(): void {
+  if (Platform.OS === "web") return;
+  try {
+    const LA = require("expo-local-authentication");
+    void LA.cancelAuthenticate?.();
+  } catch {
+    /* best-effort */
+  }
+}

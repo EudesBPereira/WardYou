@@ -49,6 +49,11 @@ export interface TaskDto {
   description: string | null;
   category: string;
   rewardMinutes: number;
+  /** Achado de QA 2026-09-11: faltava aqui (a API ja devolvia). Sem isto o
+   *  cliente nao tem como distinguir "tarefa unica ja paga, nunca mais"
+   *  de "tarefa recorrente, paga de novo amanha" -- ver isAlreadyCredited em
+   *  app/(tabs)/tasks.tsx. */
+  isRecurring: boolean;
   isActive: boolean;
 }
 
@@ -61,6 +66,10 @@ export interface CompletionDto {
   status: string;
   childNote: string | null;
   completedAt: string;
+  /** Quando foi decidida (aprovada/recusada) — null enquanto pendente. Usado
+   *  por isAlreadyCredited (tasks.tsx) para tarefas recorrentes: "aprovada
+   *  hoje" vs "aprovada num dia anterior, pode enviar de novo". */
+  reviewedAt: string | null;
 }
 
 const empty = async <T>(): Promise<T[]> => [];

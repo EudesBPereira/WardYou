@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { View, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator, Alert } from "react-native";
 import { router } from "expo-router";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
@@ -16,7 +16,30 @@ import { colors } from "@/theme";
 import { useMyProfile } from "@/features/profile/queries";
 import { useMyTasks, useCompleteTask } from "@/features/parental/childQueries";
 import { ProfileButton } from "@/components/ProfileButton";
-import type { TaskDto } from "@/features/parental/queries";
+import type { TaskDto, CompletionDto } from "@/features/parental/queries";
+
+/**
+ * Espelha `isTaskAlreadyCredited` de apps/api/src/services/parentalService.ts
+ * (so pra DECIDIR o que mostrar aqui — quem de fato bloqueia e o servidor,
+ * via o 409 de POST /tasks/complete). Achado de QA 2026-09-11: sem isto,
+ * `waiting` so olhava "PendingApproval", entao uma tarefa NAO recorrente ja
+ * aprovada e paga voltava a mostrar "Concluí!" -- a crianca tocava, o
+ * servidor recusava (409, confirmado no log), e a tela nao mudava nada, sem
+ * aviso nenhum: um botao que existe mas nunca funciona de novo. Dia local do
+ * APARELHO (nao o "meio-dia da familia" do servidor) — e so um sinal de UI;
+ * o servidor continua sendo quem decide de verdade.
+ */
+function isAlreadyCredited(task: TaskDto, completions: CompletionDto[]): boolean {
+  const approvedDates = completions
+    .filter((c) => c.childTaskId === task.id && c.status === "Approved" && c.reviewedAt)
+    .map((c) => new Date(c.reviewedAt as string));
+  if (approvedDates.length === 0) return false;
+  if (!task.isRecurring) return true;
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const tomorrow = new Date(today.getTime() + 24 * 60 * 60_000);
+  return approvedDates.some((d) => d >= today && d < tomorrow);
+}
 
 const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   Educational: "book",
@@ -35,6 +58,16 @@ export default function TasksScreen() {
   const { data, isLoading } = useMyTasks(profile?.appProfile === "child");
   const complete = useCompleteTask();
   const [noteFor, setNoteFor] = useState<TaskDto | null>(null);
+
+  // Achado de QA 2026-09-11: um 409 do servidor (tarefa ja creditada, ou uma
+  // pendencia ja existente) desaparecia em silencio -- a crianca via a tela
+  // voltar exatamente como estava, sem nenhum aviso do porque nada aconteceu.
+  useEffect(() => {
+    if (complete.isError) {
+      Alert.alert(t("childTasks.title"), (complete.error as Error)?.message || t("common.genericError"));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [complete.isError]);
 
   // This tab only exists for children; anyone landing here goes home.
   useEffect(() => {
@@ -77,6 +110,7 @@ export default function TasksScreen() {
 
       {tasks.map((task) => {
         const waiting = pendingTaskIds.has(task.id);
+        const credited = !waiting && isAlreadyCredited(task, completions);
         return (
           <Card key={task.id} className="mt-4 gap-3">
             <View className="flex-row items-center gap-3">
@@ -102,6 +136,13 @@ export default function TasksScreen() {
                 <Ionicons name="hourglass" size={18} color={colors["ink-muted"]} />
                 <Text variant="caption" color="muted">
                   {t("childTasks.waitingReview")}
+                </Text>
+              </View>
+            ) : credited ? (
+              <View className="flex-row items-center gap-2 rounded-2xl bg-safe-50 px-3 py-2.5">
+                <Ionicons name="checkmark-circle" size={18} color={colors.safe[600]} />
+                <Text variant="caption" className="text-safe-600">
+                  {t("childTasks.alreadyCredited")}
                 </Text>
               </View>
             ) : (

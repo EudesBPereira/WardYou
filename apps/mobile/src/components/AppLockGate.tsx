@@ -7,7 +7,7 @@ import { colors } from "@/theme";
 import { useSession } from "@/stores/session";
 import { useAppLock, consumeRelockSuppression } from "@/stores/appLock";
 import { useMyProfile } from "@/features/profile/queries";
-import { authenticateBiometric, hasDeviceAuth } from "@/services/auth/biometrics";
+import { authenticateBiometric, cancelBiometricPrompt, hasDeviceAuth } from "@/services/auth/biometrics";
 
 /**
  * WhatsApp-style biometric lock. Wraps the app: while authenticated and the
@@ -83,6 +83,11 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     return () => sub.remove();
   }, [lock]);
 
+  // Gera um id por tentativa. Uma tentativa PENDURADA que resolve tarde
+  // demais (ver cancelBiometricPrompt abaixo) nao pode pisar no estado de
+  // uma tentativa mais nova via seu proprio `finally`/resultado.
+  const promptAttemptRef = useRef(0);
+
   const promptUnlock = async (origem: "auto" | "usuario" = "auto") => {
     // `activeRef`, nao `active`: este metodo e chamado de dentro do listener de
     // AppState, que e montado UMA vez e captura o valor do primeiro render.
@@ -104,15 +109,28 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     // fazia nada e passados 70s abria o prompt normalmente. Era esse o
     // "nao abre a opcao de desbloquear" relatado pelo fundador.
     if (origem === "auto" && prompting) return;
+    const myAttempt = ++promptAttemptRef.current;
+    // COMPLEMENTO 2026-09-11 (achado de QA em outro aparelho, POCO, resume
+    // "morno" via monkey/intent do launcher): a correcao acima (bypassar a
+    // guarda para toque manual) deixa o toque sempre CHAMAR de novo, mas sem
+    // isto ele chama authenticateAsync() uma SEGUNDA vez com a tentativa
+    // anterior ainda pendurada por baixo -- comportamento indefinido do lado
+    // nativo (o Android nao promete o que acontece com dois authenticate()
+    // simultaneos). Cancelar a pendurada primeiro garante uma chamada nativa
+    // limpa a cada toque, e o id de tentativa acima impede que o resultado
+    // (tardio) da cancelada derrube o estado da nova.
+    if (prompting) cancelBiometricPrompt();
     setPrompting(true);
     try {
       const ok = await authenticateBiometric(t("appLock.prompt"));
+      if (myAttempt !== promptAttemptRef.current) return; // resultado tardio de uma tentativa ja substituida
       if (ok) unlock();
     } finally {
       // `finally`: se authenticateBiometric lancar, `prompting` ficaria true
       // para sempre e a tela de bloqueio viraria uma prisao -- ver o
-      // comentario do botao, abaixo.
-      setPrompting(false);
+      // comentario do botao, abaixo. So a tentativa MAIS RECENTE limpa o
+      // estado (ver promptAttemptRef acima).
+      if (myAttempt === promptAttemptRef.current) setPrompting(false);
     }
   };
   const promptUnlockRef = useRef(promptUnlock);
