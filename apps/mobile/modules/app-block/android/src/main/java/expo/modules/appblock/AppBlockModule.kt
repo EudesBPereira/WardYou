@@ -78,6 +78,22 @@ class AppBlockModule : Module() {
       AppBlockEventBus.listener = null
     }
 
+    // Canal de log SINCRONO para o logcat. Mora neste modulo por pragmatismo:
+    // ele ja existe, ja compila e ja e autolinkado -- criar um modulo nativo
+    // novo as vesperas do lancamento custaria mais risco de build do que o
+    // acoplamento de nome custa aqui. Nao tem nada a ver com bloqueio de apps.
+    //
+    // Por que precisa ser NATIVO e por que precisa ser `Function` (sincrono):
+    // quando a tarefa headless roda com a Activity em pausa e a tarefa headless
+    // do expo-task-manager nao chegou a iniciar, o JavaTimerManager suspende
+    // TODOS os timers do JS -- promises e setTimeout param de progredir. Um
+    // instrumento que dependa de `await` (como o nosso storage) para justamente
+    // nessa hora, que e a hora que a gente precisa medir. `Function` e uma
+    // chamada JSI direta: atravessa sem timer, sem bridge assincrona, sem fila.
+    Function("nativeLog") { tag: String, message: String ->
+      android.util.Log.i(tag, message)
+    }
+
     // Returns and clears the pending overlay requests as a JSON array string
     // `[{"type":"access","packageName":"...","label":"..."},{"type":"extra","minutes":30}]`.
     Function("drainPendingRequestsJson") {

@@ -63,6 +63,8 @@ export type AccessibilityStatus =
 
 interface AppBlockNativeModule {
   isAccessibilityServiceEnabled(): boolean;
+  /** Added 2026-09-11; absent on an older APK - see nativeLog(). */
+  nativeLog?(tag: string, message: string): void;
   /** Added 2026-09-11; absent on an APK built before that - see
    *  getAccessibilityStatus() for the fallback. */
   accessibilityStatus?(): string;
@@ -150,6 +152,37 @@ export function getAccessibilityStatus(): AccessibilityStatus {
  *  to the guardian. */
 export function isAccessibilityServiceEnabled(): boolean {
   return getAccessibilityStatus() === "running";
+}
+
+/**
+ * Escreve uma linha no logcat de forma SINCRONA, via JSI.
+ *
+ * Existe porque `console.warn` nao serve para medir a tarefa headless: quando
+ * a Activity esta em pausa e a tarefa headless do expo-task-manager nao
+ * chegou a iniciar, o JavaTimerManager do React Native suspende todos os
+ * timers do JS -- promises param de resolver e qualquer instrumento que
+ * dependa de `await` (o nosso storage, por exemplo) emudece exatamente no
+ * momento que a gente precisa observar. Uma `Function` de modulo Expo e uma
+ * chamada direta: nao passa por timer nem por fila assincrona.
+ *
+ * (Correcao de leitura, para o registro: o `console.log` NAO e removido neste
+ * projeto -- nao ha `transform-remove-console` no babel.config.js, e linhas
+ * `ReactNativeJS` aparecem no logcat normalmente. O silencio que observamos em
+ * campo nao era o log sendo apagado; era o codigo depois do primeiro `await`
+ * nunca chegando a rodar.)
+ *
+ * Best-effort: em APK antigo, iOS ou web cai no `console.warn`.
+ */
+export function nativeLog(tag: string, message: string): void {
+  try {
+    if (nativeModule && typeof nativeModule.nativeLog === "function") {
+      nativeModule.nativeLog(tag, message);
+      return;
+    }
+  } catch {
+    /* cai no console abaixo */
+  }
+  console.warn(`${tag} ${message}`);
 }
 
 export function openAccessibilitySettings(): void {

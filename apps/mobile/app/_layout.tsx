@@ -1,7 +1,14 @@
 import "../global.css";
 import "@/i18n";
-// Side-effect import: registers the background trip-location TaskManager task so
-// the OS can relaunch it headlessly (native only; a no-op module on web).
+// Side-effect import: registra a tarefa de localizacao em segundo plano.
+//
+// Este import NAO e mais o registro autoritativo -- quem registra cedo o
+// bastante e `index.js`, o ponto de entrada real (ver o comentario longo la:
+// um modulo de rota como este so e avaliado durante o primeiro render, tarde
+// demais para a chave headless do expo-task-manager). Mantido de proposito
+// como rede de seguranca: e idempotente (cache de modulo do Metro) e protege
+// o caso de alguem reapontar o `main` do package.json sem saber por que ele
+// mudou.
 import "@/services/location/tripLocationTracking";
 
 import { useEffect, useState } from "react";

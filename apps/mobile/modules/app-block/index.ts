@@ -39,6 +39,12 @@ export function isAccessibilityServiceEnabled(): boolean {
   return false;
 }
 
+/** Sem logcat fora do Android - ver a versao android para o porque de ser
+ *  sincrono. */
+export function nativeLog(tag: string, message: string): void {
+  console.warn(`${tag} ${message}`);
+}
+
 export function openAccessibilitySettings(): void {
   // no-op
 }

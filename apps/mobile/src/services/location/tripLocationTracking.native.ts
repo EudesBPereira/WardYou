@@ -3,6 +3,7 @@ import * as Battery from "expo-battery";
 import * as IntentLauncher from "expo-intent-launcher";
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
+import { nativeLog } from "@modules/app-block";
 import Constants from "expo-constants";
 import { env } from "@/lib/env";
 import { storage } from "@/lib/storage";
@@ -25,6 +26,12 @@ import {
  * como `ReactNativeJS` (conferido: o babel deste projeto NAO remove console).
  */
 const LOG = "[wardyou-trip]";
+
+/** Contador de invocacoes dentro de um mesmo processo JS. Se ele reinicia em
+ *  1 a cada disparo, o processo esta sendo recriado do zero toda vez; se
+ *  cresce, e o mesmo runtime sendo reusado. Distingue duas causas que geram o
+ *  mesmo silencio no banco. */
+let invocacoes = 0;
 
 // Native background trip-location broadcasting. Unlike the old foreground-only
 // watcher (which stopped the moment the app was backgrounded or killed), this
@@ -129,7 +136,7 @@ async function postTripLocation(tripId: string, token: string, coords: PostCoord
     // Sobrevivivel E observavel: antes isto derrubava o callback inteiro em
     // silencio; depois virou silencio sobrevivivel, que e meia correcao.
     const motivo = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
-    console.warn(`${LOG} POST falhou (rede/DNS/TLS) trip=${tripId}: ${motivo}`);
+    nativeLog(LOG, `POST falhou (rede/DNS/TLS) trip=${tripId}: ${motivo}`);
     await markTripPostFailed(motivo);
     return 0;
   }
@@ -165,19 +172,35 @@ TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
   // "o SO entregou posicao", e so separando os dois da para saber onde a
   // corrente arrebenta. A primeira versao deste instrumento gravava isto
   // depois do guard abaixo -- que no cenario investigado nunca e alcancado.
+  //
+  // MEDICAO DECISIVA (2026-09-11). As duas linhas abaixo existem para separar
+  // "o callback entrou" de "o primeiro await voltou". `nativeLog` e sincrono
+  // (JSI direto); `markTripTaskRan` grava no storage e portanto depende de
+  // promise -- que o JavaTimerManager do React Native SUSPENDE quando a
+  // Activity esta em pausa e a tarefa headless do expo-task-manager nao
+  // chegou a iniciar. Se no logcat aparecer "entrou" sem o "carimbo ok"
+  // seguinte, a causa e fome de timer, nao rede, nem bateria, nem GPS.
+  invocacoes += 1;
+  const entrouEm = Date.now();
+  nativeLog(LOG, `entrou #${invocacoes} (sincrono, antes de qualquer await)`);
   await markTripTaskRan();
+  nativeLog(LOG, `carimbo ok #${invocacoes} (+${Date.now() - entrouEm}ms) — timers do JS estao vivos`);
   if (error) {
-    console.warn(`${LOG} tarefa invocada com erro: ${String(error)}`);
+    nativeLog(LOG, `tarefa invocada com erro: ${String(error)}`);
     return;
   }
   const locations = data?.locations;
   const latest = locations?.[locations.length - 1];
   if (!latest) {
     // A hipotese principal do caso de campo: invocada, sem posicao nenhuma.
-    console.warn(`${LOG} tarefa invocada SEM posicao (locations vazio) — nada a enviar`);
+    nativeLog(LOG, "tarefa invocada SEM posicao (locations vazio) — nada a enviar");
     return;
   }
   await markTripFixReceived();
+  // `timestamp` e opcional no tipo do expo-location: quando o SO nao informa,
+  // a idade do fix e desconhecida e o log diz isso em vez de inventar um numero.
+  const idade = typeof latest.timestamp === "number" ? `${Date.now() - latest.timestamp}ms` : "desconhecida";
+  nativeLog(LOG, `posicao recebida #${invocacoes} idade=${idade}`);
 
   let session = await readSession();
   if (!session) {
@@ -209,8 +232,9 @@ TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
     }
     if (status >= 200 && status < 300) {
       await markTripPostOk();
+      nativeLog(LOG, `POST ok trip=${tripId} (+${Date.now() - entrouEm}ms desde a entrada)`);
     } else {
-      console.warn(`${LOG} POST recusado trip=${tripId} status=${status}`);
+      nativeLog(LOG, `POST recusado trip=${tripId} status=${status}`);
       await markTripPostFailed(`HTTP ${status}`);
     }
     // Keep the trip unless the server says we can't share (403) or it ended (410).
