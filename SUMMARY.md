@@ -35,14 +35,38 @@
 | Apelido, mapa recentralizar, teclado, datas pt-BR, layout | todos confirmados |
 
 ### 🔧 Corrigido mas NÃO validado em aparelho
-- Sirene do antifurto (nativa) — **trabalho em andamento, ver "em aberto"**
+- **Sirene do antifurto, reescrita 100% nativa** (completa, compila, falta testar no aparelho):
+  - As duas leituras foram CONFIRMADAS: (a) `setAudioModeAsync` não aguardado contra
+    `play()` imediato, com o lock correndo em paralelo; (b) `player.volume` é ganho do
+    tocador, não do `STREAM_ALARM` do sistema.
+  - O motivo decisivo de ir para o nativo não foi só "já roda em foreground service":
+    **é a única forma de tornar o `play()` síncrono** (`MediaPlayer.prepare()` bloqueante,
+    contra o `prepareAsync()`/promise do JS). Quando `startSiren()` retorna, ou a sirene
+    está tocando de verdade, ou já falhou de forma definitiva — a corrida morre aí.
+  - `AudioAttributes.USAGE_ALARM` + `STREAM_ALARM` no máximo, **reafirmado a cada 300ms**
+    por um handler nativo (sobrevive à pausa dos timers do JS).
+  - Foreground service dedicado, separado do shield — o antifurto precisa funcionar em
+    aparelho sem política de bloqueio ativa (idoso/SOS). Notificação **sem** `MediaStyle`,
+    **sem** `MediaSession` e **sem** botão de ação: nada que dê ao ladrão um "pausar".
+  - **Limite honesto, documentado:** o Android **não permite desabilitar as teclas físicas
+    de volume**, e não há confirmação de que `onKeyEvent` as intercepte com a tela
+    bloqueada. A defesa é **reafirmação, não bloqueio** — o ladrão abaixa por uma fração
+    de segundo e o volume volta ao máximo em até ~300ms. Prometer "impossível abaixar"
+    seria falso.
+  - iOS mantém o caminho antigo (`expo-audio`), fora do escopo.
 - `capturedAt` real na tarefa nativa de viagem
 - Cutucada de retomada no `POST /location`
 - Painel de proteção re-medindo a cada 15s (era leitura congelada)
 - Bloqueio de SITES — **implementado 11/09, ZERO validação em aparelho**
 
 ### ❌ Em aberto / quebrado
-1. **Sirene do antifurto**: (a) não tocou numa segunda ativação — corrida entre `setAudioModeAsync` não aguardado e o `play()`; (b) **o ladrão consegue baixar o volume com a tela bloqueada** — `player.volume` é ganho do tocador, não do stream do sistema. Requisito do fundador: só quem desbloquear a tela pode silenciar. Sirene sendo movida para o nativo (o JS é pausado quando a tela trava).
+1. **Sirene do antifurto — código pronto, FALTA VALIDAR NO APARELHO.** Roteiro para o fundador:
+   (1) ative o antifurto; (2) confirme que a sirene toca **imediatamente**, repetindo a
+   ativação 4-5 vezes — era o cenário intermitente; (3) com a sirene tocando e a tela
+   desbloqueada, segure o **volume para baixo** e confirme que ele volta sozinho ao máximo
+   em menos de 1s; (4) repita com a tela **bloqueada**; (5) tente deslizar a notificação da
+   sirene para fora — não deve sumir; (6) feche o app pelos Recentes — a sirene deve
+   continuar; (7) para sair, desbloqueie com biometria/PIN do aparelho.
 2. **Bloqueio de sites sem validação**. Para testar, o Chrome precisa estar LIBERADO como app — senão tudo bloqueia e o teste não significa nada. Casos: `g1.com.br`, `www.`, subdomínio, **`naog1.com.br` que NÃO pode bloquear**, navegador nativo Xiaomi, aba anônima, link dentro do Instagram (esperado não bloquear).
 3. **Rastreamento FORA de viagem não existe**. O mapa da família mostra a posição de quando a criança abriu o app pela última vez. Recomendação: reusar o `AppBlockShieldService` (já roda 24h) para reportar a cada 10-15min com precisão `Balanced`.
 
