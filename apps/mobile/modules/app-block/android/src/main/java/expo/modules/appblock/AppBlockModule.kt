@@ -595,19 +595,42 @@ class AppBlockModule : Module() {
    *     working service report "Acessibilidade desligada" on 2026-09-11.
    */
   private fun accessibilityStatus(): String {
-    val context = context() ?: return A11Y_UNKNOWN
+    val context = context() ?: run {
+      android.util.Log.i(A11Y_LOG, "status=unknown motivo=sem-context")
+      return A11Y_UNKNOWN
+    }
     val liveInstance = AppBlockAccessibilityService.instance != null
-    if (!isServiceGranted(context)) {
+    val granted = isServiceGranted(context)
+    val bound = isServiceBound(context)
+    val status = if (!granted) {
       // The one case where a live instance overrules the settings list: we are
       // demonstrably running, so the read must be the stale/unreadable side.
-      return if (liveInstance) A11Y_RUNNING else A11Y_NOT_GRANTED
+      if (liveInstance) A11Y_RUNNING else A11Y_NOT_GRANTED
+    } else {
+      when (bound) {
+        true -> A11Y_RUNNING
+        false -> if (liveInstance) A11Y_RUNNING else A11Y_GRANTED_NOT_RUNNING
+        // System list unreadable: a null `instance` proves nothing here.
+        null -> if (liveInstance) A11Y_RUNNING else A11Y_UNKNOWN
+      }
     }
-    return when (isServiceBound(context)) {
-      true -> A11Y_RUNNING
-      false -> if (liveInstance) A11Y_RUNNING else A11Y_GRANTED_NOT_RUNNING
-      // System list unreadable: a null `instance` proves nothing here.
-      null -> if (liveInstance) A11Y_RUNNING else A11Y_UNKNOWN
-    }
+    // Os tres sinais crus, no instante da medicao, no logcat.
+    //
+    // Existe por causa de 2026-09-12: o painel mostrou "granted_not_running"
+    // enquanto o shell dizia que a lista de servicos estava VAZIA. Levou uma
+    // rodada inteira de leitura de codigo para mostrar que aquele estado era
+    // inalcancavel com a lista vazia -- ou seja, que o problema era a tela
+    // exibindo uma medicao velha, nao o nativo medindo errado. Com esta linha,
+    // a mesma pergunta se responde comparando dois timestamps no logcat.
+    //
+    // `Log` nativo de proposito: e a medicao do nativo que esta sendo posta em
+    // duvida, entao ela precisa aparecer sem depender da camada JS que a
+    // consome -- que foi exatamente a camada que mentiu.
+    android.util.Log.i(
+      A11Y_LOG,
+      "status=$status granted=$granted bound=$bound instance=$liveInstance",
+    )
+    return status
   }
 
   /** Did the USER grant the service in Android's accessibility settings?
@@ -682,6 +705,8 @@ class AppBlockModule : Module() {
   }
 
   companion object {
+    /** Tag do logcat para o diagnostico de acessibilidade: `-s wardyou-a11y`. */
+    const val A11Y_LOG = "wardyou-a11y"
     const val A11Y_RUNNING = "running"
     const val A11Y_GRANTED_NOT_RUNNING = "granted_not_running"
     const val A11Y_NOT_GRANTED = "not_granted"

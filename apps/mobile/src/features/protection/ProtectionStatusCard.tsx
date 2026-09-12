@@ -34,6 +34,11 @@ function tomDoNivel(nivel: NivelProtecao) {
  * Usa o mesmo vocabulario de status do resto do produto: protecao completa,
  * limitada, acao necessaria, offline.
  */
+/** Cadencia de re-medicao do painel. Mesmo valor de useTripSharingHealth: alto
+ *  o bastante para nao pesar no aparelho da crianca, baixo o bastante para que
+ *  ninguem fique olhando uma leitura velha achando que e a de agora. */
+const INTERVALO_REMEDICAO_MS = 15_000;
+
 export function ProtectionStatusCard({ modoCrianca }: { modoCrianca: boolean }) {
   const { t } = useTranslation();
   const [diag, setDiag] = useState<Diagnostico | null>(null);
@@ -42,14 +47,51 @@ export function ProtectionStatusCard({ modoCrianca }: { modoCrianca: boolean }) 
     diagnosticar({ modoCrianca }).then(setDiag).catch(() => setDiag(null));
   }, [modoCrianca]);
 
-  // Remede ao voltar do segundo plano: resolver uma permissao acontece FORA do
-  // app, entao sem isto o painel continuaria mostrando o problema ja resolvido.
+  // Remede ao voltar do segundo plano E em intervalo fixo.
+  //
+  // O AppState sozinho nao bastava, e isso custou um diagnostico errado em
+  // campo (2026-09-12): a acessibilidade foi desligada por fora com o app
+  // aberto na frente, o app nunca foi para segundo plano, `medir()` nunca
+  // re-rodou, e o painel continuou exibindo a medicao anterior -- "o servico
+  // travou, desligue e ligue de novo" -- enquanto o estado real ja era
+  // "nunca foi ligado". O texto mandava a pessoa mexer num interruptor que ela
+  // encontraria desligado.
+  //
+  // Num painel cuja unica razao de existir e dizer a verdade sobre a protecao,
+  // uma leitura velha e indistinguivel de uma leitura errada: quem le nao tem
+  // como saber que esta vendo o passado. Estado de protecao muda por fora do
+  // app (Ajustes do sistema, um servico que morre, o OEM matando o processo),
+  // entao ele precisa ser RE-MEDIDO, nao lembrado.
+  //
+  // Mesmo tratamento que useTripSharingHealth ja recebia -- o defeito aqui era
+  // eu ter corrigido a staleness num cartao e nao no outro.
   useEffect(() => {
     medir();
+    let timer: ReturnType<typeof setInterval> | null = null;
+    const iniciar = () => {
+      if (timer === null) timer = setInterval(medir, INTERVALO_REMEDICAO_MS);
+    };
+    const parar = () => {
+      if (timer !== null) {
+        clearInterval(timer);
+        timer = null;
+      }
+    };
+    iniciar();
     const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") medir();
+      if (s === "active") {
+        medir();
+        iniciar();
+      } else {
+        // Em segundo plano nao ha ninguem lendo o painel; sondar so gastaria
+        // bateria no aparelho da crianca, que e o que menos pode gastar.
+        parar();
+      }
     });
-    return () => sub.remove();
+    return () => {
+      parar();
+      sub.remove();
+    };
   }, [medir]);
 
   if (!diag) return null;
