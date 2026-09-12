@@ -92,7 +92,14 @@
 - **Premium**: o card em Ajustes abre "Em breve" — não há pagamento no app. Esconder, virar lista de espera, ou integrar cobrança?
 - **Consentimento de viagem**: entrar numa viagem compartilha localização, bateria e SOS **sem nenhuma tela de aceite**.
 - **Consentimento familiar concedido em nome de outro membro não tem como ser revogado** — nem no app, nem na API.
-- **SOS não expira** — fica ativo para sempre até alguém cancelar.
+- **SOS não expira — PRIORIDADE, não mais "decisão de produto".** Em 12/09 ~01:00
+  encontrei um **SOS ATIVO no aparelho do fundador**, resíduo dos testes do dia:
+  "SOS ativo / Sua família foi avisada / ENVIADO". Ficou vivo por horas anunciando
+  emergência à família. Num app onde o SOS é o recurso mais sério, **um alerta que nunca
+  expira envenena o próximo**: quem recebe o terceiro alerta esquecido não corre no quarto.
+  Precisa de TTL, ou de lembrete ao acionador, ou das duas coisas. Já havia sido visto
+  antes na conta da criança (o testador cancelou manualmente) — então é reincidente, não
+  caso isolado.
 - **A criança pode desligar sozinha o compartilhamento da própria localização.**
 - **O responsável não vê o saldo de tempo extra** (só o limite base).
 - Rastreamento permanente fora de viagem (privacidade vs. promessa do produto).
