@@ -67,7 +67,18 @@
    em menos de 1s; (4) repita com a tela **bloqueada**; (5) tente deslizar a notificação da
    sirene para fora — não deve sumir; (6) feche o app pelos Recentes — a sirene deve
    continuar; (7) para sair, desbloqueie com biometria/PIN do aparelho.
-2. **Bloqueio de sites sem validação**. Para testar, o Chrome precisa estar LIBERADO como app — senão tudo bloqueia e o teste não significa nada. Casos: `g1.com.br`, `www.`, subdomínio, **`naog1.com.br` que NÃO pode bloquear**, navegador nativo Xiaomi, aba anônima, link dentro do Instagram (esperado não bloquear).
+2. **Bloqueio de sites — TESTE NEGATIVO FALHOU, investigar PRIMEIRO.**
+   Medido em 12/09 00:45 no Redmi: `naog1.com.br` **FOI BLOQUEADO** (foco foi para
+   `com.wardyou.app`, overlay disparou) — e **não deveria**, com só `g1.com.br` na lista.
+   Duas hipóteses, ambas por verificar:
+   - **(a)** o Chrome está bloqueado como APP, e aí todo o teste de site é inválido
+     (tudo bloqueia independente da regra). **Verifique isto primeiro**: libere o Chrome
+     em Controle parental → Apps e repita.
+   - **(b)** a regra de domínio está larga demais — seria bug sério: bloquear `g1.com.br`
+     derrubaria qualquer domínio que contenha esse texto, sem o pai saber.
+   A lógica em `websiteBlocking.ts` / `AppBlockWebsiteRules.kt` compara sufixo em
+   fronteira de ponto (`h === d || h.endsWith("." + d)`), o que NÃO casaria
+   `naog1.com.br` — por isso a aposta é na hipótese (a). **Mas aposta não é validação.** Para testar, o Chrome precisa estar LIBERADO como app — senão tudo bloqueia e o teste não significa nada. Casos: `g1.com.br`, `www.`, subdomínio, **`naog1.com.br` que NÃO pode bloquear**, navegador nativo Xiaomi, aba anônima, link dentro do Instagram (esperado não bloquear).
 3. **Rastreamento FORA de viagem não existe**. O mapa da família mostra a posição de quando a criança abriu o app pela última vez. Recomendação: reusar o `AppBlockShieldService` (já roda 24h) para reportar a cada 10-15min com precisão `Balanced`.
 
 ### 🧪 NUNCA TESTADO — prioridade para a próxima sessão
