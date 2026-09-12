@@ -12,8 +12,11 @@ import { getBiometricSupport, authenticateBiometric } from "@/services/auth/biom
 
 const SIREN_SOUND = require("../../../assets/sounds/siren.wav");
 const KEEP_AWAKE_TAG = "wardyou-antifurto";
-// Enough time for the siren to start and the SOS request to leave before the
-// device locks (the app keeps running in background after the lock).
+// Enough time for the fire-and-forget SOS request to leave before the device
+// locks (the app keeps running in background after the lock). No longer
+// covering "give the siren time to start" — AppBlock.startSiren() (Android)
+// is synchronous and confirmed before this timer is even scheduled; see the
+// call site below.
 const LOCK_DELAY_MS = 1_200;
 
 export interface AntifurtoAlarmOverlayProps {
@@ -34,10 +37,21 @@ export interface AntifurtoAlarmOverlayProps {
  * (Android back is swallowed), keeps the screen on, plays a siren, and fires
  * the real SOS once. With `lockOnActivate` (snatch detection) it also locks
  * the device via the accessibility service (Fase 2 "trava real", no Device
- * Admin needed) — the siren keeps playing behind the lockscreen because the
- * audio session is set to background mode (Spotify-style), and the owner
- * dismisses it with the device authentication (biometrics, falling back to the
- * device PIN/pattern via the OS prompt).
+ * Admin needed) — the owner dismisses it with the device authentication
+ * (biometrics, falling back to the device PIN/pattern via the OS prompt).
+ *
+ * On Android the siren itself is fully NATIVE (AppBlock.startSiren(), see
+ * AppBlockSirenPlayer.kt) as of 2026-09-12, not expo-audio — a field report
+ * found the JS/expo-audio siren silent about half the time (an unawaited
+ * `setAudioModeAsync()` racing `player.play()` against the screen lock) and
+ * with no defense against the physical volume-down button. The native path
+ * fixes both: `startSiren()` is synchronous and does not return until the
+ * siren is genuinely audible (see below), and it re-asserts STREAM_ALARM to
+ * max in a loop that keeps running after the screen locks — independent of
+ * this component, the RN bridge, or JS timers (which the OS can pause once
+ * the Activity is backgrounded; confirmed 2026-09-12 as the cause of a
+ * separate bug the same day). iOS still uses the expo-audio path below
+ * (no native module there yet) with the same known limits as before.
  */
 export function AntifurtoAlarmOverlay({ visible, soundEnabled, onDismiss, onTriggerSos, lockOnActivate = false }: AntifurtoAlarmOverlayProps) {
   const { t } = useTranslation();
@@ -71,9 +85,13 @@ export function AntifurtoAlarmOverlay({ visible, soundEnabled, onDismiss, onTrig
         clearTimeout(lockTimerRef.current);
         lockTimerRef.current = null;
       }
-      player.pause();
-      // Back to a foreground-only audio session once the alarm is off.
-      setAudioModeAsync({ shouldPlayInBackground: false }).catch(() => {});
+      if (Platform.OS === "android") {
+        AppBlock.stopSiren();
+      } else {
+        player.pause();
+        // Back to a foreground-only audio session once the alarm is off.
+        setAudioModeAsync({ shouldPlayInBackground: false }).catch(() => {});
+      }
       return;
     }
     if (!sosFiredRef.current && onTriggerSos) {
@@ -84,20 +102,34 @@ export function AntifurtoAlarmOverlay({ visible, soundEnabled, onDismiss, onTrig
       .then((state) => setOffline(!(state.isConnected && state.isInternetReachable)))
       .catch(() => setOffline(false));
     if (soundEnabled) {
-      // Background-capable session BEFORE play, so the siren survives the
-      // screen lock below (and the thief pocketing the phone). No
-      // setActiveForLockScreen on purpose: lockscreen media controls would
-      // hand the thief a pause button.
-      setAudioModeAsync({
-        shouldPlayInBackground: true,
-        playsInSilentMode: true,
-        interruptionMode: "doNotMix",
-      }).catch(() => {});
-      player.loop = true;
-      player.volume = 1;
-      player.play();
+      if (Platform.OS === "android") {
+        // Synchronous native call — by the time this returns, the siren is
+        // either genuinely playing (see AppBlockSirenPlayer.kt) or it
+        // definitively failed to start. Either way there is nothing left to
+        // race against the lock scheduled below.
+        const started = AppBlock.startSiren();
+        if (!started) AppBlock.nativeLog("wardyou-antifurto", "startSiren() failed");
+      } else {
+        // iOS: no native siren module yet — same expo-audio path as before.
+        // Background-capable session BEFORE play, so the siren survives the
+        // screen lock below (and the thief pocketing the phone). No
+        // setActiveForLockScreen on purpose: lockscreen media controls would
+        // hand the thief a pause button.
+        setAudioModeAsync({
+          shouldPlayInBackground: true,
+          playsInSilentMode: true,
+          interruptionMode: "doNotMix",
+        }).catch(() => {});
+        player.loop = true;
+        player.volume = 1;
+        player.play();
+      }
     }
     if (lockOnActivate && Platform.OS === "android") {
+      // The siren start above is synchronous and already confirmed by now —
+      // this delay is only to give the fire-and-forget SOS request time to
+      // actually leave the device before the lock screen potentially
+      // disrupts networking, NOT to wait for audio readiness anymore.
       lockTimerRef.current = setTimeout(() => {
         AppBlock.lockScreen();
       }, LOCK_DELAY_MS);

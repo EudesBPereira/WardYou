@@ -14,4 +14,7 @@
   <string name="app_block_admin_label">Uninstall protection</string>
   <string name="app_block_admin_description">Prevents WardYou from being uninstalled or disabled without the guardians knowing. It never wipes data or controls passwords.</string>
   <string name="app_block_admin_disable_warning">If you turn this off, WardYou\'s protection can be removed from this device and your guardians will be notified.</string>
+  <string name="app_block_siren_channel">Anti-theft alarm</string>
+  <string name="app_block_siren_title">Anti-theft alarm active</string>
+  <string name="app_block_siren_body">Unlock the device to turn off the alarm.</string>
 </resources>

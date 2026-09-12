@@ -14,4 +14,7 @@
   <string name="app_block_admin_label">Proteção contra desinstalação</string>
   <string name="app_block_admin_description">Impede que o WardYou seja desinstalado ou desativado sem que os responsáveis saibam. Não apaga dados nem controla senhas.</string>
   <string name="app_block_admin_disable_warning">Se você desativar, a proteção do WardYou poderá ser removida deste aparelho e seus responsáveis serão avisados.</string>
+  <string name="app_block_siren_channel">Alarme antifurto</string>
+  <string name="app_block_siren_title">Alarme antifurto ativo</string>
+  <string name="app_block_siren_body">Toque no aparelho para desbloquear e desligar o alarme.</string>
 </resources>

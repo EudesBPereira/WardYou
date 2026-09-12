@@ -77,6 +77,20 @@ export function lockScreen(): boolean {
   return false;
 }
 
+/** No native siren on this platform — see index.android.ts. Callers should
+ *  keep using their own audio path (e.g. expo-audio) when this returns false. */
+export function startSiren(): boolean {
+  return false;
+}
+
+export function stopSiren(): void {
+  // no-op
+}
+
+export function isSirenPlaying(): boolean {
+  return false;
+}
+
 export function isIgnoringBatteryOptimizations(): boolean {
   return false;
 }

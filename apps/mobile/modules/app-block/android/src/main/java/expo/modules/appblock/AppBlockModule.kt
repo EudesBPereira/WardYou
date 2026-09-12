@@ -418,6 +418,31 @@ class AppBlockModule : Module() {
       false
     }
 
+    // --- Antifurto siren (STREAM_ALARM, fully native) ---
+    // See AppBlockSirenPlayer.kt for why this replaced the JS/expo-audio
+    // siren (2026-09-12 field report: intermittent no-sound + no defense
+    // against the volume-down button).
+    //
+    // `startSiren` is synchronous (like nativeLog above): it does not return
+    // until MediaPlayer.prepare()+start() have actually completed, so the
+    // caller (AntifurtoAlarmOverlay.tsx) can safely schedule the screen lock
+    // only AFTER seeing `true` — no more racing an unawaited async call.
+    Function("startSiren") {
+      val context = context() ?: return@Function false
+      AppBlockSirenService.start(context)
+      AppBlockSirenPlayer.start(context)
+    }
+
+    Function("stopSiren") {
+      val context = appContext.reactContext
+      AppBlockSirenPlayer.stop()
+      if (context != null) AppBlockSirenService.stop(context)
+    }
+
+    Function("isSirenPlaying") {
+      AppBlockSirenPlayer.isPlaying()
+    }
+
     // --- UsageStats (real screen-time tracking) ---
 
     Function("hasUsageAccess") {

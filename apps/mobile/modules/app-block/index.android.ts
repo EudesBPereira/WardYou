@@ -76,6 +76,10 @@ interface AppBlockNativeModule {
   getInstalledAppsJson(): string;
   canLockScreen(): boolean;
   lockScreen(): boolean;
+  /** Added 2026-09-12; absent on an APK built before that — see startSiren(). */
+  startSiren?(): boolean;
+  stopSiren?(): void;
+  isSirenPlaying?(): boolean;
   canScheduleExactAlarms(): boolean;
   requestScheduleExactAlarm(): void;
   isIgnoringBatteryOptimizations(): boolean;
@@ -262,6 +266,51 @@ export function canLockScreen(): boolean {
 export function lockScreen(): boolean {
   try {
     return nativeModule?.lockScreen() ?? false;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Starts the native anti-theft siren (STREAM_ALARM, AppBlockSirenPlayer) and
+ * does NOT return until MediaPlayer.prepare()+start() have actually
+ * completed — see AppBlockSirenPlayer.kt for why this is synchronous and why
+ * it replaced the JS/expo-audio siren (2026-09-12 field report: intermittent
+ * no-sound, plus no defense against the physical volume-down button, which
+ * the native side now re-asserts against in a loop that survives the screen
+ * lock and the RN JS timers pausing).
+ *
+ * Callers that also lock the screen (see AntifurtoAlarmOverlay.tsx) MUST
+ * wait for this to return before scheduling the lock — that ordering is the
+ * whole fix for the intermittent "bloqueou mas não tocou" report.
+ *
+ * Returns false if the native module predates this function (stale APK) or
+ * if MediaPlayer failed to start (e.g. missing bundled resource) — callers
+ * should still proceed with the lock in that case; the siren is a secondary
+ * signal, not a precondition for Fase 2's "trava real".
+ */
+export function startSiren(): boolean {
+  try {
+    return nativeModule?.startSiren?.() ?? false;
+  } catch {
+    return false;
+  }
+}
+
+/** Stops the native siren and abandons its audio focus/foreground service.
+ *  Safe to call even if the siren was never started. */
+export function stopSiren(): void {
+  try {
+    nativeModule?.stopSiren?.();
+  } catch {
+    /* best-effort */
+  }
+}
+
+/** True only while the native MediaPlayer is actually playing the siren. */
+export function isSirenPlaying(): boolean {
+  try {
+    return nativeModule?.isSirenPlaying?.() ?? false;
   } catch {
     return false;
   }

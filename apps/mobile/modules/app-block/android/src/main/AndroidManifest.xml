@@ -90,6 +90,22 @@
         android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
         android:value="Parental-control protection keep-alive: keeps the app-blocking enforcement process alive while a guardian's policy is active on a child device." />
     </service>
+    <!-- Anti-theft siren FGS: see AppBlockSirenService.kt for why this is a
+         SEPARATE service from AppBlockShieldService above (must keep sounding
+         even for a device that never enabled parental app-blocking — e.g. an
+         elder-care device using only antifurto/SOS) and why specialUse (no
+         MediaSession/MediaStyle — a lock-screen "pause" control would hand
+         the thief a way to silence it). Reuses the FOREGROUND_SERVICE_SPECIAL_USE
+         permission already declared above; no new permission needed. -->
+    <service
+      android:name=".AppBlockSirenService"
+      android:exported="false"
+      android:stopWithTask="false"
+      android:foregroundServiceType="specialUse">
+      <property
+        android:name="android.app.PROPERTY_SPECIAL_USE_FGS_SUBTYPE"
+        android:value="Anti-theft alarm: plays an audible siren on STREAM_ALARM until the device owner authenticates, so a thief closing or swiping away the app cannot silence it." />
+    </service>
     <!-- Device admin: while active, Android REFUSES to uninstall the app — the
          fix for a child long-pressing the icon and tapping "Desinstalar".
          Policies are minimal (force-lock only; no wipe, no password control). -->
