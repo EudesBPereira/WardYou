@@ -21,7 +21,33 @@ const ONLINE_WINDOW_MS = 10 * 60_000;
 // Throttled per user so the 10s map poll doesn't spam FCM.
 const RESUME_NUDGE_STALE_MS = 2 * 60_000;
 const RESUME_NUDGE_THROTTLE_MS = 5 * 60_000;
+/**
+ * Teto por usuario da cutucada de retomada. BEST-EFFORT, de proposito, e nao
+ * de-se a ele mais confianca do que ele merece:
+ *
+ *  - E um Map EM MEMORIA de modulo. O Container App roda com `min-replicas 0`
+ *    (ver CLAUDE.md), entao um cold start ZERA este teto -- duas tentativas
+ *    separadas por um adormecimento do conteiner podem cutucar duas vezes
+ *    dentro da mesma janela de 5min.
+ *  - Se algum dia rodar com mais de uma replica, o teto passa a ser POR
+ *    REPLICA: N replicas => ate N vezes mais cutucadas.
+ *
+ * Isso e aceitavel para o que ele protege (uma push silenciosa a mais nao
+ * machuca ninguem), mas NAO serve como garantia de volume. Se um dia precisar
+ * ser garantia, tem que sair da memoria e ir para o banco.
+ */
 const lastResumeNudgeAt = new Map<string, number>();
+
+/**
+ * Ultima vez que uma viagem foi ESCANEADA em busca de membros parados, a
+ * partir do caminho de POST de localizacao. Existe por custo, nao por
+ * corretude: `POST /:id/location` roda a cada ~10s POR MEMBRO, e varrer as
+ * ultimas posicoes de todo mundo a cada post multiplicaria a carga de banco
+ * pelo numero de membros. Um escaneamento por minuto por viagem e suficiente
+ * -- o teto real de quem recebe cutucada continua sendo o de 5min por usuario.
+ */
+const lastNudgeScanAt = new Map<string, number>();
+const NUDGE_SCAN_INTERVAL_MS = 60_000;
 
 /** Realtime + (optional) push to every active member of a trip. Best-effort. */
 async function notifyTripMembers(
@@ -145,6 +171,59 @@ async function activeTripMembers(travelGroupId: string): Promise<TripMemberRow[]
     where: { TravelGroupId: travelGroupId, IsActive: true, LeftAt: null },
     orderBy: { JoinedAt: "asc" },
     include: { users: { select: { FullName: true, AvatarUrl: true } } },
+  });
+}
+
+/**
+ * Acorda em silencio os membros desta viagem cuja posicao parou de chegar.
+ *
+ * A push de dados (alta prioridade -- `dataOnly` forca isso em lib/fcm.ts)
+ * dispara a tarefa de segundo plano do app, que reinicia o servico de
+ * localizacao sem nenhuma interacao do usuario.
+ *
+ * Chamada de DOIS lugares, de proposito:
+ *  - `GET /:id/map`  alguem esta OLHANDO a viagem;
+ *  - `POST /:id/location`  alguem esta TRANSMITINDO nela.
+ *
+ * O segundo existe porque o primeiro sozinho so recupera quando ha uma pessoa
+ * com a tela aberta -- e quem mais precisa da recuperacao e justamente o pai
+ * que NAO esta olhando. Com o segundo, enquanto UM membro transmite ele mantem
+ * os outros vivos, que e a viagem assimetrica comum (um dirigindo com o app
+ * aberto, os outros com o telefone no bolso).
+ *
+ * NAO VIRA PINGUE-PONGUE, e isto e o ponto a nao "otimizar" depois: o teto de
+ * `RESUME_NUDGE_THROTTLE_MS` (5min) e por USUARIO ALVO e e gravado no momento
+ * em que a cutucada e decidida. Se A cutuca B, B fica travado por 5min; quando
+ * B volta e passa a transmitir, a tentativa dele de cutucar A so passa se A
+ * estiver parado E fora do proprio teto de A. Dois membros ativos nunca se
+ * cutucam, porque `RESUME_NUDGE_STALE_MS` ja exclui quem transmitiu nos
+ * ultimos 2min. Remover qualquer um dos dois filtros reabre o ciclo.
+ */
+function nudgeStaleTripMembers(
+  trip: { Id: string; IsActive: boolean; EndsAt: Date },
+  members: TripMemberRow[],
+  latestByUser: Map<string, { ReceivedAt: Date }>,
+  callerUserId: string,
+  now: number,
+): void {
+  if (!trip.IsActive || trip.EndsAt <= new Date()) return;
+  const staleIds = members
+    .filter((m) => {
+      if (!m.UserId || m.UserId === callerUserId || !m.ShareLiveLocation) return false;
+      const loc = latestByUser.get(m.UserId);
+      if (loc && now - loc.ReceivedAt.getTime() <= RESUME_NUDGE_STALE_MS) return false;
+      const last = lastResumeNudgeAt.get(m.UserId) ?? 0;
+      if (now - last < RESUME_NUDGE_THROTTLE_MS) return false;
+      lastResumeNudgeAt.set(m.UserId, now);
+      return true;
+    })
+    .map((m) => m.UserId);
+  if (staleIds.length === 0) return;
+  void pushToUsers(staleIds, {
+    title: "",
+    body: "",
+    dataOnly: true,
+    data: { type: "trip-resume", travelGroupId: trip.Id },
   });
 }
 
@@ -326,32 +405,7 @@ export async function registerTripsRoutes(app: FastifyInstance) {
 
     const now = Date.now();
 
-    // Someone is WATCHING this trip: silently wake any sharing member whose
-    // device went quiet (service killed by an OEM, app force-stopped and
-    // reopened, etc.). The high-priority data push triggers the app's
-    // background task, which restarts the location service headlessly — no
-    // user interaction needed. Throttled per user.
-    if (trip.IsActive && trip.EndsAt > new Date()) {
-      const staleIds = members
-        .filter((m) => {
-          if (!m.UserId || m.UserId === userId || !m.ShareLiveLocation) return false;
-          const loc = latestByUser.get(m.UserId);
-          if (loc && now - loc.ReceivedAt.getTime() <= RESUME_NUDGE_STALE_MS) return false;
-          const last = lastResumeNudgeAt.get(m.UserId) ?? 0;
-          if (now - last < RESUME_NUDGE_THROTTLE_MS) return false;
-          lastResumeNudgeAt.set(m.UserId, now);
-          return true;
-        })
-        .map((m) => m.UserId);
-      if (staleIds.length > 0) {
-        void pushToUsers(staleIds, {
-          title: "",
-          body: "",
-          dataOnly: true,
-          data: { type: "trip-resume", travelGroupId: trip.Id },
-        });
-      }
-    }
+    nudgeStaleTripMembers(trip, members, latestByUser, userId, now);
 
     return {
       travelGroupId: trip.Id,
@@ -433,6 +487,31 @@ export async function registerTripsRoutes(app: FastifyInstance) {
     // Live push to every member allowed to see this position (best-effort).
     try {
       const members = await activeTripMembers(trip.Id);
+
+      // Quem transmite mantem os outros vivos -- ver nudgeStaleTripMembers.
+      // O escaneamento e limitado a 1x/min POR VIAGEM porque este handler roda
+      // a cada ~10s por membro: sem isso, a consulta das ultimas posicoes
+      // rodaria a cada post, multiplicando a carga pelo numero de membros.
+      const ultimoScan = lastNudgeScanAt.get(trip.Id) ?? 0;
+      if (now.getTime() - ultimoScan >= NUDGE_SCAN_INTERVAL_MS) {
+        lastNudgeScanAt.set(trip.Id, now.getTime());
+        const ultimas = await prisma.location_events.findMany({
+          where: {
+            TravelGroupId: trip.Id,
+            SourceType: LOCATION_SOURCE_TRAVEL,
+            UserId: { in: members.map((m) => m.UserId) },
+          },
+          orderBy: [{ UserId: "asc" }, { ReceivedAt: "desc" }],
+          distinct: ["UserId"],
+        });
+        nudgeStaleTripMembers(
+          trip,
+          members,
+          new Map(ultimas.map((e) => [e.UserId, e])),
+          userId,
+          now.getTime(),
+        );
+      }
       const recipients = members
         .filter((m) => canViewTripLocation(trip, { UserId: userId, ShareLiveLocation: true }, m.UserId))
         .map((m) => m.UserId);
