@@ -2,6 +2,7 @@ import { Platform } from "react-native";
 import * as Location from "expo-location";
 import * as Network from "expo-network";
 import * as AppBlock from "@modules/app-block";
+import { isTripTrackingRunning } from "@/services/location/tripLocationTracking";
 import { getPushPermissionStatus } from "@/services/push/pushService";
 
 /**
@@ -33,6 +34,15 @@ export type IdProblema =
   | "usageAccess"
   | "locationPermission"
   | "locationServices"
+  /** MODO VIAGEM: permissao so "enquanto usa o app". A pessoa acha que esta
+   *  compartilhando a viagem inteira; na verdade para quando ela fecha o app.
+   *  O nivel ja era medido (nivelPermissaoLocalizacao devolve "whenInUse") e
+   *  era JOGADO FORA -- so "denied" virava aviso. */
+  | "locationBackground"
+  /** MODO VIAGEM: a tarefa de rastreamento nao esta rodando. Mede o SO
+   *  (isTripTrackingRunning), nao uma tentativa lembrada -- ensureTripLocation
+   *  Tracking engole as proprias falhas. */
+  | "tripTracking"
   | "battery"
   | "overlay"
   | "exactAlarm"
@@ -55,8 +65,25 @@ export interface Diagnostico {
   oemAgressiva: boolean;
 }
 
+export interface OpcoesDiagnostico {
+  /** Cobra o que so existe no aparelho da crianca (acessibilidade, uso, etc). */
+  modoCrianca?: boolean;
+  /**
+   * Cobra o que uma VIAGEM ATIVA precisa para o viajante ser acompanhado:
+   * alem de permissao + GPS do sistema (que ja valiam para todo mundo), a
+   * permissao de segundo plano e a tarefa de rastreamento de fato rodando.
+   *
+   * Passar `true` so quando existe viagem ativa: cobrar GPS de quem nao esta
+   * viajando e o mesmo "gritar perigo onde nao ha" que esvazia o aviso.
+   */
+  emViagem?: boolean;
+}
+
 /** Ordem importa: e a ordem em que aparecem para o usuario resolver. */
-export async function diagnosticar(modoCrianca: boolean): Promise<Diagnostico> {
+export async function diagnosticar({
+  modoCrianca = false,
+  emViagem = false,
+}: OpcoesDiagnostico = {}): Promise<Diagnostico> {
   const problemas: Problema[] = [];
   const android = Platform.OS === "android";
 
@@ -78,6 +105,25 @@ export async function diagnosticar(modoCrianca: boolean): Promise<Diagnostico> {
   }
   if (!servicosLigados) {
     problemas.push({ id: "locationServices", severidade: "critica", resolver: abrirAjustesLocalizacao });
+  }
+  // Numa viagem ativa, "enquanto usa o app" NAO cumpre a promessa da funcao:
+  // a regra do produto e "seus companheiros te acompanham ate a viagem
+  // acabar", e isso exige segundo plano. `degrada`, nao `critica`: com o app
+  // aberto o compartilhamento funciona de verdade -- o que quebra e o resto
+  // do tempo, que e justamente quando a pessoa acha que esta tudo certo.
+  if (emViagem && permissao === "whenInUse") {
+    problemas.push({ id: "locationBackground", severidade: "degrada", resolver: abrirAjustesDoApp });
+  }
+  // A tarefa esta rodando MESMO? So faz sentido perguntar quando ha viagem
+  // ativa e quando ha permissao para ela rodar -- sem permissao/GPS o aviso
+  // certo ja esta acima, e repetir a mesma causa em duas linhas so dilui.
+  if (emViagem && permissao !== "denied" && servicosLigados) {
+    const rodando = await rastreamentoDeViagemRodando();
+    // `null` = nao deu para medir: nao afirma que caiu (mesmo criterio do
+    // `accessibilityUnknown`). Only `false` -- medido e negativo -- vira aviso.
+    if (rodando === false) {
+      problemas.push({ id: "tripTracking", severidade: "critica" });
+    }
   }
 
   if (android) {
@@ -190,6 +236,16 @@ async function nivelPermissaoLocalizacao(): Promise<"always" | "whenInUse" | "de
     return bg.granted ? "always" : "whenInUse";
   } catch {
     return "denied";
+  }
+}
+
+/** A tarefa de rastreamento de viagem esta rodando? `null` = nao deu para
+ *  medir — tratado como "nao afirmar nada", nunca como falha. */
+async function rastreamentoDeViagemRodando(): Promise<boolean | null> {
+  try {
+    return await isTripTrackingRunning();
+  } catch {
+    return null;
   }
 }
 

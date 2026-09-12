@@ -11,6 +11,7 @@ import { colors } from "@/theme";
 import type { TripMapMemberDto } from "@/services/api/types";
 import type { TripLiveMapProps } from "./TripLiveMap";
 import { formatSeenAt } from "@/lib/formatTime";
+import { isLocationStale } from "@/lib/staleness";
 
 // São Paulo — neutral start before anyone has a fix (same as the MAUI page).
 const FALLBACK_REGION = {
@@ -142,6 +143,14 @@ export function TripLiveMap({ tripName, isActive, members, onBack }: TripLiveMap
               : m.canViewLocation
                 ? t("trips.detail.noFix")
                 : t("trips.detail.locationHidden");
+            // Pedido do fundador (2026-09-11): o anel colorido abaixo (ring)
+            // so olha `isOnline` (presenca via heartbeat) -- um membro pode
+            // estar "online" agora com uma posicao de ONTEM (fora de viagem,
+            // nada rastreia localizacao com o app fechado; ver
+            // src/lib/staleness.ts), e o anel azul ao lado do "Visto ontem"
+            // sugeria atualidade que a posicao nao tem. Mesmo tratamento do
+            // caption em app/family/[memberId].tsx.
+            const stale = isLocationStale(m.capturedAt);
             return (
               <Pressable
                 key={m.userId}
@@ -182,7 +191,12 @@ export function TripLiveMap({ tripName, isActive, members, onBack }: TripLiveMap
                   <Text variant="label" numberOfLines={1}>
                     {m.isMe ? t("trips.detail.you", { name: m.fullName }) : m.fullName}
                   </Text>
-                  <Text variant="caption" color="muted" numberOfLines={1}>
+                  <Text
+                    variant="caption"
+                    color={stale ? undefined : "muted"}
+                    style={stale ? { color: colors.warning[700] } : undefined}
+                    numberOfLines={1}
+                  >
                     {seen}
                     {m.batteryLevel != null ? ` · ${m.batteryLevel}%` : ""}
                   </Text>

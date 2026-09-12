@@ -39,7 +39,7 @@ export function ProtectionStatusCard({ modoCrianca }: { modoCrianca: boolean }) 
   const [diag, setDiag] = useState<Diagnostico | null>(null);
 
   const medir = useCallback(() => {
-    diagnosticar(modoCrianca).then(setDiag).catch(() => setDiag(null));
+    diagnosticar({ modoCrianca }).then(setDiag).catch(() => setDiag(null));
   }, [modoCrianca]);
 
   // Remede ao voltar do segundo plano: resolver uma permissao acontece FORA do

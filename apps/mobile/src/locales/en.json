@@ -100,7 +100,8 @@
     "guardian": "Guardian",
     "child": "Child",
     "elder": "Elder",
-    "member": "Member"
+    "member": "Member",
+    "dependent": "Dependent"
   },
   "home": {
     "subtitle": "Everyone safe, in one place.",
@@ -143,6 +144,7 @@
     "subtitle": "Your family network",
     "add": "Add member",
     "responsibles": "Responsibles",
+    "members": "Members",
     "dependents": "Children & elders",
     "battery": "{{n}}%",
     "invite": {
@@ -173,6 +175,7 @@
         "alert": "Needs attention"
       },
       "lastSeen": "seen {{time}}",
+      "locationStale": "May not be the current position — {{name}} hasn't opened the app since.",
       "locationTitle": "Last location",
       "noLocation": "No location shared yet.",
       "locationHidden": "This member's location is hidden — no active consent.",
@@ -209,6 +212,12 @@
     }
   },
   "trips": {
+    "sharing": {
+      "blockedTitle": "Nobody can follow you",
+      "blockedBody": "Your position isn't being shared with this trip.",
+      "partialTitle": "They'll lose track of you",
+      "partialBody": "This only works while the app is open."
+    },
     "title": "Trips",
     "subtitle": "Track routes and trips",
     "create": "Create trip",
@@ -236,6 +245,7 @@
       "days": "{{n}} day(s)"
     },
     "join": {
+      "title": "Joining the trip...",
       "subtitle": "Enter the invite code you received.",
       "placeholder": "Invite code",
       "invalid": "Invalid or expired invite."
@@ -861,6 +871,16 @@
       "locationServices": {
         "title": "Device location is off",
         "body": "GPS is turned off system-wide. Even with permission granted, nothing location-related works.",
+        "oemHint": ""
+      },
+      "locationBackground": {
+        "title": "Location only while the app is open",
+        "body": "If you close WardYou, the others stop following you. Choose “Allow all the time”.",
+        "oemHint": ""
+      },
+      "tripTracking": {
+        "title": "Trip sharing isn't running",
+        "body": "Your position isn't being sent. Reopen the app or turn location back on.",
         "oemHint": ""
       },
       "battery": {

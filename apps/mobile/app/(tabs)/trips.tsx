@@ -18,6 +18,7 @@ import { type MockTrip } from "@/lib/mockData";
 import { useTrips, useCreateTrip, useJoinTrip } from "@/features/trips/queries";
 import { CreateTripModal } from "@/features/trips/CreateTripModal";
 import { ProfileButton } from "@/components/ProfileButton";
+import { TripSharingStatusCard } from "@/features/trips/TripSharingStatusCard";
 import type { CreateTripRequest } from "@/services/api/types";
 
 function TripRow({ trip }: { trip: MockTrip }) {
@@ -109,6 +110,12 @@ export default function TripsScreen() {
         subtitle={t("trips.subtitle")}
         action={<ProfileButton />}
       />
+
+      {/* Antes dos botoes de propósito: se o compartilhamento desta viagem
+          esta quebrado, isso importa mais do que criar outra viagem. Aparece
+          tambem aqui (e nao so no detalhe) porque a pessoa pode entrar numa
+          viagem e nunca mais abrir a tela dela. */}
+      <TripSharingStatusCard ativa={active.length > 0} />
 
       {/* Stacked full-width so long labels ("Entrar com código", FR's even
           longer) never overflow the fixed-height button — matches the Family

@@ -19,6 +19,7 @@ import type { MapMarker } from "@/components/ui";
 import { colors } from "@/theme";
 import { suppressNextRelock } from "@/stores/appLock";
 import { formatSeenAt } from "@/lib/formatTime";
+import { TripSharingStatusCard } from "@/features/trips/TripSharingStatusCard";
 import {
   useTrip,
   useTripMap,
@@ -143,6 +144,11 @@ export default function TripDetailScreen() {
         <ActivityIndicator className="mt-10" color={colors.brand[500]} />
       ) : (
         <>
+          {/* Antes do cartao de status da viagem: "voce esta sendo acompanhado?"
+              vale mais do que "a viagem esta ativa". So aparece quando ha algo
+              errado numa viagem ATIVA. */}
+          <TripSharingStatusCard ativa={isActive} />
+
           {/* Status */}
           <Card className="mt-2 flex-row items-center gap-3">
             <View

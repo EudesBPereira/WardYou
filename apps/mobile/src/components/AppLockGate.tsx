@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AppState, View } from "react-native";
+import { ActivityIndicator, AppState, View } from "react-native";
 import { useTranslation } from "react-i18next";
 import { Ionicons } from "@expo/vector-icons";
 import { Text, Button } from "@/components/ui";
@@ -58,6 +58,29 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
   // valor atual em vez do capturado no primeiro render.
   const activeRef = useRef(active);
   activeRef.current = active;
+
+  // FIXED 2026-09-11 (achado de QA, Redmi Note 10, perfil recem-virado
+  // "member"): `active` so decidia SE MOSTRAR a sobreposicao de bloqueio --
+  // nunca decidia se `children` (o app de verdade) podia ser tocado. Enquanto
+  // `profile` (rede) e `podeAutenticar` (chamada nativa) ainda nao resolveram,
+  // `active` e `false` de proposito (para a CRIANCA nunca ver um bloqueio
+  // falso antes do perfil carregar -- ver o comentario acima), mas isso
+  // renderizava `children` SEM NENHUMA cobertura: o app de verdade (mapa da
+  // familia incluido) ficava tocavel durante essa janela, num aparelho ADULTO
+  // com o bloqueio ligado. Reproduzido ao vivo: cancelar o prompt automatico
+  // (que so aparece DEPOIS que `active` vira true) fecha o app numa transicao
+  // de AppState que pode reabrir essa mesma janela (profile refazendo fetch),
+  // e um toque nela caiu direto no card do mapa por baixo -- sem nenhuma
+  // autenticacao. `(tabs)/_layout.tsx` ja documentava exatamente este padrao
+  // pra outro caso: "the full adult menu flashes for a frame... and that
+  // flash was tappable".
+  //
+  // A correcao NAO pode voltar a armar cedo demais para a crianca (isso foi
+  // decisao deliberada, ver o comentario acima) nem abrir de novo essa janela
+  // para o adulto -- as duas coisas de uma vez so saem renderizando um estado
+  // NEUTRO enquanto a decisao esta pendente: nem o app real, nem uma cobranca
+  // de biometria (que poderia ser a crianca vendo algo que nao devia).
+  const decidingLock = authed && hydrated && enabled && (podeAutenticar === null || !profile);
 
   // Re-lock on every background → foreground transition (like WhatsApp).
   useEffect(() => {
@@ -152,6 +175,14 @@ export function AppLockGate({ children }: { children: React.ReactNode }) {
     return () => clearTimeout(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [active, locked]);
+
+  if (decidingLock) {
+    return (
+      <View style={{ flex: 1 }} className="items-center justify-center bg-night-500">
+        <ActivityIndicator color="#FFFFFF" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1 }}>

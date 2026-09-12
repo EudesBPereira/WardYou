@@ -15,6 +15,7 @@ import {
   InputModal,
 } from "@/components/ui";
 import { colors } from "@/theme";
+import { isLocationStale } from "@/lib/staleness";
 import { useSession } from "@/stores/session";
 import {
   useFamilyMap,
@@ -118,6 +119,13 @@ export default function FamilyMemberDetailScreen() {
         hour12: false,
       })
     : null;
+  // Pedido do fundador (2026-09-11), depois de confirmar por código que o
+  // rastreamento de posição só existe em viagem ativa ou com o app aberto na
+  // Home da criança — fora disso, nada reporta, e o pino no mapa pode ser de
+  // ontem enquanto um selo de presença ao lado sugere "agora". Ver
+  // src/lib/staleness.ts para o porquê do limiar e do porquê isto é um aviso
+  // visual, não só um timestamp que a pessoa precisa notar sozinha.
+  const locationStale = isLocationStale(member?.locationCapturedAt);
 
   return (
     <ScreenContainer>
@@ -157,11 +165,23 @@ export default function FamilyMemberDetailScreen() {
           <View className="mt-6 flex-row items-baseline justify-between">
             <Text variant="h2">{t("family.memberDetail.locationTitle")}</Text>
             {locationSeenAt ? (
-              <Text variant="caption" color="muted">
+              <Text
+                variant="caption"
+                color={locationStale ? undefined : "muted"}
+                style={locationStale ? { color: colors.warning[700] } : undefined}
+              >
                 {t("family.memberDetail.lastSeen", { time: locationSeenAt })}
               </Text>
             ) : null}
           </View>
+          {locationStale && member.latitude != null ? (
+            <View className="mt-1.5 flex-row items-start gap-1.5 px-0.5">
+              <Ionicons name="time-outline" size={14} color={colors.warning[700]} style={{ marginTop: 1 }} />
+              <Text variant="caption" style={{ color: colors.warning[700], flex: 1 }}>
+                {t("family.memberDetail.locationStale", { name: member.name })}
+              </Text>
+            </View>
+          ) : null}
           <Card padded={false} className="mt-3 overflow-hidden">
             {member.latitude != null && member.longitude != null ? (
               <MapPreview

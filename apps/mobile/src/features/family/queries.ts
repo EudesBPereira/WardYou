@@ -39,9 +39,14 @@ function mapDto(dto: FamilyMemberDto): FamilyMemberVM {
     declaredRole: dto.role,
     nickname: dto.nickname ?? "",
     name: dto.displayName,
-    role: (dto.role === "guardian" || dto.role === "admin" || dto.role === "child" || dto.role === "elder"
-      ? dto.role
-      : "child") as MockMember["role"],
+    // FIXED 2026-09-11 (achado de QA): colapsava qualquer papel que nao fosse
+    // guardian/admin/child/elder para "child" -- um membro real com papel
+    // "member" (ex.: trocado de Criança pra Membro via Alterar papel) ficava
+    // rotulado "Criança" na tela de Família, mesmo com o papel certo gravado
+    // no banco (confirmado: a leitura direta do banco mostrava o papel
+    // correto; so esta funcao jogava fora o valor). `MockMember["role"]`
+    // agora inclui os 6 valores reais de FamilyRole -- ver o tipo.
+    role: dto.role,
     status: dto.status,
     locationLabel: dto.lastLocationLabel ?? "—",
     battery: dto.batteryLevel ?? 0,

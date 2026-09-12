@@ -27,6 +27,7 @@ import { useAppLock } from "@/stores/appLock";
 import { AppLockGate } from "@/components/AppLockGate";
 import { useRealtimeSync } from "@/services/realtime/useRealtimeSync";
 import { useConsumePendingInvite } from "@/features/family/useConsumePendingInvite";
+import { useConsumePendingTripInvite } from "@/features/trips/useConsumePendingTripInvite";
 import { useTripLocationBroadcast } from "@/features/trips/useTripLocationBroadcast";
 import { usePushRegistration } from "@/services/push/usePushRegistration";
 import { useAppBlockRequests } from "@/features/parental/useAppBlockRequests";
@@ -79,6 +80,7 @@ function AuthGate() {
   const router = useRouter();
   useRealtimeSync();
   useConsumePendingInvite();
+  useConsumePendingTripInvite();
   useTripLocationBroadcast();
   usePushRegistration();
   useAppBlockRequests();

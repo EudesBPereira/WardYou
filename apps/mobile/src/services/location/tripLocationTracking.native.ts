@@ -331,3 +331,25 @@ export async function resumeTripTrackingFromPush(): Promise<void> {
     /* best-effort — the next nudge retries */
   }
 }
+
+/**
+ * A tarefa de rastreamento de viagem esta REALMENTE rodando agora?
+ *
+ * Pergunta ao SO (`hasStartedLocationUpdatesAsync`), nao a um booleano que o
+ * app lembrou de uma tentativa passada. A diferenca importa: `ensureTripLocation
+ * Tracking` engolia a falha de `requestPermissions()` e de `startTrackingService`
+ * (`.catch(() => {})` em ambos os lados), entao "tentei iniciar" nunca foi prova
+ * de "esta rodando" -- e era exatamente por isso que o viajante podia estar numa
+ * viagem ativa, vendo o mapa, sem transmitir posicao nenhuma.
+ *
+ * `null` = nao foi possivel medir. NAO e o mesmo que `false`: ver o mesmo
+ * criterio em AppBlockModule.accessibilityStatus (nunca afirmar ausencia de
+ * protecao sem ter verificado).
+ */
+export async function isTripTrackingRunning(): Promise<boolean | null> {
+  try {
+    return await Location.hasStartedLocationUpdatesAsync(TASK_NAME);
+  } catch {
+    return null;
+  }
+}

@@ -100,7 +100,8 @@
     "guardian": "Tuteur",
     "child": "Enfant",
     "elder": "Aîné",
-    "member": "Membre"
+    "member": "Membre",
+    "dependent": "Personne à charge"
   },
   "home": {
     "subtitle": "Tous en sécurité, au même endroit.",
@@ -143,6 +144,7 @@
     "subtitle": "Votre réseau familial",
     "add": "Ajouter un membre",
     "responsibles": "Responsables",
+    "members": "Membres",
     "dependents": "Enfants et aînés",
     "battery": "{{n}}%",
     "invite": {
@@ -173,6 +175,7 @@
         "alert": "Attention requise"
       },
       "lastSeen": "vu {{time}}",
+      "locationStale": "Ce n'est peut-être pas la position actuelle — {{name}} n'a pas rouvert l'appli depuis.",
       "locationTitle": "Dernière position",
       "noLocation": "Aucune position partagée pour le moment.",
       "locationHidden": "La position de ce membre est masquée — pas de consentement actif.",
@@ -209,6 +212,12 @@
     }
   },
   "trips": {
+    "sharing": {
+      "blockedTitle": "Personne ne peut vous suivre",
+      "blockedBody": "Votre position n'est pas partagée avec ce trajet.",
+      "partialTitle": "Ils vont vous perdre de vue",
+      "partialBody": "Cela ne fonctionne que si l'appli est ouverte."
+    },
     "title": "Trajets",
     "subtitle": "Suivez itinéraires et trajets",
     "create": "Créer un trajet",
@@ -236,6 +245,7 @@
       "days": "{{n}} jour(s)"
     },
     "join": {
+      "title": "Rejoindre le trajet...",
       "subtitle": "Saisissez le code d'invitation reçu.",
       "placeholder": "Code d'invitation",
       "invalid": "Invitation invalide ou expirée."
@@ -861,6 +871,16 @@
       "locationServices": {
         "title": "Localisation de l'appareil désactivée",
         "body": "Le GPS est éteint au niveau du système. Même avec l'autorisation accordée, rien ne fonctionne.",
+        "oemHint": ""
+      },
+      "locationBackground": {
+        "title": "Localisation seulement appli ouverte",
+        "body": "Si vous fermez WardYou, les autres cessent de vous suivre. Choisissez « Toujours autoriser ».",
+        "oemHint": ""
+      },
+      "tripTracking": {
+        "title": "Le partage du trajet n'est pas actif",
+        "body": "Votre position n'est pas envoyée. Rouvrez l'appli ou réactivez la localisation.",
         "oemHint": ""
       },
       "battery": {

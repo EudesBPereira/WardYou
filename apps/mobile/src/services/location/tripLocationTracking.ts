@@ -22,3 +22,12 @@ export async function stopTripLocationTracking(): Promise<void> {
 export async function resumeTripTrackingFromPush(): Promise<void> {
   /* no-op on web */
 }
+
+/**
+ * A tarefa de rastreamento esta REALMENTE rodando agora? `null` = nao da para
+ * medir (aqui, na web, ela nem existe). Ver a versao nativa para o porque de
+ * isto ser uma medicao do SO e nao um booleano lembrado.
+ */
+export async function isTripTrackingRunning(): Promise<boolean | null> {
+  return null;
+}

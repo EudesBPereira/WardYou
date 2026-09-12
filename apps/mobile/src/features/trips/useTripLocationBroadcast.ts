@@ -113,6 +113,13 @@ export function useTripLocationBroadcast() {
         stopWatch = null;
         return;
       }
+      // `watchPosition` devolve `null` quando a permissao foi negada (ou nao ha
+      // geolocalizacao). Antes, o timer subia assim mesmo e ficava postando um
+      // `lastCoordsRef` eternamente vazio: dez em dez segundos, para sempre,
+      // sem transmitir nada e sem ninguem saber. Nao e o aviso ao usuario (esse
+      // e o TripSharingStatusCard, que MEDE o estado em vez de deduzir daqui) —
+      // e so parar de fingir que ha uma transmissao em curso.
+      if (!stopWatch) return;
       timer = setInterval(post, BROADCAST_INTERVAL_MS);
     };
 

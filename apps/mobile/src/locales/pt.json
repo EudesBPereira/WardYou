@@ -100,7 +100,8 @@
     "guardian": "Responsável",
     "child": "Criança",
     "elder": "Idoso",
-    "member": "Membro"
+    "member": "Membro",
+    "dependent": "Dependente"
   },
   "home": {
     "subtitle": "Todos seguros, em um só lugar.",
@@ -143,6 +144,7 @@
     "subtitle": "Sua rede familiar",
     "add": "Adicionar membro",
     "responsibles": "Responsáveis",
+    "members": "Membros",
     "dependents": "Crianças e idosos",
     "battery": "{{n}}%",
     "invite": {
@@ -173,6 +175,7 @@
         "alert": "Em alerta"
       },
       "lastSeen": "visto {{time}}",
+      "locationStale": "Pode não ser a posição atual — {{name}} não abriu o app desde então.",
       "locationTitle": "Última localização",
       "noLocation": "Nenhuma localização compartilhada ainda.",
       "locationHidden": "A localização deste membro está oculta — sem consentimento ativo.",
@@ -209,6 +212,12 @@
     }
   },
   "trips": {
+    "sharing": {
+      "blockedTitle": "Ninguém consegue te acompanhar",
+      "blockedBody": "Sua posição não está sendo enviada para esta viagem.",
+      "partialTitle": "Vão te perder de vista",
+      "partialBody": "Funciona só enquanto o app estiver aberto."
+    },
     "title": "Trajetos",
     "subtitle": "Acompanhe rotas e trajetos",
     "create": "Criar trajeto",
@@ -236,6 +245,7 @@
       "days": "{{n}} dia(s)"
     },
     "join": {
+      "title": "Entrando na viagem...",
       "subtitle": "Digite o código do convite que você recebeu.",
       "placeholder": "Código do convite",
       "invalid": "Convite inválido ou expirado."
@@ -861,6 +871,16 @@
       "locationServices": {
         "title": "Localização do aparelho desligada",
         "body": "O GPS está desligado no sistema. Mesmo com a permissão concedida, nada de localização funciona.",
+        "oemHint": ""
+      },
+      "locationBackground": {
+        "title": "Localização só com o app aberto",
+        "body": "Se você fechar o WardYou, os outros param de te acompanhar. Escolha “Permitir o tempo todo”.",
+        "oemHint": ""
+      },
+      "tripTracking": {
+        "title": "Compartilhamento da viagem não está ativo",
+        "body": "O envio da sua posição não está rodando. Abra o app de novo ou reative a localização.",
         "oemHint": ""
       },
       "battery": {

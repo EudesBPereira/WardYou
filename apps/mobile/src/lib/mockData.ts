@@ -6,7 +6,15 @@ export type MemberStatus = "online" | "offline" | "alert";
 export interface MockMember {
   id: string;
   name: string;
-  role: "admin" | "guardian" | "child" | "elder";
+  // Achado de QA 2026-09-11: "member" e "dependent" faltavam aqui -- os dois
+  // sao valores REAIS de FamilyRole (apps/mobile/src/services/api/types.ts),
+  // nao so um detalhe de mock. `queries.ts` (mapDto) reusava este tipo pra
+  // dado REAL vindo da API, e a ausencia forcava qualquer membro "member"
+  // (ex.: um adulto trocado de "Criança" pra "Membro" via Alterar papel) a
+  // cair no fallback ": child" -- rotulado errado como "Criança" na tela de
+  // Família, mesmo com o papel certo gravado no banco. Ver Group() em
+  // app/(tabs)/family.tsx para o balde correspondente.
+  role: "admin" | "guardian" | "child" | "elder" | "member" | "dependent";
   status: MemberStatus;
   locationLabel: string;
   battery: number;

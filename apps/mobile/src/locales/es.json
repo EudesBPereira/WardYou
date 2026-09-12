@@ -100,7 +100,8 @@
     "guardian": "Tutor",
     "child": "Niño",
     "elder": "Mayor",
-    "member": "Miembro"
+    "member": "Miembro",
+    "dependent": "Dependiente"
   },
   "home": {
     "subtitle": "Todos a salvo, en un solo lugar.",
@@ -143,6 +144,7 @@
     "subtitle": "Tu red familiar",
     "add": "Añadir miembro",
     "responsibles": "Responsables",
+    "members": "Miembros",
     "dependents": "Niños y mayores",
     "battery": "{{n}}%",
     "invite": {
@@ -173,6 +175,7 @@
         "alert": "Necesita atención"
       },
       "lastSeen": "visto {{time}}",
+      "locationStale": "Puede no ser la posición actual — {{name}} no ha abierto la app desde entonces.",
       "locationTitle": "Última ubicación",
       "noLocation": "Aún no ha compartido ubicación.",
       "locationHidden": "La ubicación de este miembro está oculta — sin consentimiento activo.",
@@ -209,6 +212,12 @@
     }
   },
   "trips": {
+    "sharing": {
+      "blockedTitle": "Nadie puede seguirte",
+      "blockedBody": "Tu posición no se está compartiendo en este viaje.",
+      "partialTitle": "Te van a perder de vista",
+      "partialBody": "Solo funciona mientras la app esté abierta."
+    },
     "title": "Trayectos",
     "subtitle": "Sigue rutas y trayectos",
     "create": "Crear trayecto",
@@ -236,6 +245,7 @@
       "days": "{{n}} día(s)"
     },
     "join": {
+      "title": "Uniéndote al viaje...",
       "subtitle": "Introduce el código de invitación que recibiste.",
       "placeholder": "Código de invitación",
       "invalid": "Invitación inválida o expirada."
@@ -861,6 +871,16 @@
       "locationServices": {
         "title": "Ubicación del dispositivo desactivada",
         "body": "El GPS está apagado en el sistema. Aunque el permiso esté concedido, nada de ubicación funciona.",
+        "oemHint": ""
+      },
+      "locationBackground": {
+        "title": "Ubicación solo con la app abierta",
+        "body": "Si cierras WardYou, los demás dejan de seguirte. Elige “Permitir todo el tiempo”.",
+        "oemHint": ""
+      },
+      "tripTracking": {
+        "title": "El viaje no se está compartiendo",
+        "body": "Tu posición no se está enviando. Vuelve a abrir la app o reactiva la ubicación.",
         "oemHint": ""
       },
       "battery": {

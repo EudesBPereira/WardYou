@@ -145,6 +145,13 @@ export default function FamilyScreen() {
   const dependents = activeMembers.filter(
     (m) => m.role === "child" || m.role === "elder",
   );
+  // Achado de QA 2026-09-11: antes desta secao existir, um membro com papel
+  // "member"/"dependent" (ex.: trocado de Criança pra Membro via Alterar
+  // papel) nao caia em NENHUM dos dois grupos acima -- so ficava rotulado
+  // errado (ver o fix em queries.ts), e corrigir SO o rotulo sem isto faria a
+  // pessoa DESAPARECER da tela de Família inteira, o que e pior. Um "member"
+  // e um adulto que nao administra a família nem e um dependente gerenciado.
+  const others = activeMembers.filter((m) => m.role === "member" || m.role === "dependent");
 
   async function handleInvite() {
     if (!hasFamily) {
@@ -240,6 +247,7 @@ export default function FamilyScreen() {
         <>
           <PendingMembers members={pending} />
           <Group title={t("family.responsibles")} members={responsibles} />
+          <Group title={t("family.members")} members={others} />
           <Group title={t("family.dependents")} members={dependents} />
         </>
       )}
