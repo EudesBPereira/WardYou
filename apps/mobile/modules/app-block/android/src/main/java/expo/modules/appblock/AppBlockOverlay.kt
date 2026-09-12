@@ -13,6 +13,7 @@ import android.graphics.drawable.GradientDrawable
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
+import android.util.Log
 import android.view.Gravity
 import android.view.View
 import android.view.WindowManager
@@ -20,12 +21,15 @@ import android.widget.LinearLayout
 import android.widget.TextView
 
 /**
- * Fullscreen "app blocked" panel drawn by the AccessibilityService itself via
- * TYPE_ACCESSIBILITY_OVERLAY — the ONLY overlay type that needs no extra
- * permission and is exempt from background-activity-launch restrictions, so it
- * appears INSTANTLY when a blocked app is kicked, even on MIUI with the
- * "pop-up in background" permission denied (where startActivity is silently
- * swallowed — the old approach, which only surfaced the screen on next open).
+ * Fullscreen "app blocked" panel drawn by the AccessibilityService itself,
+ * over TYPE_APPLICATION_OVERLAY (SYSTEM_ALERT_WINDOW) when granted, or
+ * TYPE_ACCESSIBILITY_OVERLAY as a fallback — the latter needs no extra
+ * permission and is exempt from background-activity-launch restrictions, so
+ * it still appears even on MIUI with the "pop-up in background" permission
+ * denied (where startActivity is silently swallowed — the old approach,
+ * which only surfaced the screen on next open). See the class doc on show()
+ * for why the application overlay is now tried FIRST — a field bug found
+ * TYPE_ACCESSIBILITY_OVERLAY taking focus without ever painting a pixel.
  *
  * The action buttons don't talk to the network: they enqueue the request in
  * AppBlockPrefs and poke the JS runtime (kept alive by the shield FGS), which
@@ -46,6 +50,51 @@ object AppBlockOverlay {
   private var current: View? = null
   private var autoDismiss: Runnable? = null
 
+  private const val LOG_TAG = "AppBlockOverlay"
+
+  /**
+   * FIXED 2026-09-11 (achado de QA, Redmi Note 10 / MIUI, Android 12).
+   *
+   * Medido em campo com `dumpsys window windows` no instante exato do
+   * bloqueio: a janela TYPE_ACCESSIBILITY_OVERLAY (valor 2032 -- confirmado
+   * no fonte do AOSP, `FIRST_SYSTEM_WINDOW+32`; NAO e o TYPE_APPLICATION_OVERLAY
+   * como uma leitura inicial do dump sugeriu) pedia o tamanho certo
+   * (`Requested w=1080 h=2270`) e tinha `mFrame` de tela cheia -- por isso
+   * intercepta toque corretamente, e um toque no icone do launcher por baixo
+   * nao abria o app -- mas a **Surface** real ficava `[0,0][0,0]`, com
+   * `mDrawState=HAS_DRAWN` e `isVisible=true` mesmo assim. Ou seja: o sistema
+   * considera que "ja desenhou" e "esta visivel", so que numa superficie de
+   * area zero. `addView()` nao lanca excecao nesse cenario -- o antigo
+   * `try/catch` chamava isso de sucesso.
+   *
+   * Essa e a chave do porque isto nunca foi percebido: TYPE_ACCESSIBILITY_OVERLAY
+   * e o PRIMEIRO tipo tentado, incondicional (nao depende de nenhuma
+   * permissao), e o loop so caia para TYPE_APPLICATION_OVERLAY se o primeiro
+   * LANÇASSE. Como ele nunca lançava -- so falhava em desenhar -- o segundo
+   * caminho, o unico que exige `SYSTEM_ALERT_WINDOW`, NUNCA CHEGOU A RODAR
+   * neste aparelho. E plausivel que o bloqueio de app em si nunca tenha
+   * disparado antes de hoje a noite (a Acessibilidade so foi ligada agora),
+   * entao este e o primeiro teste real deste caminho inteiro.
+   *
+   * Duas mudancas, uma cautelar e uma corretiva:
+   *  1. Reordenado: TYPE_APPLICATION_OVERLAY primeiro quando a permissao
+   *     existe. E o tipo usado por incontaveis apps de "bolha"/overlay
+   *     flutuante havera muito mais testado em ROMs de fabricante do que o
+   *     tipo de acessibilidade, que e nicho. TYPE_ACCESSIBILITY_OVERLAY vira
+   *     o FALLBACK, para aparelhos sem a permissao de sobreposicao.
+   *  2. Verificacao de renderizacao com `view.post` (mede `width`/`height`
+   *     depois do layout) antes de declarar sucesso -- e se o `post` nem
+   *     rodar em 400ms (a mesma classe de falha, sem excecao nenhuma),
+   *     tambem conta como falha em vez de travar aqui para sempre. **Limite
+   *     conhecido, documentado para nao virar falsa garantia**: isto mede o
+   *     LAYOUT da View (measure/layout), nao a Surface do compositor -- o
+   *     bug medido em campo tinha layout correto e Surface zerada, e uma
+   *     verificacao so de `width`/`height` PODE não pegar exatamente essa
+   *     variante. E por isso a mudanca 1 (nao depender de detectar a falha,
+   *     e sim evitar o caminho comprovadamente ruim) e a que realmente
+   *     resolve o caso medido; a verificacao aqui e rede de seguranca para
+   *     outros aparelhos, nao a correcao principal.
+   */
   fun show(service: AccessibilityService, pkg: String, label: String, onShown: (() -> Unit)? = null) {
     main.post {
       // Backstop (Home kick) runs after the add attempt regardless of outcome,
@@ -60,13 +109,11 @@ object AppBlockOverlay {
       }
       removeCurrent(service)
       val wm = service.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-      val view = build(service, pkg, label)
-      // Primary: accessibility overlay — needs NO permission, drawn by the a11y
-      // layer. Fallback: TYPE_APPLICATION_OVERLAY (needs "display over other
-      // apps"), for OEM builds where the a11y overlay is suppressed. MIUI
-      // exposes an explicit toggle for the latter, which the setup guide walks
-      // the user through — so between the two, the panel shows on every device.
-      val types = mutableListOf(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
+      // Preferido: application overlay (SYSTEM_ALERT_WINDOW) -- o caminho
+      // testado em campo por milhoes de outros apps. Fallback: accessibility
+      // overlay, para aparelhos sem essa permissao concedida -- continua sem
+      // exigir nada extra, so deixou de ser o PRIMEIRO depois do achado acima.
+      val types = mutableListOf<Int>()
       if (canDrawOverlays(service)) {
         val appOverlay =
           if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
@@ -75,8 +122,29 @@ object AppBlockOverlay {
             @Suppress("DEPRECATION") WindowManager.LayoutParams.TYPE_PHONE
         types.add(appOverlay)
       }
-      var lastError = "no window type available"
-      for (type in types) {
+      types.add(WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY)
+
+      fun typeName(type: Int) =
+        if (type == WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY) "a11y-overlay" else "app-overlay"
+
+      fun tryType(index: Int, lastError: String) {
+        if (index >= types.size) {
+          // Every window overlay failed to actually render (some HyperOS
+          // builds). Last resort: a full-screen-intent notification — the
+          // incoming-call mechanism, which OEMs DO allow to present UI from
+          // the background (unlike a plain startActivity). It surfaces
+          // app/blocked.tsx automatically, no tap.
+          current = null // never break enforcement over UI
+          val fsi = fireFullScreenIntent(service, pkg, label)
+          val result = if (fsi) "fullscreen-intent" else "failed: $lastError"
+          Log.w(LOG_TAG, "todos os overlays falharam em renderizar, resultado=$result pkg=$pkg")
+          AppBlockPrefs.setLastOverlayResult(service, result)
+          runBackstop() // the Home kick is the only block left; run it now
+          return
+        }
+        val type = types[index]
+        val name = typeName(type)
+        val view = build(service, pkg, label)
         try {
           val lp = WindowManager.LayoutParams(
             WindowManager.LayoutParams.MATCH_PARENT,
@@ -86,33 +154,44 @@ object AppBlockOverlay {
             PixelFormat.TRANSLUCENT,
           )
           wm.addView(view, lp)
-          current = view
-          scheduleDismiss(service, 30_000L)
-          // Self-diagnostic: record which window path actually rendered so the
-          // setup screen (and the guardian's device via heartbeat) can confirm
-          // the overlay works, instead of relying on a subjective "did it show?"
-          AppBlockPrefs.setLastOverlayResult(
-            service,
-            if (type == WindowManager.LayoutParams.TYPE_ACCESSIBILITY_OVERLAY) "a11y-overlay" else "app-overlay",
-          )
-          runBackstop() // kick Home as backstop, now that the overlay is attached
-          return@post
+          Log.i(LOG_TAG, "addView OK para $name pkg=$pkg -- verificando se realmente desenhou")
+          var verificado = false
+          val timeout = Runnable {
+            if (verificado) return@Runnable
+            verificado = true
+            Log.w(LOG_TAG, "$name: post() nunca rodou em 400ms -- tratando como falha de render")
+            try { wm.removeView(view) } catch (e: Exception) { /* ignore */ }
+            tryType(index + 1, "$name: post nunca rodou")
+          }
+          main.postDelayed(timeout, 400L)
+          view.post {
+            if (verificado) return@post
+            verificado = true
+            main.removeCallbacks(timeout)
+            if (view.width > 0 && view.height > 0) {
+              Log.i(LOG_TAG, "$name mediu ${view.width}x${view.height} pkg=$pkg -- declarando sucesso (ver limite documentado acima)")
+              current = view
+              scheduleDismiss(service, 30_000L)
+              // Self-diagnostic: record which window path actually rendered so
+              // the setup screen (and the guardian's device via heartbeat) can
+              // confirm the overlay works, instead of relying on "did addView
+              // throw?" -- see the class doc above for why that was never enough.
+              AppBlockPrefs.setLastOverlayResult(service, name)
+              runBackstop() // kick Home as backstop, now that the overlay is attached
+            } else {
+              Log.w(LOG_TAG, "$name addView OK mas dimensao ZERO (${view.width}x${view.height}) -- tratando como falha de render, tentando proximo tipo")
+              try { wm.removeView(view) } catch (e: Exception) { /* ignore */ }
+              tryType(index + 1, "$name: dimensao zero apos layout")
+            }
+          }
         } catch (e: Exception) {
-          lastError = e.javaClass.simpleName + ": " + (e.message ?: "")
+          val erro = e.javaClass.simpleName + ": " + (e.message ?: "")
+          Log.w(LOG_TAG, "$name addView lancou: $erro")
+          tryType(index + 1, "$name: $erro")
         }
       }
-      // Both window overlays were suppressed (some HyperOS builds). Last resort:
-      // a full-screen-intent notification — the incoming-call mechanism, which
-      // OEMs DO allow to present UI from the background (unlike a plain
-      // startActivity). It surfaces app/blocked.tsx automatically, no tap.
-      current = null // never break enforcement over UI
-      val fsi = fireFullScreenIntent(service, pkg, label)
-      AppBlockPrefs.setLastOverlayResult(
-        service,
-        if (fsi) "fullscreen-intent" else "failed: $lastError",
-      )
-      // Overlays failed → the Home kick is the only block left; run it now.
-      runBackstop()
+
+      tryType(0, "no window type available")
     }
   }
 
