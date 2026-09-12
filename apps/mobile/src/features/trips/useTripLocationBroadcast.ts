@@ -15,6 +15,30 @@ import { useTrips } from "./queries";
 const BROADCAST_INTERVAL_MS = 10_000;
 
 /**
+ * Idade maxima de um fix para ele ainda poder ser transmitido.
+ *
+ * Achado de QA 2026-09-11, medido no BANCO (nao deduzido): com o GPS do
+ * sistema desligado durante uma viagem ativa, este broadcast continuou
+ * postando a MESMA coordenada a cada 10s -- nove posts consecutivos com
+ * `lat=-23.7749889 lng=-46.702075` identicos e um `CapturedAt` novo a cada
+ * um. Do outro lado, o acompanhante via "Visto as" subindo junto com o
+ * relogio e o membro como "online": indistinguivel de rastreamento ao vivo,
+ * com a pessoa podendo estar em qualquer lugar.
+ *
+ * Causa: `watchPositionAsync` assina normalmente (a PERMISSAO esta
+ * concedida), so para de ENTREGAR fixes quando o GPS e desligado --
+ * `lastCoordsRef` fica congelado com o ultimo fix e nada nunca o limpa,
+ * enquanto o timer segue republicando. O app passava a fabricar a evidencia
+ * de um rastreamento que nao existe, que e o pior caso desta auditoria
+ * inteira: nao e ausencia de aviso, e um falso positivo ativo.
+ *
+ * 60s: tolera um engasgo normal de GPS (tunel, ambiente fechado, deriva
+ * indoor) sem descartar um fix legitimamente recente, e corta a republicacao
+ * de uma coordenada congelada em no maximo um minuto.
+ */
+const MAX_FIX_AGE_MS = 60_000;
+
+/**
  * App-level port of the MAUI TravelLocationBroadcastService: while the user is a
  * member of any active trip, share the device position with each of them — so
  * other travelers can follow this member for the whole trip.
@@ -48,7 +72,8 @@ export function useTripLocationBroadcast() {
   const tripsKnown = tripsQuery.isSuccess;
   const activeTripIds = trips.filter((tr) => tr.status === "active").map((tr) => tr.id);
   const idsKey = activeTripIds.join(",");
-  const lastCoordsRef = useRef<Coords | null>(null);
+  // Guarda QUANDO o fix foi observado, nao so a coordenada -- ver MAX_FIX_AGE_MS.
+  const lastCoordsRef = useRef<{ coords: Coords; at: number } | null>(null);
 
   // --- Native: OS foreground-service tracking (survives background/kill) ---
   useEffect(() => {
@@ -78,8 +103,13 @@ export function useTripLocationBroadcast() {
     let timer: ReturnType<typeof setInterval> | null = null;
 
     const post = async () => {
-      const coords = lastCoordsRef.current;
-      if (cancelled || !coords) return;
+      const fix = lastCoordsRef.current;
+      if (cancelled || !fix) return;
+      // Um fix velho demais NAO e transmitido: melhor o acompanhante ver a
+      // posicao parar de atualizar (e o aviso de compartilhamento aparecer)
+      // do que ver um horario novo em cima de uma coordenada congelada.
+      if (Date.now() - fix.at > MAX_FIX_AGE_MS) return;
+      const coords = fix.coords;
       for (const tripId of activeTripIds) {
         if (skip.has(tripId)) continue;
         try {
@@ -87,6 +117,10 @@ export function useTripLocationBroadcast() {
             latitude: coords.latitude,
             longitude: coords.longitude,
             accuracyMeters: coords.accuracy,
+            // Manda o instante REAL da observacao. Sem isto o servidor carimba
+            // `now` (ver CapturedAt em routes/trips.ts), e um fix de um minuto
+            // atras chegava registrado como se fosse deste segundo.
+            capturedAt: new Date(fix.at).toISOString(),
           });
           qc.invalidateQueries({ queryKey: ["trips", tripId, "map"] });
         } catch (err) {
@@ -102,7 +136,7 @@ export function useTripLocationBroadcast() {
       if (stopWatch || cancelled) return;
       let first = true;
       stopWatch = await watchPosition((coords) => {
-        lastCoordsRef.current = coords;
+        lastCoordsRef.current = { coords, at: Date.now() };
         if (first) {
           first = false;
           post();

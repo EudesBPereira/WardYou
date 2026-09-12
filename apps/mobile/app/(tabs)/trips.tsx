@@ -19,6 +19,7 @@ import { useTrips, useCreateTrip, useJoinTrip } from "@/features/trips/queries";
 import { CreateTripModal } from "@/features/trips/CreateTripModal";
 import { ProfileButton } from "@/components/ProfileButton";
 import { TripSharingStatusCard } from "@/features/trips/TripSharingStatusCard";
+import { useTripSharingHealth } from "@/features/trips/useTripSharingHealth";
 import type { CreateTripRequest } from "@/services/api/types";
 
 function TripRow({ trip }: { trip: MockTrip }) {
@@ -72,6 +73,7 @@ export default function TripsScreen() {
   const [joinOpen, setJoinOpen] = useState(false);
 
   const active = trips.filter((tr) => tr.status === "active");
+  const sharing = useTripSharingHealth(active.length > 0);
   const history = trips.filter((tr) => tr.status === "closed");
 
   async function handleCreate(req: CreateTripRequest) {
@@ -115,7 +117,7 @@ export default function TripsScreen() {
           esta quebrado, isso importa mais do que criar outra viagem. Aparece
           tambem aqui (e nao so no detalhe) porque a pessoa pode entrar numa
           viagem e nunca mais abrir a tela dela. */}
-      <TripSharingStatusCard ativa={active.length > 0} />
+      <TripSharingStatusCard health={sharing} />
 
       {/* Stacked full-width so long labels ("Entrar com código", FR's even
           longer) never overflow the fixed-height button — matches the Family

@@ -263,6 +263,8 @@
       "active": "Trip active",
       "closed": "Trip closed",
       "live": "Live",
+      "notLive": "No signal",
+      "youNotSharing": "Your position isn't being sent",
       "mapTitle": "Trip map",
       "mapEmpty": "No member has shared a position on this trip yet.",
       "members": "Members",

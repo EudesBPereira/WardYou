@@ -263,6 +263,8 @@
       "active": "Trayecto activo",
       "closed": "Trayecto cerrado",
       "live": "En vivo",
+      "notLive": "Sin señal",
+      "youNotSharing": "Tu posición no se está enviando",
       "mapTitle": "Mapa del trayecto",
       "mapEmpty": "Ningún miembro ha compartido posición en este trayecto todavía.",
       "members": "Miembros",

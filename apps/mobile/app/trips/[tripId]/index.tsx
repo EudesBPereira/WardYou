@@ -20,6 +20,7 @@ import { colors } from "@/theme";
 import { suppressNextRelock } from "@/stores/appLock";
 import { formatSeenAt } from "@/lib/formatTime";
 import { TripSharingStatusCard } from "@/features/trips/TripSharingStatusCard";
+import { useTripSharingHealth } from "@/features/trips/useTripSharingHealth";
 import {
   useTrip,
   useTripMap,
@@ -37,6 +38,10 @@ export default function TripDetailScreen() {
   const { data: trip, isLoading } = useTrip(tripId);
   const isActive = trip?.isActive ?? false;
   const { data: map } = useTripMap(tripId, isActive);
+  // Uma unica medicao alimenta o card de aviso, o selo "Ao vivo" e a linha do
+  // proprio usuario -- ver useTripSharingHealth para o porque da re-medicao
+  // periodica e TripSharingStatusCard para o porque de ser uma fonte so.
+  const sharing = useTripSharingHealth(isActive);
   const update = useUpdateTrip();
   const close = useCloseTrip();
   const leave = useLeaveTrip();
@@ -147,7 +152,7 @@ export default function TripDetailScreen() {
           {/* Antes do cartao de status da viagem: "voce esta sendo acompanhado?"
               vale mais do que "a viagem esta ativa". So aparece quando ha algo
               errado numa viagem ATIVA. */}
-          <TripSharingStatusCard ativa={isActive} />
+          <TripSharingStatusCard health={sharing} />
 
           {/* Status */}
           <Card className="mt-2 flex-row items-center gap-3">
@@ -168,7 +173,19 @@ export default function TripDetailScreen() {
                 {timeRange} · {t("trips.members", { count: trip.memberCount })}
               </Text>
             </View>
-            {isActive ? <Badge label={t("trips.detail.live")} tone="safe" /> : null}
+            {/* "Ao vivo" amarrado ao compartilhamento REAL, nao a "a viagem
+                esta ativa". Achado de QA 2026-09-11: com o GPS desligado, o
+                selo continuava verde ao lado de um aviso dizendo que ninguem
+                consegue te acompanhar -- duas afirmacoes contraditorias a
+                dois centimetros uma da outra. `null` (ainda medindo) nao
+                afirma nenhum dos dois. */}
+            {isActive ? (
+              sharing.transmitindo === false ? (
+                <Badge label={t("trips.detail.notLive")} tone="danger" />
+              ) : sharing.transmitindo ? (
+                <Badge label={t("trips.detail.live")} tone="safe" />
+              ) : null
+            ) : null}
           </Card>
 
           {/* Live map — tap to open the fullscreen live map */}
@@ -205,11 +222,20 @@ export default function TripDetailScreen() {
           </Text>
           <Card padded={false} className="mt-3 px-4">
             {(map?.members ?? []).map((m, i) => {
-              const seen = m.capturedAt
-                ? t("trips.detail.lastSeen", { time: formatSeenAt(m.capturedAt) })
-                : m.canViewLocation
-                  ? t("trips.detail.noFix")
-                  : t("trips.detail.locationHidden");
+              // Para o PROPRIO usuario, quando o compartilhamento esta
+              // quebrado agora, dizer isso JA -- em vez de exibir um horario
+              // recente (que congelou no instante em que o GPS caiu) e so
+              // acender o aviso de posicao velha meia hora depois. Achado de
+              // QA 2026-09-11: nesse meio tempo a pessoa via o proprio nome
+              // com horario fresco e nenhuma indicacao de problema.
+              const seen =
+                m.isMe && sharing.transmitindo === false
+                  ? t("trips.detail.youNotSharing")
+                  : m.capturedAt
+                    ? t("trips.detail.lastSeen", { time: formatSeenAt(m.capturedAt) })
+                    : m.canViewLocation
+                      ? t("trips.detail.noFix")
+                      : t("trips.detail.locationHidden");
               return (
                 <View key={m.userId}>
                   {i > 0 ? <View className="h-px bg-border" /> : null}

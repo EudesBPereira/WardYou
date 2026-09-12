@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useState } from "react";
-import { AppState, Pressable, View } from "react-native";
+import { Pressable, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
 import { Card, Text } from "@/components/ui";
 import { colors } from "@/theme";
-import { diagnosticar, type Diagnostico } from "@/features/protection/diagnostics";
+import type { TripSharingHealth } from "./useTripSharingHealth";
 
 /**
  * "Os outros conseguem te acompanhar nesta viagem?"
@@ -12,58 +11,28 @@ import { diagnosticar, type Diagnostico } from "@/features/protection/diagnostic
  * Existe porque o modo viajante tinha o mesmo defeito que perseguimos o dia
  * inteiro, na versao mais silenciosa de todas: a pessoa entrava na viagem,
  * via o mapa, aparecia na lista de membros -- e nao transmitia posicao
- * nenhuma. Quatro camadas engoliam a falha sem uma palavra:
+ * nenhuma. Quatro camadas engoliam a falha sem uma palavra (permissao negada
+ * devolvendo `null` em silencio, quem chama nao olhando esse `null`, ninguem
+ * checando o GPS do SISTEMA, e a falha do servico de segundo plano engolida
+ * por um `.catch(() => {})`).
  *
- *  1. `watchPosition` devolve `null` quando a permissao e negada;
- *  2. quem chama (useTripLocationBroadcast) nao olhava esse `null` e seguia
- *     rodando um timer que postava `lastCoords` eternamente vazio;
- *  3. ninguem checava o GPS do SISTEMA (permissao concedida + GPS desligado
- *     e o caso silencioso classico);
- *  4. `ensureTripLocationTracking(...).catch(() => {})` engolia a falha do
- *     servico de segundo plano.
+ * Componente puramente de APRESENTACAO: quem mede e `useTripSharingHealth`
+ * (ver la o porque da re-medicao periodica). Isso existe para a tela de
+ * detalhe da viagem poder usar A MESMA medicao para o selo "Ao vivo" e para
+ * a linha do proprio usuario -- um aviso dizendo "ninguem consegue te
+ * acompanhar" a dois centimetros de um selo "Ao vivo" seria a mesma
+ * contradicao que este card veio corrigir.
  *
- * Reusa `diagnosticar` de proposito, em vez de um segundo mecanismo: ele ja
- * sabe medir permissao, GPS do sistema e o vocabulario de niveis, e dois
- * diagnosticos que medem a mesma coisa divergem com o tempo.
- *
- * So renderiza quando ha viagem ativa E ha algo errado: numa viagem saudavel
- * nao aparece nada. Cobrar GPS de quem esta tudo certo e como gritar perigo
- * onde nao ha -- ensina a ignorar o aviso no dia em que ele importa.
+ * So renderiza quando ha algo errado: numa viagem saudavel nao aparece nada.
+ * Cobrar GPS de quem esta com tudo certo e como gritar perigo onde nao ha --
+ * ensina a ignorar o aviso no dia em que ele importa.
  */
-export function TripSharingStatusCard({ ativa }: { ativa: boolean }) {
+export function TripSharingStatusCard({ health }: { health: TripSharingHealth }) {
   const { t } = useTranslation();
-  const [diag, setDiag] = useState<Diagnostico | null>(null);
+  const { problemas, critico } = health;
 
-  const medir = useCallback(() => {
-    if (!ativa) {
-      setDiag(null);
-      return;
-    }
-    diagnosticar({ emViagem: true }).then(setDiag).catch(() => setDiag(null));
-  }, [ativa]);
+  if (problemas.length === 0) return null;
 
-  // Remede ao voltar do segundo plano: conceder permissao ou ligar o GPS
-  // acontece FORA do app, entao sem isto o aviso continuaria de pe depois de
-  // resolvido. Mesmo padrao do ProtectionStatusCard.
-  useEffect(() => {
-    medir();
-    const sub = AppState.addEventListener("change", (s) => {
-      if (s === "active") medir();
-    });
-    return () => sub.remove();
-  }, [medir]);
-
-  // So interessam os problemas que afetam SER ACOMPANHADO nesta viagem. Os
-  // outros itens que `diagnosticar` devolve (bateria, push...) tem o painel
-  // deles; repetir aqui transformaria este card numa segunda lista generica.
-  const relevantes =
-    diag?.problemas.filter((p) =>
-      ["locationPermission", "locationServices", "locationBackground", "tripTracking", "network"].includes(p.id),
-    ) ?? [];
-
-  if (!ativa || relevantes.length === 0) return null;
-
-  const critico = relevantes.some((p) => p.severidade === "critica");
   const cor = critico ? colors.danger[500] : colors.warning[500];
   const fundo = critico ? colors.danger[50] : colors.warning[100];
 
@@ -87,7 +56,7 @@ export function TripSharingStatusCard({ ativa }: { ativa: boolean }) {
       </View>
 
       <View className="gap-px overflow-hidden rounded-xl bg-border">
-        {relevantes.map((p) => (
+        {problemas.map((p) => (
           <Pressable
             key={p.id}
             onPress={p.resolver}
