@@ -6,6 +6,12 @@ import * as TaskManager from "expo-task-manager";
 import Constants from "expo-constants";
 import { env } from "@/lib/env";
 import { storage } from "@/lib/storage";
+import {
+  clearTripDelivery,
+  markTripPostOk,
+  markTripTaskRan,
+  markTripTrackingArmed,
+} from "./tripDelivery";
 
 // Native background trip-location broadcasting. Unlike the old foreground-only
 // watcher (which stopped the moment the app was backgrounded or killed), this
@@ -89,7 +95,24 @@ interface PostCoords {
   accuracy?: number;
 }
 
+/**
+ * `0` = a requisicao nem chegou a ter resposta (rede indisponivel, DNS, TLS).
+ *
+ * Antes isto era um `fetch` cru: se ele lancasse -- exatamente o que acontece
+ * com rede de segundo plano restringida, o cenario que estamos investigando --
+ * a excecao subia para fora do callback do `defineTask` e morria ali, sem log,
+ * sem retentativa e sem nenhum vestigio. Distinguir "sem rede" de um status
+ * HTTP e o que permite o diagnostico dizer QUAL das duas coisas aconteceu.
+ */
 async function postTripLocation(tripId: string, token: string, coords: PostCoords): Promise<number> {
+  try {
+    return await postTripLocationRaw(tripId, token, coords);
+  } catch {
+    return 0;
+  }
+}
+
+async function postTripLocationRaw(tripId: string, token: string, coords: PostCoords): Promise<number> {
   const res = await fetch(`${env.apiBaseUrl}/api/v1/travels/${tripId}/location`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
@@ -128,6 +151,11 @@ TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
     return;
   }
 
+  // O SO ENTREGOU localizacao para esta tarefa. Registrado separadamente do
+  // envio aceito (markTripPostOk) para separar "o SO nao entrega" de "entrega
+  // mas o envio falha" -- ver tripDelivery.ts.
+  await markTripTaskRan();
+
   const coords: PostCoords = {
     latitude: latest.coords.latitude,
     longitude: latest.coords.longitude,
@@ -144,6 +172,7 @@ TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
         status = await postTripLocation(tripId, session.accessToken, coords);
       }
     }
+    if (status >= 200 && status < 300) await markTripPostOk();
     // Keep the trip unless the server says we can't share (403) or it ended (410).
     // Transient/network failures keep the trip for the next tick.
     if (status !== 403 && status !== 410) stillActive.push(tripId);
@@ -226,6 +255,7 @@ export async function ensureTripLocationTracking(
 
   if (!(await requestPermissions())) return;
   await ensureBatteryOptimizationExemption();
+  await markTripTrackingArmed();
   await startTrackingService(notification);
 }
 
@@ -275,6 +305,9 @@ async function startTrackingService(notification: TrackingNotification): Promise
 
 export async function stopTripLocationTracking(): Promise<void> {
   await writeActiveTripIds([]);
+  // Sem rastreamento armado nao ha entrega a cobrar -- deixar o carimbo velho
+  // faria o diagnostico acusar uma falha de algo que nao deveria estar rodando.
+  await clearTripDelivery();
   try {
     const started = await Location.hasStartedLocationUpdatesAsync(TASK_NAME);
     if (started) await Location.stopLocationUpdatesAsync(TASK_NAME);

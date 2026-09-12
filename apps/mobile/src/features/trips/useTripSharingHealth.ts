@@ -10,6 +10,9 @@ const IDS_RELEVANTES = [
   "locationServices",
   "locationBackground",
   "tripTracking",
+  "tripDelivery",
+  "oemBattery",
+  "battery",
   "network",
 ] as const;
 

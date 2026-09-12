@@ -885,6 +885,16 @@
         "body": "Votre position n'est pas envoyée. Rouvrez l'appli ou réactivez la localisation.",
         "oemHint": ""
       },
+      "tripDelivery": {
+        "title": "Votre position n'est plus envoyée",
+        "body": "L'appareil suit la position, mais rien n'arrive depuis plus d'une minute. Ouvrez l'appli pour reprendre.",
+        "oemHint": ""
+      },
+      "oemBattery": {
+        "title": "La batterie peut couper l'envoi",
+        "body": "Sans cela, votre position cesse d'être envoyée dès que vous fermez l'appli. Touchez et choisissez « Aucune restriction » dans Batterie.",
+        "oemHint": ""
+      },
       "battery": {
         "title": "La batterie restreint l'appli",
         "body": "Le système peut arrêter la protection en arrière-plan pour économiser la batterie.",

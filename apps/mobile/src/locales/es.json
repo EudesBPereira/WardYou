@@ -885,6 +885,16 @@
         "body": "Tu posición no se está enviando. Vuelve a abrir la app o reactiva la ubicación.",
         "oemHint": ""
       },
+      "tripDelivery": {
+        "title": "Tu ubicación dejó de enviarse",
+        "body": "El dispositivo está rastreando, pero no llega nada hace más de un minuto. Abre la app para reanudar.",
+        "oemHint": ""
+      },
+      "oemBattery": {
+        "title": "La batería puede cortar el envío",
+        "body": "Sin esto tu ubicación deja de enviarse cuando cierras la app. Toca y elige “Sin restricciones” en Batería.",
+        "oemHint": ""
+      },
       "battery": {
         "title": "La batería está restringiendo la app",
         "body": "El sistema puede cerrar la protección en segundo plano para ahorrar batería.",

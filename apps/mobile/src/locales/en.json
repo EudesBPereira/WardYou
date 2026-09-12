@@ -885,6 +885,16 @@
         "body": "Your position isn't being sent. Reopen the app or turn location back on.",
         "oemHint": ""
       },
+      "tripDelivery": {
+        "title": "Your location stopped being sent",
+        "body": "The device is tracking, but nothing has arrived for over a minute. Open the app to resume.",
+        "oemHint": ""
+      },
+      "oemBattery": {
+        "title": "Battery settings may cut sending",
+        "body": "Without this, your location stops being sent once you close the app. Tap and choose “No restrictions” under Battery.",
+        "oemHint": ""
+      },
       "battery": {
         "title": "Battery is restricting the app",
         "body": "The system may kill background protection to save battery.",

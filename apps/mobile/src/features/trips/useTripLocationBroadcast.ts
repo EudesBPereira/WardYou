@@ -10,6 +10,7 @@ import {
   ensureTripLocationTracking,
   stopTripLocationTracking,
 } from "@/services/location/tripLocationTracking";
+import { markTripPostOk } from "@/services/location/tripDelivery";
 import { useTrips } from "./queries";
 
 const BROADCAST_INTERVAL_MS = 10_000;
@@ -122,6 +123,9 @@ export function useTripLocationBroadcast() {
             // atras chegava registrado como se fosse deste segundo.
             capturedAt: new Date(fix.at).toISOString(),
           });
+          // Mesmo carimbo que a tarefa nativa grava -- o diagnostico mede
+          // ENTREGA, e nao importa por qual dos dois caminhos ela aconteceu.
+          await markTripPostOk();
           qc.invalidateQueries({ queryKey: ["trips", tripId, "map"] });
         } catch (err) {
           if (err instanceof ApiError && (err.status === 403 || err.status === 410)) {

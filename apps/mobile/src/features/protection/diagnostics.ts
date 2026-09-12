@@ -3,6 +3,8 @@ import * as Location from "expo-location";
 import * as Network from "expo-network";
 import * as AppBlock from "@modules/app-block";
 import { isTripTrackingRunning } from "@/services/location/tripLocationTracking";
+import { isTripDeliveryStalled, readTripDelivery } from "@/services/location/tripDelivery";
+import { storage } from "@/lib/storage";
 import { getPushPermissionStatus } from "@/services/push/pushService";
 
 /**
@@ -18,6 +20,8 @@ import { getPushPermissionStatus } from "@/services/push/pushService";
  * concedida e a localizacao do aparelho **desligada no sistema**, e ai nada
  * funciona sem que nada avise.
  */
+
+const OEM_BATTERY_ACK_KEY = "wardyou_oem_battery_ack";
 
 export type NivelProtecao = "completa" | "limitada" | "acao" | "offline";
 
@@ -43,6 +47,16 @@ export type IdProblema =
    *  (isTripTrackingRunning), nao uma tentativa lembrada -- ensureTripLocation
    *  Tracking engole as proprias falhas. */
   | "tripTracking"
+  /** MODO VIAGEM: a tarefa roda, mas NADA chega ao servidor ha tempo demais.
+   *  Mede RESULTADO, nao pre-requisito -- o unico sinal que teria pego o caso
+   *  medido em campo, onde permissao, GPS, servico e notificacao estavam todos
+   *  "ok" e nenhuma posicao era entregue. Ver tripDelivery.ts. */
+  | "tripDelivery"
+  /** MODO VIAGEM em OEM agressiva (MIUI e afins): a restricao de bateria
+   *  PROPRIA do fabricante -- separada da isencao padrao do Android -- pode
+   *  sufocar o envio com o app fechado, e nao existe API para LER esse estado.
+   *  So da para guiar, nao detectar. */
+  | "oemBattery"
   | "battery"
   | "overlay"
   | "exactAlarm"
@@ -117,6 +131,26 @@ export async function diagnosticar({
   // A tarefa esta rodando MESMO? So faz sentido perguntar quando ha viagem
   // ativa e quando ha permissao para ela rodar -- sem permissao/GPS o aviso
   // certo ja esta acima, e repetir a mesma causa em duas linhas so dilui.
+  if (emViagem) {
+    // RESULTADO acima de pre-requisito: se ha rastreamento armado e nada e
+    // entregue ha mais de 90s, isso e falha medida, nao deduzida -- e aparece
+    // mesmo quando todos os pre-requisitos respondem "sim".
+    if (isTripDeliveryStalled(await readTripDelivery())) {
+      problemas.push({ id: "tripDelivery", severidade: "critica" });
+    }
+    // Guiar, nao detectar: o modo de bateria proprio da MIUI nao e legivel por
+    // API nenhuma. Mostrado uma vez por instalacao ate a pessoa abrir a tela.
+    if (android && AppBlock.isAggressiveOem() && !(await storage.getItem(OEM_BATTERY_ACK_KEY))) {
+      problemas.push({
+        id: "oemBattery",
+        severidade: "degrada",
+        resolver: () => {
+          void storage.setItem(OEM_BATTERY_ACK_KEY, "1");
+          AppBlock.openAppSettings();
+        },
+      });
+    }
+  }
   if (emViagem && permissao !== "denied" && servicosLigados) {
     const rodando = await rastreamentoDeViagemRodando();
     // `null` = nao deu para medir: nao afirma que caiu (mesmo criterio do
@@ -155,7 +189,17 @@ export async function diagnosticar({
     }
     // --- Sobrevivencia em segundo plano (vale para qualquer perfil)
     if (!AppBlock.isIgnoringBatteryOptimizations()) {
-      problemas.push({ id: "battery", severidade: "degrada", resolver: AppBlock.requestIgnoreBatteryOptimizations });
+      // Numa viagem ativa isto nao e degradacao, e a promessa central quebrada:
+      // sem a isencao, o envio de posicao morre com o app fechado -- que e
+      // exatamente quando a viagem depende dele. Medido em campo (2026-09-11):
+      // o app NAO estava na whitelist (`dumpsys deviceidle`) apesar de
+      // ensureBatteryOptimizationExemption() ser chamado -- ele pede uma vez e
+      // nunca confere se foi concedido.
+      problemas.push({
+        id: "battery",
+        severidade: emViagem ? "critica" : "degrada",
+        resolver: AppBlock.requestIgnoreBatteryOptimizations,
+      });
     }
     // `critica`, not `degrada`: confirmed on-device (Redmi Note 10 / MIUI,
     // Android 12, 2026-09-11) that without this permission the blocked-app
