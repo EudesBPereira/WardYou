@@ -15,6 +15,72 @@
 > **Todo o código acionável foi entregue** — o que resta é validação em aparelho (usuário) + ações externas
 > (Google OAuth público, LGPD, pagamentos, Play Store) — ver seções abaixo.
 
+## 🚦 ESTADO PARA RETOMAR (fim de 2026-09-11 / madrugada de 12-09) — LEIA ISTO PRIMEIRO
+
+34 commits num dia. Esta seção é o ponto de partida de qualquer conversa nova.
+
+### ✅ Validado EM APARELHO (funciona, medido, não inferido)
+
+| Área | Evidência |
+|---|---|
+| **Rastreamento de viagem com o app FECHADO** | `entrou` → `carimbo ok` → `POST ok` nos dois aparelhos, com o app fora da tela e até com outro app por cima |
+| Sobrevive ao processo ser morto | `am kill` não derruba (FGS protege), tarefa segue reportando |
+| Aviso de GPS desligado | aviso em ~20s + selo "Sem sinal" + "Visto às" congela; recuperação ao religar; confirmado no banco |
+| Push ponta a ponta | FCM HTTP 200 e `FirebaseMessaging` processando no aparelho |
+| **Painel de app bloqueado** | superfície real `1080x2307` (antes `[0,0][0,0]`), tipo `APPLICATION_OVERLAY` |
+| Crédito duplicado de tarefa | extra foi 75→105min na aprovação e **ficou** em 105 no reenvio |
+| Tarefa paga mostra "Já concluída" | sem caminho clicável em nenhum dos dois cards |
+| App-lock | 0 de 12 tentativas de bypass; ciclo cancelar→tocar→reabrir 5/5 em ~0,3s |
+| Reversão de papel preserva tudo | Controle Parental, 480min e "TesteQA" voltam — verificado NA TELA |
+| Apelido, mapa recentralizar, teclado, datas pt-BR, layout | todos confirmados |
+
+### 🔧 Corrigido mas NÃO validado em aparelho
+- Sirene do antifurto (nativa) — **trabalho em andamento, ver "em aberto"**
+- `capturedAt` real na tarefa nativa de viagem
+- Cutucada de retomada no `POST /location`
+- Painel de proteção re-medindo a cada 15s (era leitura congelada)
+- Bloqueio de SITES — **implementado 11/09, ZERO validação em aparelho**
+
+### ❌ Em aberto / quebrado
+1. **Sirene do antifurto**: (a) não tocou numa segunda ativação — corrida entre `setAudioModeAsync` não aguardado e o `play()`; (b) **o ladrão consegue baixar o volume com a tela bloqueada** — `player.volume` é ganho do tocador, não do stream do sistema. Requisito do fundador: só quem desbloquear a tela pode silenciar. Sirene sendo movida para o nativo (o JS é pausado quando a tela trava).
+2. **Bloqueio de sites sem validação**. Para testar, o Chrome precisa estar LIBERADO como app — senão tudo bloqueia e o teste não significa nada. Casos: `g1.com.br`, `www.`, subdomínio, **`naog1.com.br` que NÃO pode bloquear**, navegador nativo Xiaomi, aba anônima, link dentro do Instagram (esperado não bloquear).
+3. **Rastreamento FORA de viagem não existe**. O mapa da família mostra a posição de quando a criança abriu o app pela última vez. Recomendação: reusar o `AppBlockShieldService` (já roda 24h) para reportar a cada 10-15min com precisão `Balanced`.
+
+### 🧪 NUNCA TESTADO — prioridade para a próxima sessão
+**MODO IDOSO, inteiro.** Nenhuma tela, nenhum fluxo. Existe `ElderHome`, `app/elder/`, `elderService.ts`, medicação, check-in. **Zero validação.** O fundador pediu explicitamente que isto entre na próxima rodada.
+
+### 💭 Decisões de produto pendentes (do fundador, não técnicas)
+- **Premium**: o card em Ajustes abre "Em breve" — não há pagamento no app. Esconder, virar lista de espera, ou integrar cobrança?
+- **Consentimento de viagem**: entrar numa viagem compartilha localização, bateria e SOS **sem nenhuma tela de aceite**.
+- **Consentimento familiar concedido em nome de outro membro não tem como ser revogado** — nem no app, nem na API.
+- **SOS não expira** — fica ativo para sempre até alguém cancelar.
+- **A criança pode desligar sozinha o compartilhamento da própria localização.**
+- **O responsável não vê o saldo de tempo extra** (só o limite base).
+- Rastreamento permanente fora de viagem (privacidade vs. promessa do produto).
+- Limiar do antifurto (2.2G) segue sem calibração.
+- Gatilho de recuperação independente de alguém olhar o mapa (exige contêiner acordado ou agendador; hoje `min-replicas 0`).
+
+### ⚠️ ARMADILHAS OPERACIONAIS — custaram horas, não repita
+
+**1. `uiautomator dump` DERRUBA a acessibilidade.** Uma sessão de `UiAutomation` suspende TODOS os serviços de acessibilidade do sistema e às vezes fica pendurada (`IllegalStateException: UiAutomationService already registered`). Isso poluiu horas de diagnóstico e fez o fundador ir ao aparelho várias vezes para consertar o que NÓS quebrávamos.
+→ **Use `dumpsys window` / `dumpsys activity` para foco e estado.** Só use `uiautomator dump` quando precisar do texto real, e avise que a acessibilidade vai cair.
+→ Se travar: `adb kill-server && adb start-server` recupera aparelho que aparece como "(no serial number)".
+
+**2. Instalar o APK REVOGA `SYSTEM_ALERT_WINDOW`.** Reconceder após cada instalação:
+`adb -s <serial> shell appops set com.wardyou.app SYSTEM_ALERT_WINDOW allow`
+(A isenção de bateria, ao contrário, sobrevive.)
+
+**3. Agentes em paralelo NUNCA rodam git destrutivo.** Ver CLAUDE.md — um `git stash` apagou ~20 arquivos de trabalho não commitado.
+
+**4. `Test-Path` não prova que o build rodou.** O `ship.ps1` já exige `LastWriteTimeUtc` mais novo; **confira o artefato, não a mensagem de sucesso** (um APK velho foi publicado e instalado anunciado como novo).
+
+**5. Escrever em `settings secure` é bloqueado pelo classificador.** Religar acessibilidade é sempre ação do fundador.
+
+### 🔁 O padrão que se repetiu o dia inteiro
+**O servidor estava certo e a TELA mentia** — ou pior, o app **fabricava** o dado. Casos: posição congelada republicada com carimbo novo (o app inventava frescor); painel acusando acessibilidade caída com ela funcionando; site "bloqueado" que nunca foi implementado; contador prometendo tempo já pago; painel de bloqueio interceptando toque sem desenhar nada.
+**Corolário de método:** um card que mede uma vez e lembra o resultado mente sem perceber — o estado muda FORA do app. Três correções de hoje foram exatamente isso.
+**Segundo corolário:** três correções feitas hoje introduziram os defeitos seguintes. Correção em caminho de autenticação ou de background **exige teste em aparelho**, não basta typecheck.
+
 ## 🔴 RODADA DE VALIDAÇÃO TOTAL (2026-09-11) — 25 commits, 34 defeitos
 
 Bateria completa nos dois aparelhos reais (Redmi = criança, POCO = responsável), com arquiteto
