@@ -12,56 +12,53 @@ export async function readTripDelivery(): Promise<TripDelivery | null> {
     const raw = await storage.getItem(KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as TripDelivery;
-    if (typeof parsed?.armedAt !== "number") return null;
-    return { armedAt: parsed.armedAt, lastRunAt: parsed.lastRunAt ?? null, lastOkAt: parsed.lastOkAt ?? null };
+    return typeof parsed?.armedAt === "number" ? parsed : null;
   } catch {
     return null;
   }
 }
 
-async function write(d: TripDelivery): Promise<void> {
+async function patch(campos: Partial<TripDelivery>): Promise<void> {
   try {
-    await storage.setItem(KEY, JSON.stringify(d));
+    const atual = await readTripDelivery();
+    const proximo: TripDelivery = { armedAt: atual?.armedAt ?? Date.now(), ...atual, ...campos };
+    await storage.setItem(KEY, JSON.stringify(proximo));
   } catch {
     /* best-effort: um diagnostico que nao consegue gravar nao pode derrubar o
        rastreamento que ele esta observando */
   }
 }
 
-/** Rastreamento armado. Preserva `lastOkAt` se ja havia um (re-armar por causa
- *  de uma troca de viagem nao pode zerar o historico de entrega). */
+/** Rastreamento armado. Preserva os carimbos anteriores: re-armar por causa de
+ *  uma troca de viagem nao pode zerar o historico de entrega. */
 export async function markTripTrackingArmed(): Promise<void> {
   const atual = await readTripDelivery();
-  await write({
-    armedAt: atual?.armedAt ?? Date.now(),
-    lastRunAt: atual?.lastRunAt ?? null,
-    lastOkAt: atual?.lastOkAt ?? null,
-  });
+  if (!atual) await patch({ armedAt: Date.now() });
 }
 
-/**
- * A tarefa nativa rodou COM uma localizacao em maos -- ou seja, o SO entregou.
- *
- * Separar isto de `markTripPostOk` e o que distingue as duas causas que
- * passamos horas sem conseguir separar: "o SO nao esta entregando localizacao"
- * (roda sem nunca chegar aqui) de "entrega, mas o envio ao servidor falha"
- * (chega aqui e nunca em lastOkAt). Sem essa distincao, os dois casos
- * produzem exatamente o mesmo sintoma: silencio.
- */
+/** A tarefa nativa foi INVOCADA pelo SO. Gravado no topo do callback, antes de
+ *  qualquer guard -- ver o porque em tripDeliveryRules.ts. */
 export async function markTripTaskRan(): Promise<void> {
-  const atual = await readTripDelivery();
-  await write({
-    armedAt: atual?.armedAt ?? Date.now(),
-    lastRunAt: Date.now(),
-    lastOkAt: atual?.lastOkAt ?? null,
-  });
+  await patch({ lastRunAt: Date.now() });
 }
 
-/** Um POST de posicao foi aceito pelo servidor. Chamado pelos DOIS caminhos. */
+/** O SO entregou uma localizacao de fato (passou do guard de `locations`). */
+export async function markTripFixReceived(): Promise<void> {
+  await patch({ lastFixAt: Date.now() });
+}
+
+/** Um POST de posicao foi aceito pelo servidor. Chamado pelos DOIS caminhos
+ *  (primeiro plano e tarefa nativa) -- o diagnostico mede ENTREGA, e nao
+ *  importa por qual dos dois ela aconteceu. */
 export async function markTripPostOk(): Promise<void> {
-  const atual = await readTripDelivery();
-  const agora = Date.now();
-  await write({ armedAt: atual?.armedAt ?? agora, lastRunAt: atual?.lastRunAt ?? agora, lastOkAt: agora });
+  await patch({ lastOkAt: Date.now(), lastError: null });
+}
+
+/** Falha de envio, guardada em texto: no aparelho de teste o storage nao e
+ *  legivel por fora (app nao-debuggable) e a UI pode estar atras do app lock,
+ *  entao o motivo precisa sobreviver ate alguem conseguir abrir o app. */
+export async function markTripPostFailed(motivo: string): Promise<void> {
+  await patch({ lastError: motivo.slice(0, 200), lastErrorAt: Date.now() });
 }
 
 export async function clearTripDelivery(): Promise<void> {
@@ -72,5 +69,5 @@ export async function clearTripDelivery(): Promise<void> {
   }
 }
 
-export { isTripDeliveryStalled, TRIP_DELIVERY_STALL_MS } from "./tripDeliveryRules";
-export type { TripDelivery } from "./tripDeliveryRules";
+export { isTripDeliveryStalled, tripDeliveryStage, TRIP_DELIVERY_STALL_MS } from "./tripDeliveryRules";
+export type { TripDelivery, TripDeliveryStage } from "./tripDeliveryRules";

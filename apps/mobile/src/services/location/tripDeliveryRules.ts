@@ -13,28 +13,43 @@
  * `minUpdateDistanceMeters > 0` -- e nos pedimos `distanceInterval: 0`, entao
  * essas linhas nem sao nossas; e "too fast" e o filtro normal de intervalo
  * (provedor a ~1Hz, cliente pedindo 10s => ~9 descartes por entrega aceita,
- * proporcao que bate com o medido). Ou seja: a entrega estava funcionando.
+ * proporcao que bate com o medido). Restricao de rede tambem foi descartada
+ * (`dumpsys netpolicy`: rules=0, e o app ainda ganha isencao temporaria de
+ * economia de energia no instante em que o broadcast de localizacao dispara).
  *
- * O que sobra e o pior tipo de silencio: a tarefa RODOU 18 vezes e nada chegou
- * ao servidor, e nenhuma camada registrou o porque. Tudo que o app conseguia
+ * O que sobra e o pior tipo de silencio: a tarefa RODA e nada chega ao
+ * servidor, sem nenhuma camada registrando o porque. Tudo que o app conseguia
  * verificar era PRE-REQUISITO (permissao concedida? GPS ligado? tarefa
  * registrada?), e todos respondiam "sim" enquanto nada funcionava.
  *
- * E a mesma licao do diagnostico de acessibilidade: parar de inferir a partir
- * do que DEVERIA funcionar e passar a observar o que de fato acontece. Por
- * isso o carimbo e gravado pelos DOIS caminhos que postam -- o de primeiro
- * plano (useTripLocationBroadcast) e a tarefa NATIVA headless
- * (tripLocationTracking.native.ts). Gravar so no primeiro plano deixaria o
- * valor velho exatamente no cenario que queremos medir: o app fechado.
+ * Por isso sao TRES carimbos, nao um -- cada um marca uma etapa diferente da
+ * corrente, e e a diferenca entre eles que aponta onde ela arrebenta:
+ *
+ *   lastRunAt  a tarefa foi INVOCADA (gravado no topo do callback, antes de
+ *              qualquer guard -- foi exatamente esse o erro da primeira
+ *              versao deste instrumento: gravar depois do `if (!latest)
+ *              return`, que no cenario investigado nunca e alcancado, e ai os
+ *              dois carimbos envelheciam juntos sem separar nada).
+ *   lastFixAt  o SO ENTREGOU uma localizacao (passou do guard).
+ *   lastOkAt   o servidor ACEITOU o envio.
+ *
+ * lastRunAt fresco + lastFixAt velho  => o SO invoca mas nao entrega posicao.
+ * lastFixAt fresco + lastOkAt velho   => entrega, mas o envio falha.
+ * os tres frescos                     => funcionando.
  */
+
 export interface TripDelivery {
   /** Quando o rastreamento foi armado. Base para "armou e nunca entregou". */
   armedAt: number;
-  /** Ultima vez que a tarefa nativa RODOU com uma localizacao em maos (ou seja,
-   *  o SO entregou). `null` = nunca rodou com dado. */
-  lastRunAt: number | null;
-  /** Ultimo POST de posicao aceito pelo servidor. `null` = nenhum ainda. */
-  lastOkAt: number | null;
+  /** Tarefa invocada pelo SO (antes de qualquer guard). */
+  lastRunAt?: number | null;
+  /** O SO entregou uma localizacao de fato. */
+  lastFixAt?: number | null;
+  /** Ultimo POST de posicao aceito pelo servidor. */
+  lastOkAt?: number | null;
+  /** Ultima falha de envio, em texto, para o caso de nao dar para ler o log. */
+  lastError?: string | null;
+  lastErrorAt?: number | null;
 }
 
 /**
@@ -47,7 +62,7 @@ export interface TripDelivery {
 export const TRIP_DELIVERY_STALL_MS = 90_000;
 
 /**
- * Pura, exportada para teste: a entrega esta parada?
+ * Pura, exportada para teste: a entrega ao SERVIDOR esta parada?
  *
  * `null` (nada armado) devolve `false` de proposito -- sem rastreamento armado
  * nao ha o que acusar, e afirmar falha sem ter medido e o erro que esta
@@ -63,4 +78,22 @@ export function isTripDeliveryStalled(
   // envio acontecer, senao acusaria todo mundo nos primeiros segundos.
   if (d.lastOkAt == null) return now - d.armedAt > thresholdMs;
   return now - d.lastOkAt > thresholdMs;
+}
+
+/**
+ * Em qual etapa a corrente arrebentou? Para o texto do diagnostico e para o
+ * relato de QA -- responde "onde parou", nao so "parou".
+ */
+export type TripDeliveryStage = "ok" | "sem-invocacao" | "sem-posicao" | "sem-envio";
+
+export function tripDeliveryStage(
+  d: TripDelivery | null,
+  now: number = Date.now(),
+  thresholdMs: number = TRIP_DELIVERY_STALL_MS,
+): TripDeliveryStage {
+  if (!isTripDeliveryStalled(d, now, thresholdMs) || !d) return "ok";
+  const fresco = (t: number | null | undefined) => t != null && now - t <= thresholdMs;
+  if (!fresco(d.lastRunAt)) return "sem-invocacao"; // o SO nem chama a tarefa
+  if (!fresco(d.lastFixAt)) return "sem-posicao"; // chama, mas nao entrega fix
+  return "sem-envio"; // entrega, mas o POST nao chega ao servidor
 }

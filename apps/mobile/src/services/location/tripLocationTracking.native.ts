@@ -8,10 +8,23 @@ import { env } from "@/lib/env";
 import { storage } from "@/lib/storage";
 import {
   clearTripDelivery,
+  markTripFixReceived,
+  markTripPostFailed,
   markTripPostOk,
   markTripTaskRan,
   markTripTrackingArmed,
 } from "./tripDelivery";
+
+/**
+ * Rastro observavel da tarefa headless.
+ *
+ * O aparelho de teste nao e debuggable (`run-as` recusa) e nao tem root, entao
+ * o storage do instrumento e ilegivel por fora; e a UI que o mostraria pode
+ * estar atras do app lock. Logcat sobrou como UNICO canal de leitura com o app
+ * fechado. Prefixo fixo para dar um `grep` so. `console.warn` chega no logcat
+ * como `ReactNativeJS` (conferido: o babel deste projeto NAO remove console).
+ */
+const LOG = "[wardyou-trip]";
 
 // Native background trip-location broadcasting. Unlike the old foreground-only
 // watcher (which stopped the moment the app was backgrounded or killed), this
@@ -93,6 +106,11 @@ interface PostCoords {
   latitude: number;
   longitude: number;
   accuracy?: number;
+  /** Instante REAL da observacao. Sem isto o servidor carimba `now` (ver
+   *  CapturedAt em routes/trips.ts) -- a mesma desonestidade que corrigimos no
+   *  caminho de primeiro plano e que tinha ficado de pe justamente aqui, no
+   *  caminho que mais importa para "app fechado". */
+  capturedAt?: number;
 }
 
 /**
@@ -107,7 +125,12 @@ interface PostCoords {
 async function postTripLocation(tripId: string, token: string, coords: PostCoords): Promise<number> {
   try {
     return await postTripLocationRaw(tripId, token, coords);
-  } catch {
+  } catch (e) {
+    // Sobrevivivel E observavel: antes isto derrubava o callback inteiro em
+    // silencio; depois virou silencio sobrevivivel, que e meia correcao.
+    const motivo = e instanceof Error ? `${e.name}: ${e.message}` : String(e);
+    console.warn(`${LOG} POST falhou (rede/DNS/TLS) trip=${tripId}: ${motivo}`);
+    await markTripPostFailed(motivo);
     return 0;
   }
 }
@@ -120,6 +143,7 @@ async function postTripLocationRaw(tripId: string, token: string, coords: PostCo
       latitude: coords.latitude,
       longitude: coords.longitude,
       accuracyMeters: coords.accuracy,
+      ...(coords.capturedAt ? { capturedAt: new Date(coords.capturedAt).toISOString() } : {}),
     }),
   });
   return res.status;
@@ -128,6 +152,8 @@ async function postTripLocationRaw(tripId: string, token: string, coords: PostCo
 interface LocationTaskData {
   locations?: Array<{
     coords: { latitude: number; longitude: number; accuracy: number | null };
+    /** Instante da observacao, em ms epoch, como o SO reporta. */
+    timestamp?: number;
   }>;
 }
 
@@ -135,10 +161,23 @@ interface LocationTaskData {
 // freshest fix to every active trip; a trip that rejects (403 not sharing / 410
 // ended) is dropped, and when none remain the service stops itself.
 TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
-  if (error) return;
+  // ANTES de qualquer guard: "o SO invocou a tarefa" e um fato diferente de
+  // "o SO entregou posicao", e so separando os dois da para saber onde a
+  // corrente arrebenta. A primeira versao deste instrumento gravava isto
+  // depois do guard abaixo -- que no cenario investigado nunca e alcancado.
+  await markTripTaskRan();
+  if (error) {
+    console.warn(`${LOG} tarefa invocada com erro: ${String(error)}`);
+    return;
+  }
   const locations = data?.locations;
   const latest = locations?.[locations.length - 1];
-  if (!latest) return;
+  if (!latest) {
+    // A hipotese principal do caso de campo: invocada, sem posicao nenhuma.
+    console.warn(`${LOG} tarefa invocada SEM posicao (locations vazio) — nada a enviar`);
+    return;
+  }
+  await markTripFixReceived();
 
   let session = await readSession();
   if (!session) {
@@ -151,15 +190,11 @@ TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
     return;
   }
 
-  // O SO ENTREGOU localizacao para esta tarefa. Registrado separadamente do
-  // envio aceito (markTripPostOk) para separar "o SO nao entrega" de "entrega
-  // mas o envio falha" -- ver tripDelivery.ts.
-  await markTripTaskRan();
-
   const coords: PostCoords = {
     latitude: latest.coords.latitude,
     longitude: latest.coords.longitude,
     accuracy: latest.coords.accuracy ?? undefined,
+    capturedAt: latest.timestamp,
   };
 
   const stillActive: string[] = [];
@@ -172,7 +207,12 @@ TaskManager.defineTask<LocationTaskData>(TASK_NAME, async ({ data, error }) => {
         status = await postTripLocation(tripId, session.accessToken, coords);
       }
     }
-    if (status >= 200 && status < 300) await markTripPostOk();
+    if (status >= 200 && status < 300) {
+      await markTripPostOk();
+    } else {
+      console.warn(`${LOG} POST recusado trip=${tripId} status=${status}`);
+      await markTripPostFailed(`HTTP ${status}`);
+    }
     // Keep the trip unless the server says we can't share (403) or it ended (410).
     // Transient/network failures keep the trip for the next tick.
     if (status !== 403 && status !== 410) stillActive.push(tripId);
